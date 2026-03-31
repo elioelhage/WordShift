@@ -34,8 +34,7 @@
   const endTitle = document.getElementById("end-title");
   const countdownEl = document.getElementById("countdown");
   const closeModal = document.getElementById("close-modal");
-  
-  // Instruction Card UI
+
   const instructionCard = document.getElementById("instruction-card");
   const closeInstructionBtn = document.getElementById("close-instruction");
 
@@ -270,8 +269,7 @@
 
   function showHint() {
     if (gameOver || isSubmitting) return;
-    
-    // Find correctly guessed letters
+
     const correctLetters = new Set();
     for (const row of boardState) {
       if (!row) continue;
@@ -282,9 +280,8 @@
       }
     }
 
-    // Filter solution letters to find ones that haven't been placed correctly yet
     const unrevealed = solution.split('').filter(l => !correctLetters.has(l));
-    
+
     if (unrevealed.length > 0) {
       const randomHintLetter = unrevealed[Math.floor(Math.random() * unrevealed.length)];
       showMessage(`Hint: Try finding a spot for '${randomHintLetter}'`);
