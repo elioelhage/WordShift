@@ -7,18 +7,16 @@
   const passwordError = document.getElementById("password-error");
   const gamePanel = document.getElementById("game-panel");
 
-  // Prevent removal of password overlay via devtools
+  // MutationObserver to prevent removal of password overlay
   const observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
       if (mutation.removedNodes.length > 0) {
         const overlayExists = document.getElementById("password-overlay");
         if (!overlayExists && !authenticated) {
-          // Overlay was removed, re-add it and reset auth
           document.body.insertBefore(passwordOverlay, document.body.firstChild);
           passwordOverlay.style.display = "flex";
           authenticated = false;
           if (gamePanel) gamePanel.style.display = "none";
-          // Also clear local token
           localStorage.removeItem(AUTH_KEY);
         }
       }
@@ -116,6 +114,8 @@
   const lookupStatus = document.getElementById("lookup-status");
   const statusBadge = document.getElementById("status");
   const hintButton = document.getElementById("hint-button");
+  const hintCountSpan = document.getElementById("hint-count");
+  const themeToggle = document.getElementById("theme-toggle");
 
   const modal = document.getElementById("end-modal");
   const endTitle = document.getElementById("end-title");
@@ -123,6 +123,7 @@
 
   statusBadge.textContent = `${wordLength}-letter word • ${maxRows} tries`;
   grid.style.setProperty("--cols", wordLength);
+  grid.style.setProperty("--tile-size", "min(60px, 12vw)");
 
   let currentRow = 0;
   let currentGuess = "";
@@ -134,6 +135,10 @@
   let gameStarted = false;
   let eventsBound = false;
 
+  // Track total hints (2)
+  const TOTAL_HINTS = 2;
+  const hintsRemaining = TOTAL_HINTS - hintsUsed;
+
   if (savedState && savedState.solutionIndex === solutionIndex) {
     currentRow = Math.min(savedState.currentRow ?? 0, maxRows - 1);
     currentGuess = typeof savedState.currentGuess === "string" ? savedState.currentGuess : "";
@@ -143,12 +148,29 @@
 
   syncTitleIcon();
   initPasswordGate();
+  initThemeToggle();
 
   function syncTitleIcon() {
     const favicon = document.querySelector('link[rel="icon"]');
     const titleIcon = document.querySelector(".title-icon");
     if (!titleIcon || !favicon) return;
     titleIcon.src = favicon.getAttribute("href");
+  }
+
+  function initThemeToggle() {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      document.body.classList.add("light");
+      themeToggle.textContent = "☀️";
+    } else {
+      themeToggle.textContent = "🌙";
+    }
+    themeToggle.addEventListener("click", () => {
+      document.body.classList.toggle("light");
+      const isLight = document.body.classList.contains("light");
+      localStorage.setItem("theme", isLight ? "light" : "dark");
+      themeToggle.textContent = isLight ? "☀️" : "🌙";
+    });
   }
 
   async function unlockSite() {
@@ -211,11 +233,25 @@
     buildKeyboard();
     restoreBoard();
     updateGrid();
+    updateHintDisplay();
     if (gameOver) {
       const winState = savedState?.won === true;
       showEndModal(winState);
     }
     bindEvents();
+  }
+
+  function updateHintDisplay() {
+    const remaining = TOTAL_HINTS - hintsUsed;
+    hintCountSpan.textContent = remaining;
+    if (remaining === 0) {
+      hintButton.disabled = true;
+      hintButton.style.opacity = "0.5";
+      hintButton.style.cursor = "not-allowed";
+    } else {
+      hintButton.disabled = false;
+      hintButton.style.opacity = "1";
+    }
   }
 
   function bindEvents() {
@@ -224,7 +260,7 @@
     eventsBound = true;
     hintButton.addEventListener("click", handleHintClick);
     document.addEventListener("keydown", (e) => {
-      if (!authenticated) return;  // No game if not authenticated
+      if (!authenticated) return;
       if (gameOver || isSubmitting) return;
       if (e.key === "Enter") {
         handleKeyPress("ENTER");
@@ -239,19 +275,34 @@
   function handleHintClick() {
     if (!authenticated) return;
     if (gameOver || isSubmitting) return;
+
+    const remaining = TOTAL_HINTS - hintsUsed;
+    if (remaining <= 0) {
+      showMessage("No more hints available.");
+      return;
+    }
+
     if (hintsUsed === 0) {
+      // First hint: theme
       showMessage(`Theme hint: ${currentTheme}`);
       hintsUsed++;
       saveState();
+      updateHintDisplay();
       return;
     }
+
     if (hintsUsed === 1) {
-      revealLetterHint();
+      // Second hint: reveal a random letter that appears in the solution (without position)
+      // Pick a random letter from the solution that hasn't been revealed? Actually we just pick any.
+      // We'll pick a random index and show the letter.
+      const randomIndex = Math.floor(Math.random() * wordLength);
+      const letter = solution[randomIndex];
+      showMessage(`The word contains the letter "${letter}".`);
       hintsUsed++;
       saveState();
+      updateHintDisplay();
       return;
     }
-    showMessage("No more hints available.");
   }
 
   function saveState(won = null) {
@@ -274,19 +325,6 @@
     } catch {
       return null;
     }
-  }
-
-  function revealLetterHint() {
-    const indices = [];
-    for (let i = 0; i < wordLength; i++) indices.push(i);
-    const index = indices[Math.floor(Math.random() * indices.length)];
-    const letter = solution[index];
-    const tile = document.getElementById(`row-${currentRow}-col-${index}`);
-    if (!tile) return;
-    tile.textContent = letter;
-    tile.classList.add("present", "hint-reveal");
-    setTimeout(() => tile.classList.remove("hint-reveal"), 600);
-    showMessage("A letter has been revealed.");
   }
 
   function buildGrid() {

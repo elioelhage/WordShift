@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>The Stupid Wordle</title>
   <link rel="icon" href="puzzle.png" />
   <link rel="stylesheet" href="style.css" />
@@ -28,7 +28,8 @@
           <p class="eyebrow">Daily themed word game</p>
         </div>
         <div class="top-actions">
-          <button id="hint-button" class="hint-button">💡 Hint</button>
+          <button id="hint-button" class="hint-button">💡 Hint (<span id="hint-count">2</span> left)</button>
+          <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light/dark mode">🌙</button>
           <div id="status" class="badge"></div>
         </div>
       </header>
