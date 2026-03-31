@@ -2,57 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>The Stupid Wordle</title>
-  <link rel="icon" href="puzzle.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#121213" />
+  <title>Wordle Mobile Clone</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="password-overlay" class="password-overlay">
-    <div class="password-box">
-      <h2>Enter password</h2>
-      <input id="password-input" type="password" placeholder="Password" autocomplete="current-password" />
-      <button id="password-submit" type="button">Enter</button>
-      <p id="password-error"></p>
-    </div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar__left">
+        <p class="eyebrow">Daily Word</p>
+        <h1>WORDLE</h1>
+      </div>
+
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode">
+        <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+      </button>
+    </header>
+
+    <main class="game" id="game">
+      <section class="status-card">
+        <p id="status-line" class="status-line">Tap the board or keyboard to type.</p>
+        <p id="meta-line" class="meta-line"></p>
+      </section>
+
+      <section class="board-wrap" aria-label="Word board">
+        <div id="board" class="board" aria-live="polite"></div>
+      </section>
+
+      <p id="message" class="message" aria-live="polite"></p>
+
+      <section class="keyboard-wrap" aria-label="On-screen keyboard">
+        <div id="keyboard" class="keyboard"></div>
+      </section>
+    </main>
   </div>
 
-  <main class="shell">
-    <section id="game-panel" class="panel" style="display: none;">
-      <header class="topbar">
-        <div class="title-block">
-          <div class="title-row">
-            <img src="puzzle.png" alt="Game icon" class="title-icon" />
-            <h1>THE STUPID WORDLE</h1>
-          </div>
-          <p class="eyebrow">Daily themed word game</p>
-        </div>
-        <div class="top-actions">
-          <button id="hint-button" class="hint-button">💡 Hint (<span id="hint-count">2</span> left)</button>
-          <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light/dark mode">🌙</button>
-          <div id="status" class="badge"></div>
-        </div>
-      </header>
+  <input
+    id="capture-input"
+    class="capture-input"
+    type="text"
+    inputmode="text"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="characters"
+    spellcheck="false"
+    aria-label="Word input"
+  />
 
-      <div id="message-board"></div>
-      <div id="lookup-status" class="lookup-status hidden">Checking dictionary...</div>
-
-      <div id="grid" class="grid"></div>
-      <div id="keyboard" class="keyboard"></div>
-    </section>
-  </main>
-
-  <footer>
-    <p>© 2026 Made by Elio El Hage</p>
-    <p>Archive: 289 words</p>
-  </footer>
-
-  <div id="end-modal" class="modal hidden">
-    <div class="modal-box">
-      <button id="close-modal" class="close-btn">×</button>
-      <h2 id="end-title"></h2>
-      <p>Next word in:</p>
-      <div id="countdown"></div>
+  <div id="end-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="end-title">
+    <div class="modal__card">
+      <p id="end-kicker" class="modal__kicker">Round complete</p>
+      <h2 id="end-title" class="modal__title">Nice work.</h2>
+      <p id="countdown" class="modal__countdown"></p>
+      <button id="close-modal" class="primary-button" type="button">Continue</button>
     </div>
   </div>
 
