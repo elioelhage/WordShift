@@ -71,22 +71,19 @@
   async function fetchTodaysWord() {
     if (WORD_SOURCE === "supabase") {
       try {
-        // We are deleting the Edge Function 'fetch' and querying the table directly.
-        // NOTE: Replace 'YOUR_TABLE_NAME' with the actual name of your table!
         const { data, error } = await supabase
-          .from('YOUR_TABLE_NAME')
+          .from('words') // <-- Your exact table name
           .select('word, category')
           .eq('day_index', solutionIndex)
           .single();
 
         if (error) throw error;
 
-        // If it finds the word in Supabase, use it
         solution = data.word.toUpperCase();
         wordCategory = data.category;
         
       } catch (err) {
-        console.error("Database query failed, pulling from local file instead:", err);
+        console.error("Database query failed:", err);
         const obj = DAILY_WORDS[solutionIndex % DAILY_WORDS.length];
         solution = obj.word.toUpperCase();
         wordCategory = obj.category;
