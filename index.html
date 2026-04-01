@@ -7,6 +7,7 @@
   <title>The Stupid Wordle</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='60' fill='white' font-family='sans-serif' font-weight='bold'>W</text></svg>" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -25,6 +26,16 @@
       </div>
 
       <div class="topbar__right">
+        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+            <path d="M4 22h16"></path>
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+          </svg>
+        </button>
         <button id="hint-button" class="icon-button hint-button" type="button" aria-label="Hint">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18h6"></path>
@@ -63,7 +74,33 @@
     </div>
   </div>
 
-  <script src="words.js"></script>
-  <script src="script.js"></script>
+  <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal__card leaderboard-card">
+      <button id="close-leaderboard" class="close-top-right">×</button>
+      
+      <div id="username-view" class="hidden">
+        <h2 class="modal__title">Join the Leaderboard</h2>
+        <p class="modal__countdown">Enter a username once. It's yours forever.</p>
+        <input type="text" id="username-input" class="text-input" placeholder="Enter username..." maxlength="15" />
+        <button id="save-username-btn" class="primary-button" style="margin-top: 1rem;">Save & View</button>
+      </div>
+
+      <div id="stats-view" class="hidden">
+        <h2 class="modal__title">Leaderboards</h2>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="avg">Avg Guesses</button>
+          <button class="tab-btn" data-tab="streak">Winstreak</button>
+        </div>
+        
+        <div class="tab-content">
+          <div id="lb-loading" class="lb-loading">Loading...</div>
+          <ul id="lb-list" class="lb-list hidden"></ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="words.js"></script> <script src="script.js"></script>
 </body>
 </html>

@@ -1,267 +1,14 @@
 (() => {
+  // --- SUPABASE CONFIGURATION ---
+  const supabaseUrl = 'https://hcehsxnudbwjydvenlfz.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8';
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
   const WORDS = [
     { word: "RUINS", category: "Lebanon" },
     { word: "CREED", category: "Christianity" },
     { word: "ENCORE", category: "Theater" },
-    { word: "WATAN", category: "Lebanon" },
-    { word: "LINES", category: "Theater" },
-    { word: "VILLAGE", category: "Lebanon" },
-    { word: "COMIC", category: "Theater" },
-    { word: "CHORDS", category: "Christianity" },
-    { word: "MIMIC", category: "Theater" },
-    { word: "OTTOMAN", category: "Lebanon" },
-    { word: "JESUS", category: "Christianity" },
-    { word: "DREAM", category: "General" },
-    { word: "EXTRA", category: "Theater" },
-    { word: "SCARF", category: "General" },
-    { word: "BALAD", category: "Lebanon" },
-    { word: "PARODY", category: "Theater" },
-    { word: "REVIEW", category: "Theater" },
-    { word: "CASTED", category: "Theater" },
-    { word: "ROSARY", category: "Christianity" },
-    { word: "INSECT", category: "General" },
-    { word: "PROPHET", category: "Christianity" },
-    { word: "PANTS", category: "General" },
-    { word: "DANCER", category: "Theater" },
-    { word: "SEASIDE", category: "Lebanon" },
-    { word: "CHAIR", category: "General" },
-    { word: "CEDARS", category: "Lebanon" },
-    { word: "BATATA", category: "Lebanon" },
-    { word: "DANCE", category: "General" },
-    { word: "COMEDY", category: "Theater" },
-    { word: "GLORY", category: "Christianity" },
-    { word: "THYME", category: "Lebanon" },
-    { word: "SWEET", category: "General" },
-    { word: "SLEEP", category: "General" },
-    { word: "CLIMAX", category: "Theater" },
-    { word: "CHURCH", category: "Christianity" },
-    { word: "RIGGER", category: "Theater" },
-    { word: "TAYEB", category: "Lebanon" },
-    { word: "EPISTLE", category: "Christianity" },
-    { word: "SCRIPT", category: "Theater" },
-    { word: "ARABIC", category: "Lebanon" },
-    { word: "CLOCK", category: "General" },
-    { word: "FARCE", category: "Theater" },
-    { word: "PARISH", category: "Christianity" },
-    { word: "TRACK", category: "General" },
-    { word: "LABAN", category: "Lebanon" },
-    { word: "CUES", category: "Theater" },
-    { word: "VIRTUE", category: "Christianity" },
-    { word: "HALAWA", category: "Lebanon" },
-    { word: "STAGES", category: "Theater" },
-    { word: "WATCH", category: "General" },
-    { word: "BIBLE", category: "Christianity" },
-    { word: "PSALM", category: "Christianity" },
-    { word: "LITURGY", category: "Christianity" },
-    { word: "SESAME", category: "Lebanon" },
-    { word: "PENCIL", category: "General" },
-    { word: "SACRED", category: "Christianity" },
-    { word: "TIMING", category: "Theater" },
-    { word: "MIMES", category: "Theater" },
-    { word: "CHOIR", category: "Christianity" },
-    { word: "SALTY", category: "General" },
-    { word: "CASTING", category: "Theater" },
-    { word: "IMPROV", category: "Theater" },
-    { word: "LEMON", category: "Lebanon" },
-    { word: "PLANE", category: "General" },
-    { word: "THEME", category: "Theater" },
-    { word: "FREEKEH", category: "Lebanon" },
-    { word: "STRIKE", category: "Theater" },
-    { word: "WINTER", category: "Lebanon" },
-    { word: "KNIFE", category: "General" },
-    { word: "SPOON", category: "General" },
-    { word: "HAPPY", category: "General" },
-    { word: "SHEET", category: "General" },
-    { word: "SOUKS", category: "Lebanon" },
-    { word: "ROCKS", category: "Lebanon" },
-    { word: "KEBAB", category: "Lebanon" },
-    { word: "BALLET", category: "Theater" },
-    { word: "USHER", category: "Theater" },
-    { word: "GREEN", category: "General" },
-    { word: "PIANO", category: "General" },
-    { word: "BALCONY", category: "Theater" },
-    { word: "BLACK", category: "General" },
-    { word: "VOICE", category: "General" },
-    { word: "STORY", category: "Theater" },
-    { word: "ISLAND", category: "General" },
-    { word: "MORNING", category: "General" },
-    { word: "MANKISH", category: "Lebanon" },
-    { word: "KAFTA", category: "Lebanon" },
-    { word: "WHITE", category: "General" },
-    { word: "AYYAM", category: "Lebanon" },
-    { word: "DIVINE", category: "Christianity" },
-    { word: "OPERA", category: "Theater" },
-    { word: "FINJAAN", category: "Lebanon" },
-    { word: "TAOUK", category: "Lebanon" },
-    { word: "MUSIC", category: "General" },
-    { word: "SINGER", category: "Theater" },
-    { word: "PAINT", category: "General" },
-    { word: "CABARET", category: "Theater" },
-    { word: "PAPER", category: "General" },
-    { word: "CURTAIN", category: "Theater" },
-    { word: "GARLIC", category: "Lebanon" },
-    { word: "CHALICE", category: "Christianity" },
-    { word: "STREET", category: "General" },
-    { word: "SFIHA", category: "Lebanon" },
-    { word: "GHOST", category: "General" },
-    { word: "JABAL", category: "Lebanon" },
-    { word: "ADVENT", category: "Christianity" },
-    { word: "MASKS", category: "Theater" },
-    { word: "SOUND", category: "Theater" },
-    { word: "ZAHR", category: "Lebanon" },
-    { word: "METAL", category: "General" },
-    { word: "CLOUD", category: "General" },
-    { word: "VESPERS", category: "Christianity" },
-    { word: "SCENE", category: "Theater" },
-    { word: "LABNEH", category: "Lebanon" },
-    { word: "LEVANT", category: "Lebanon" },
-    { word: "STAGED", category: "Theater" },
-    { word: "TABLE", category: "General" },
-    { word: "MATINS", category: "Christianity" },
-    { word: "VALLEY", category: "Lebanon" },
-    { word: "MYSTIC", category: "Christianity" },
-    { word: "HUMMUS", category: "Lebanon" },
-    { word: "CHANTS", category: "Christianity" },
-    { word: "DESERT", category: "General" },
-    { word: "KABIS", category: "Lebanon" },
-    { word: "DRAMA", category: "Theater" },
-    { word: "ANGEL", category: "Christianity" },
-    { word: "PIGEON", category: "Lebanon" },
-    { word: "MERCY", category: "Christianity" },
-    { word: "ACTRESS", category: "Theater" },
-    { word: "PLANET", category: "General" },
-    { word: "BICYCLE", category: "General" },
-    { word: "REVIVAL", category: "Theater" },
-    { word: "SATIRE", category: "Theater" },
-    { word: "EARTH", category: "General" },
-    { word: "PENANCE", category: "Christianity" },
-    { word: "SMILE", category: "General" },
-    { word: "CLIFF", category: "Lebanon" },
-    { word: "PRIEST", category: "Christianity" },
-    { word: "BAPTIST", category: "Christianity" },
-    { word: "FRIAR", category: "Christianity" },
-    { word: "PASTRY", category: "Lebanon" },
-    { word: "SHRINE", category: "Christianity" },
-    { word: "NAMMURA", category: "Lebanon" },
-    { word: "TICKET", category: "Theater" },
-    { word: "NOUGAT", category: "Lebanon" },
-    { word: "OCEAN", category: "General" },
-    { word: "WINDOW", category: "General" },
-    { word: "CHEESE", category: "General" },
-    { word: "CLERIC", category: "Christianity" },
-    { word: "MAGIC", category: "General" },
-    { word: "COLUMN", category: "Lebanon" },
-    { word: "BOWS", category: "Theater" },
-    { word: "FAMILY", category: "Lebanon" },
-    { word: "SUNDAY", category: "Christianity" },
-    { word: "ROMAN", category: "Lebanon" },
-    { word: "SPACE", category: "General" },
-    { word: "TEMPLE", category: "Christianity" },
-    { word: "ALTAR", category: "Christianity" },
-    { word: "MARTYR", category: "Christianity" },
-    { word: "SAINT", category: "Christianity" },
-    { word: "BELIEF", category: "Christianity" },
-    { word: "MEZZE", category: "Lebanon" },
-    { word: "SPICY", category: "General" },
-    { word: "TRAIN", category: "General" },
-    { word: "HOUSE", category: "General" },
-    { word: "EXODUS", category: "Christianity" },
-    { word: "COFFEE", category: "Lebanon" },
-    { word: "BAKLAVA", category: "Lebanon" },
-    { word: "PSALMS", category: "Christianity" },
-    { word: "SHWARMA", category: "Lebanon" },
-    { word: "BISHOP", category: "Christianity" },
-    { word: "DEVOUT", category: "Christianity" },
-    { word: "LAUGH", category: "General" },
-    { word: "CHORUS", category: "Theater" },
-    { word: "WATER", category: "General" },
-    { word: "WINGS", category: "Theater" },
-    { word: "COAST", category: "Lebanon" },
-    { word: "ANIMAL", category: "General" },
-    { word: "ASHES", category: "Christianity" },
-    { word: "SUNNY", category: "General" },
-    { word: "PROPS", category: "Theater" },
-    { word: "OLIVE", category: "Lebanon" },
-    { word: "STALLS", category: "Theater" },
-    { word: "TRUCK", category: "Theater" },
-    { word: "PARABLE", category: "Christianity" },
-    { word: "STAGE", category: "Theater" },
-    { word: "SAVIOR", category: "Christianity" },
-    { word: "GENESIS", category: "Christianity" },
-    { word: "BITTER", category: "General" },
-    { word: "FRUIT", category: "General" },
-    { word: "RECTOR", category: "Christianity" },
-    { word: "GOSPEL", category: "Christianity" },
-    { word: "TRAGIC", category: "Theater" },
-    { word: "SPIRIT", category: "Christianity" },
-    { word: "SERMON", category: "Christianity" },
-    { word: "AISLE", category: "Theater" },
-    { word: "SINNER", category: "Christianity" },
-    { word: "MARQUEE", category: "Theater" },
-    { word: "BAALBEK", category: "Lebanon" },
-    { word: "PHONE", category: "General" },
-    { word: "NOVICE", category: "Christianity" },
-    { word: "MESHWEH", category: "Lebanon" },
-    { word: "FAITH", category: "Christianity" },
-    { word: "FLOOR", category: "General" },
-    { word: "MAKEUP", category: "Theater" },
-    { word: "FATAYER", category: "Lebanon" },
-    { word: "BAPTISM", category: "Christianity" },
-    { word: "YOGHURT", category: "Lebanon" },
-    { word: "PRAYER", category: "Christianity" },
-    { word: "HOMILY", category: "Christianity" },
-    { word: "RELICS", category: "Christianity" },
-    { word: "SHISH", category: "Lebanon" },
-    { word: "BREAD", category: "General" },
-    { word: "COLOR", category: "General" },
-    { word: "FLYMAN", category: "Theater" },
-    { word: "HEAVEN", category: "Christianity" },
-    { word: "TRAIL", category: "General" },
-    { word: "SUMMER", category: "Lebanon" },
-    { word: "GLASS", category: "General" },
-    { word: "TROUPE", category: "Theater" },
-    { word: "DABKE", category: "Lebanon" },
-    { word: "SAMAK", category: "Lebanon" },
-    { word: "PLAYED", category: "Theater" },
-    { word: "POSTER", category: "Theater" },
-    { word: "VATICAN", category: "Christianity" },
-    { word: "BRUSH", category: "General" },
-    { word: "SCENERY", category: "Theater" },
-    { word: "BOOTH", category: "Theater" },
-    { word: "EASTER", category: "Christianity" },
-    { word: "ROOTS", category: "Lebanon" },
-    { word: "SPICES", category: "Lebanon" },
-    { word: "BEACH", category: "Lebanon" },
-    { word: "ROOF", category: "General" },
-    { word: "PIOUS", category: "Christianity" },
-    { word: "LYRICS", category: "Theater" },
-    { word: "CLERGY", category: "Christianity" },
-    { word: "MUSICAL", category: "Theater" },
-    { word: "FALAFEL", category: "Lebanon" },
-    { word: "PLANT", category: "General" },
-    { word: "TRAGEDY", category: "Theater" },
-    { word: "JOUNIEH", category: "Lebanon" },
-    { word: "APOSTLE", category: "Christianity" },
-    { word: "FOYER", category: "Theater" },
-    { word: "SHIRT", category: "General" },
-    { word: "DEACON", category: "Christianity" },
-    { word: "NIGHT", category: "General" },
-    { word: "PASTOR", category: "Christianity" },
-    { word: "VOCAL", category: "Theater" },
-    { word: "PALACE", category: "Christianity" },
-    { word: "KNAFEH", category: "Lebanon" },
-    { word: "CRITIC", category: "Theater" },
-    { word: "GLOVE", category: "General" },
-    { word: "LIGHT", category: "General" },
-    { word: "BRANCH", category: "Lebanon" },
-    { word: "ZAATAR", category: "Lebanon" },
-    { word: "PLOT", category: "Theater" },
-    { word: "ACTING", category: "Theater" },
-    { word: "TRINITY", category: "Christianity" },
-    { word: "CEDAR", category: "Lebanon" },
-    { word: "FLOWER", category: "General" },
-    { word: "RAINY", category: "General" },
-    { word: "KIBBEH", category: "Lebanon" },
+    // ... (Keep the rest of your WORDS array here) ...
     { word: "SETS", category: "Theater" },
   ];
 
@@ -280,6 +27,17 @@
   const countdownEl = document.getElementById("countdown");
   const closeModal = document.getElementById("close-modal");
 
+  // Leaderboard Elements
+  const leaderboardBtn = document.getElementById("leaderboard-button");
+  const leaderboardModal = document.getElementById("leaderboard-modal");
+  const closeLeaderboardBtn = document.getElementById("close-leaderboard");
+  const usernameView = document.getElementById("username-view");
+  const statsView = document.getElementById("stats-view");
+  const usernameInput = document.getElementById("username-input");
+  const saveUsernameBtn = document.getElementById("save-username-btn");
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  const lbLoading = document.getElementById("lb-loading");
+  const lbList = document.getElementById("lb-list");
 
   const wordCache = {};
 
@@ -305,6 +63,7 @@
   
   const storageKey = `wordle-mobile-${solutionIndex}`;
   const themeKey = "wordle-mobile-theme";
+  const userKey = "wordle-user-data"; // For UUID and Username
 
   let currentRow = 0;
   let currentGuess = "";
@@ -314,6 +73,26 @@
   let countdownTimer = null;
   let messageTimer = null;
   let hintsUsed = 0;
+  let hasSubmittedToLeaderboard = false;
+
+  // UUID Generation
+  function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  function getUserData() {
+    let data = localStorage.getItem(userKey);
+    if (!data) {
+      data = { uuid: generateUUID(), username: null };
+      localStorage.setItem(userKey, JSON.stringify(data));
+    } else {
+      data = JSON.parse(data);
+    }
+    return data;
+  }
 
   const savedState = loadState();
   if (savedState && savedState.solutionIndex === solutionIndex) {
@@ -322,6 +101,7 @@
     gameOver = Boolean(savedState.gameOver);
     boardState = Array.from({ length: maxRows }, (_, i) => savedState.boardState?.[i] ?? null);
     hintsUsed = savedState.hintsUsed || 0;
+    hasSubmittedToLeaderboard = savedState.hasSubmittedToLeaderboard || false;
   }
 
   setupTheme();
@@ -364,9 +144,7 @@
   }
 
   function moonIcon() {
-    return `
-      <path d="M20 13.2A7.8 7.8 0 0 1 10.8 4a8.8 8.8 0 1 0 9.2 9.2Z"></path>
-    `;
+    return `<path d="M20 13.2A7.8 7.8 0 0 1 10.8 4a8.8 8.8 0 1 0 9.2 9.2Z"></path>`;
   }
 
   function sunIcon() {
@@ -444,6 +222,7 @@
     });
 
     document.addEventListener("keydown", (event) => {
+      if (leaderboardModal.classList.contains("hidden") === false) return; // Ignore if modal open
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === "Enter") {
         event.preventDefault();
@@ -462,7 +241,148 @@
     });
 
     closeModal.addEventListener("click", hideEndModal);
+    
+    // Leaderboard Events
+    leaderboardBtn.addEventListener("click", openLeaderboard);
+    closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
+    
+    saveUsernameBtn.addEventListener("click", async () => {
+      const name = usernameInput.value.trim();
+      if (name.length < 3) return showMessage("Name too short");
+      
+      const userData = getUserData();
+      userData.username = name;
+      
+      // Attempt to create user in DB
+      const { error } = await supabase.from('leaderboards').insert([
+        { uuid: userData.uuid, username: userData.username }
+      ]);
+      
+      if (error && error.code === '23505') { // Unique violation
+        showMessage("Username taken");
+        return;
+      }
+      
+      localStorage.setItem(userKey, JSON.stringify(userData));
+      usernameView.classList.add("hidden");
+      statsView.classList.remove("hidden");
+      loadLeaderboardData("avg");
+    });
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        tabBtns.forEach(b => b.classList.remove("active"));
+        e.target.classList.add("active");
+        loadLeaderboardData(e.target.dataset.tab);
+      });
+    });
   }
+
+  // --- LEADERBOARD LOGIC ---
+  function openLeaderboard() {
+    leaderboardModal.classList.remove("hidden");
+    const userData = getUserData();
+    
+    if (!userData.username) {
+      usernameView.classList.remove("hidden");
+      statsView.classList.add("hidden");
+    } else {
+      usernameView.classList.add("hidden");
+      statsView.classList.remove("hidden");
+      // Default to avg tab
+      tabBtns[0].click(); 
+    }
+  }
+
+  async function loadLeaderboardData(type) {
+    lbLoading.classList.remove("hidden");
+    lbList.classList.add("hidden");
+    lbList.innerHTML = "";
+
+    try {
+      let data = [];
+      if (type === "avg") {
+        // Min 3 games, ordered by fewest guesses (ascending)
+        const { data: res, error } = await supabase
+          .from('leaderboards')
+          .select('username, games_played, total_guesses')
+          .gte('games_played', 3);
+        
+        if (!error && res) {
+           data = res.map(p => ({
+             ...p,
+             avg: (p.total_guesses / p.games_played).toFixed(2)
+           })).sort((a, b) => a.avg - b.avg).slice(0, 50);
+        }
+      } else if (type === "streak") {
+        // Ordered by winstreak
+        const { data: res, error } = await supabase
+          .from('leaderboards')
+          .select('username, winstreak')
+          .order('winstreak', { ascending: false })
+          .limit(50);
+          
+        if (!error && res) data = res;
+      }
+
+      data.forEach((player, index) => {
+        const li = document.createElement("li");
+        li.className = "lb-item";
+        
+        const scoreVal = type === "avg" ? player.avg : player.winstreak;
+        
+        li.innerHTML = `
+          <div><span class="rank">#${index + 1}</span> ${player.username}</div>
+          <div class="score">${scoreVal}</div>
+        `;
+        lbList.appendChild(li);
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    lbLoading.classList.add("hidden");
+    lbList.classList.remove("hidden");
+  }
+
+  async function updateUserStats(won, guessesTaken) {
+    if (hasSubmittedToLeaderboard) return;
+    
+    const userData = getUserData();
+    if (!userData.username) return; // Only track stats if they've registered a name
+
+    try {
+      // Fetch current stats
+      const { data: userRecord } = await supabase
+        .from('leaderboards')
+        .select('*')
+        .eq('uuid', userData.uuid)
+        .single();
+
+      if (userRecord) {
+        const updates = {
+          games_played: userRecord.games_played + 1,
+          total_guesses: userRecord.total_guesses + guessesTaken,
+          winstreak: won ? userRecord.winstreak + 1 : 0,
+        };
+        
+        if (updates.winstreak > userRecord.max_winstreak) {
+          updates.max_winstreak = updates.winstreak;
+        }
+
+        await supabase
+          .from('leaderboards')
+          .update(updates)
+          .eq('uuid', userData.uuid);
+          
+        hasSubmittedToLeaderboard = true;
+        saveState(won);
+      }
+    } catch (e) {
+      console.error("Error updating stats", e);
+    }
+  }
+  // --- END LEADERBOARD LOGIC ---
 
   function updateHintBadge() {
     const hintsLeft = 2 - hintsUsed;
@@ -655,6 +575,7 @@
     window.setTimeout(() => {
       if (guess === solution) {
         gameOver = true;
+        updateUserStats(true, currentRow + 1); // Submits to Leaderboard
         saveState(true);
         showMessage("Solved.");
         showEndModal(true);
@@ -667,6 +588,7 @@
 
       if (currentRow >= maxRows) {
         gameOver = true;
+        updateUserStats(false, currentRow); // Submits to Leaderboard (Loss)
         saveState(false);
         showMessage(`The word was ${solution}.`);
         showEndModal(false);
@@ -838,7 +760,8 @@
       gameOver,
       won,
       boardState,
-      hintsUsed
+      hintsUsed,
+      hasSubmittedToLeaderboard // Make sure we don't submit to DB twice for the same game upon refresh
     };
     localStorage.setItem(storageKey, JSON.stringify(state));
   }
