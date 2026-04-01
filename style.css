@@ -36,6 +36,8 @@ body[data-theme="dark"] {
   --key-bg: #818384;
   --key-text: #f5f5f5;
   --key-pressed: #9a9b9d;
+  /* Fixed dark mode absent color to be distinguishable from the standard keyboard key color */
+  --absent: #3a3a3c; 
   --shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
 }
 
@@ -48,10 +50,10 @@ body {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow: hidden;
   -webkit-text-size-adjust: 100%;
+  touch-action: manipulation; /* Prevents double-tap zoom globally */
 }
 
-button, input { font: inherit; }
-button { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
 .app-shell {
   min-height: 100dvh;
@@ -141,6 +143,27 @@ button { -webkit-tap-highlight-color: transparent; }
   stroke-linejoin: round;
 }
 
+.hint-button { position: relative; }
+.hint-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--correct);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--bg);
+  transition: background-color 0.2s ease;
+}
+.hint-badge.empty {
+  background: var(--muted);
+}
+
 .game {
   flex: 1 1 auto;
   min-height: 0;
@@ -220,13 +243,12 @@ button { -webkit-tap-highlight-color: transparent; }
   align-content: center;
   width: fit-content;
   max-width: 100%;
-  touch-action: manipulation;
 }
 
 .row {
   display: grid;
   gap: var(--board-gap);
-  grid-template-columns: repeat(5, var(--tile-size));
+  grid-template-columns: repeat(var(--word-length, 5), var(--tile-size));
 }
 
 .tile {
@@ -242,11 +264,11 @@ button { -webkit-tap-highlight-color: transparent; }
   text-transform: uppercase;
   user-select: none;
   -webkit-user-select: none;
-  transition: transform 0.12s ease, background-color 0.18s ease, border-color 0.18s ease;
+  transition: transform 0.1s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
 .tile.filled { border-color: var(--tile-filled-border); }
-.tile.pop { animation: pop 0.12s ease-in-out; }
+.tile.pop { animation: pop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
 .tile.correct, .key.correct { background: var(--correct); border-color: var(--correct); color: #fff; }
 .tile.present, .key.present { background: var(--present); border-color: var(--present); color: #fff; }
@@ -276,7 +298,6 @@ button { -webkit-tap-highlight-color: transparent; }
 .keyboard {
   display: grid;
   gap: var(--key-gap);
-  touch-action: manipulation;
   user-select: none;
 }
 
@@ -299,27 +320,12 @@ button { -webkit-tap-highlight-color: transparent; }
   min-width: 0;
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08);
   cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.05s ease;
 }
 
 .key.wide { flex: 1.55 1 0; }
-.key:active { transform: translateY(1px); background: var(--key-pressed); }
+.key:active { transform: translateY(2px); background: var(--key-pressed); }
 .key:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.capture-input {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  width: 1px;
-  height: 1px;
-  opacity: 0.01;
-  border: 0;
-  padding: 0;
-  transform: translateX(-50%);
-  background: transparent;
-  color: transparent;
-  caret-color: transparent;
-  z-index: -1;
-}
 
 .modal {
   position: fixed;
@@ -367,7 +373,13 @@ button { -webkit-tap-highlight-color: transparent; }
   cursor: pointer;
 }
 
-@keyframes pop { 0% { transform: scale(0.92); } 100% { transform: scale(1); } }
+/* Updated pop animation for a snappier, more fluid feel */
+@keyframes pop { 
+  0% { transform: scale(0.85); opacity: 0.7; } 
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); } 
+}
+
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-6px); }
