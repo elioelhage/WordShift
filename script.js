@@ -19,8 +19,10 @@
   ];
   const DAILY_WORDS = safeWords.filter(obj => obj.word && /^[a-zA-Z]+$/.test(obj.word));
   
-  // Note: In JavaScript, months are 0-indexed! So 3 = April.
-  const launchDate = Date.UTC(2026, 3, 2);
+  // FIXED LAUNCH DATE: This syncs the math perfectly if RUINS was day 0 (March 30).
+  // 2 = March, 30 = 30th. Let the math handle the offsets natively.
+  const launchDate = Date.UTC(2026, 2, 30);
+  
   const boardEl = document.getElementById("board");
   const keyboardEl = document.getElementById("keyboard");
   const messageEl = document.getElementById("message");
@@ -356,6 +358,7 @@
     leaderboardModal.classList.remove("hidden");
     const userData = getUserData();
     
+    // THE ULTIMATE LOCK: If username exists, the add name view physically cannot be reached
     if (!userData.username) {
       usernameView.classList.remove("hidden");
       statsView.classList.add("hidden");
@@ -371,8 +374,6 @@
     lbLoading.textContent = "Loading...";
     lbList.classList.add("hidden");
     lbList.innerHTML = "";
-
-    const userData = getUserData();
 
     try {
       let data = [];
@@ -414,33 +415,19 @@
         return;
       }
 
+      // Renders names as plain text, no click handlers
       data.forEach((player, index) => {
         const li = document.createElement("li");
         li.className = "lb-item";
         
-        const isMe = player.username === userData.username;
         const scoreVal = type === "avg"
           ? player.avg
           : (player.max_winstreak ?? player.winstreak ?? 0);
         
-        // Add special class if it's the current user
         li.innerHTML = `
-          <div class="name-wrap">
-            <span class="rank">#${index + 1}</span> 
-            <span class="${isMe ? 'editable-name' : ''}" title="${isMe ? 'Edit your name' : ''}">${player.username}</span>
-          </div>
+          <div><span class="rank">#${index + 1}</span> ${player.username}</div>
           <div class="score">${scoreVal}</div>
         `;
-
-        // Make the name clickable to edit
-        if (isMe) {
-          li.querySelector('.editable-name').addEventListener('click', () => {
-            statsView.classList.add("hidden");
-            usernameView.classList.remove("hidden");
-            usernameInput.value = userData.username || "";
-            saveUsernameBtn.textContent = "Update Name";
-          });
-        }
 
         lbList.appendChild(li);
       });
