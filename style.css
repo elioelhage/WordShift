@@ -52,6 +52,9 @@ body {
   touch-action: manipulation;
 }
 
+/* Fixes the stacking bug and loading screen sticking around */
+.hidden { display: none !important; }
+
 button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
 .app-shell {
@@ -291,8 +294,6 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   z-index: 20;
 }
 
-.modal.hidden { display: none; }
-
 .modal__card {
   width: min(92vw, 28rem);
   background: var(--bg);
@@ -417,10 +418,29 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   font-weight: 600;
 }
 
+.lb-item .name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .lb-item .rank {
   color: var(--muted);
-  margin-right: 0.75rem;
   font-size: 0.85rem;
+}
+
+/* New style for editing your own name */
+.editable-name {
+  cursor: pointer;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.editable-name:hover {
+  opacity: 0.6;
 }
 
 .lb-item .score {

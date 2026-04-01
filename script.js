@@ -41,7 +41,6 @@
   const statsView = document.getElementById("stats-view");
   const usernameInput = document.getElementById("username-input");
   const saveUsernameBtn = document.getElementById("save-username-btn");
-  const editNameBtn = document.getElementById("edit-name-btn");
   const tabBtns = document.querySelectorAll(".tab-btn");
   const lbLoading = document.getElementById("lb-loading");
   const lbList = document.getElementById("lb-list");
@@ -278,15 +277,6 @@
     // Leaderboard Events
     leaderboardBtn.addEventListener("click", openLeaderboard);
     closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
-
-    if (editNameBtn) {
-      editNameBtn.addEventListener("click", () => {
-        statsView.classList.add("hidden");
-        usernameView.classList.remove("hidden");
-        usernameInput.value = getUserData().username || "";
-        saveUsernameBtn.textContent = "Update Name";
-      });
-    }
     
     saveUsernameBtn.addEventListener("click", async () => {
       const name = usernameInput.value.trim();
@@ -353,7 +343,6 @@
 
     tabBtns.forEach(btn => {
       btn.addEventListener("click", (e) => {
-        if (e.target.id === "edit-name-btn") return; // Ignore the edit button here
         tabBtns.forEach(b => b.classList.remove("active"));
         e.target.classList.add("active");
         loadLeaderboardData(e.target.dataset.tab);
@@ -381,6 +370,8 @@
     lbLoading.textContent = "Loading...";
     lbList.classList.add("hidden");
     lbList.innerHTML = "";
+
+    const userData = getUserData();
 
     try {
       let data = [];
@@ -425,14 +416,31 @@
       data.forEach((player, index) => {
         const li = document.createElement("li");
         li.className = "lb-item";
+        
+        const isMe = player.username === userData.username;
         const scoreVal = type === "avg"
           ? player.avg
           : (player.max_winstreak ?? player.winstreak ?? 0);
         
+        // Add special class if it's the current user
         li.innerHTML = `
-          <div><span class="rank">#${index + 1}</span> ${player.username}</div>
+          <div class="name-wrap">
+            <span class="rank">#${index + 1}</span> 
+            <span class="${isMe ? 'editable-name' : ''}" title="${isMe ? 'Edit your name' : ''}">${player.username}</span>
+          </div>
           <div class="score">${scoreVal}</div>
         `;
+
+        // Make the name clickable to edit
+        if (isMe) {
+          li.querySelector('.editable-name').addEventListener('click', () => {
+            statsView.classList.add("hidden");
+            usernameView.classList.remove("hidden");
+            usernameInput.value = userData.username || "";
+            saveUsernameBtn.textContent = "Update Name";
+          });
+        }
+
         lbList.appendChild(li);
       });
 
