@@ -67,7 +67,6 @@
     { word: "AUDITION", category: "Theater" }, { word: "MUSIC", category: "General" }, { word: "WALL", category: "General" }, { word: "FLOOR", category: "General" }
   ];
 
-  // Dynamically accept only alphabetic characters
   const DAILY_WORDS = WORDS.filter(obj => /^[a-zA-Z]+$/.test(obj.word));
   const launchDate = Date.UTC(2026, 2, 31);
   const boardEl = document.getElementById("board");
@@ -91,19 +90,17 @@
   }
 
   const today = new Date();
-  // Standardize the local calendar date to UTC to fix the timezone bug
+
   const localDateAsUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
   const daysPassed = Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
-  
-  // The Kill Switch: Stop the game if we run out of words
+
   if (daysPassed >= DAILY_WORDS.length) {
     document.body.innerHTML = "<h1 style='text-align:center; padding: 2rem; color: var(--text); font-family: sans-serif;'>We are out of words! Check back later.</h1>";
     throw new Error("Word list exhausted.");
   }
 
-  // Set the index directly without the modulo (%) loop
   const solutionIndex = daysPassed;
-  
+
   const activeSolutionObj = DAILY_WORDS[solutionIndex];
   const solution = activeSolutionObj.word.toUpperCase();
   const wordCategory = activeSolutionObj.category;
@@ -154,7 +151,7 @@
 
   function setMetaText() {
     metaLineEl.textContent = `${wordLength} letters · ${maxRows} tries`;
-    // Pass word length to CSS for grid setup
+
     boardEl.style.setProperty("--word-length", wordLength);
   }
 
@@ -263,7 +260,6 @@
       boardEl.style.setProperty("--tile-size", computeTileSize() + "px");
     });
 
-    // Still supports desktop physical keyboard
     document.addEventListener("keydown", (event) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === "Enter") {
@@ -306,7 +302,7 @@
 
     if (hintsUsed === 1) {
       const correctLetters = new Set();
-      // Track any letter that has been played and isn't purely absent
+
       for (const row of boardState) {
         if (!row) continue;
         for (let i = 0; i < wordLength; i++) {
@@ -316,7 +312,6 @@
         }
       }
 
-      // Filter solution for letters we haven't found yet
       const unrevealed = solution.split('').filter(l => !correctLetters.has(l));
 
       if (unrevealed.length > 0) {
@@ -330,8 +325,7 @@
       }
       return;
     }
-    
-    // 3rd click does nothing
+
   }
 
   function handleKey(key) {
@@ -537,7 +531,7 @@
 
   async function isValidWord(word) {
     if (word.length !== wordLength) return false;
-    // Check local whitelist to ensure themed words pass regardless of dictionary api
+
     if (DAILY_WORDS.some(w => w.word.toLowerCase() === word.toLowerCase())) return true;
     if (!/^[a-z]+$/.test(word)) return false;
 
