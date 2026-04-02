@@ -144,61 +144,7 @@
     return data;
   }
 
-  function ensureLeaderboardHeader() {
-    if (!leaderboardCard) return;
-    if (document.getElementById("leaderboard-header")) return;
-
-    const header = document.createElement("div");
-    header.id = "leaderboard-header";
-    header.style.cssText = [
-      "display:flex",
-      "align-items:center",
-      "justify-content:space-between",
-      "gap:0.75rem",
-      "margin:0.15rem 2.2rem 0.8rem 0"
-    ].join(";");
-
-    const title = document.createElement("h2");
-    title.className = "modal__title";
-    title.textContent = "Leaderboards";
-    title.style.margin = "0";
-
-    const logoutBtn = document.createElement("button");
-    logoutBtn.type = "button";
-    logoutBtn.id = "leaderboard-logout-button";
-    logoutBtn.setAttribute("aria-label", "Log out");
-    logoutBtn.title = "Log out";
-    logoutBtn.style.cssText = [
-      "width:2rem",
-      "height:2rem",
-      "border:none",
-      "background:transparent",
-      "padding:0",
-      "display:grid",
-      "place-items:center",
-      "cursor:pointer",
-      "color:var(--muted)",
-      "flex:0 0 auto"
-    ].join(";");
-    logoutBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M10 17l-1 0"></path>
-        <path d="M14 17h-4"></path>
-        <path d="M14 7l4 4-4 4"></path>
-        <path d="M18 11H8"></path>
-        <path d="M8 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"></path>
-      </svg>
-    `;
-
-    logoutBtn.addEventListener("click", logoutLeaderboardAccount);
-
-    header.appendChild(title);
-    header.appendChild(logoutBtn);
-    leaderboardCard.insertBefore(header, leaderboardCard.firstChild);
-
-    const innerTitle = statsView.querySelector(".modal__title");
-    if (innerTitle) innerTitle.classList.add("hidden");
-  }
+  
 
   fetchTodaysWord().then(() => {
     boardState = Array.from({ length: maxRows }, () => null);
@@ -222,7 +168,7 @@
     updateKeyboardColorsFromBoard();
     updateHintBadge();
     bindEvents();
-    ensureLeaderboardHeader();
+    
 
     if (gameOver) showEndModal(Boolean(savedState?.won));
   });
@@ -324,30 +270,10 @@
   }
 
   function bindEvents() {
-    hintButton.addEventListener("click", showHint);
-
-    window.addEventListener("resize", () => {
-      boardEl.style.setProperty("--tile-size", computeTileSize() + "px");
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (leaderboardModal.classList.contains("hidden") === false) return;
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if (event.key === "Enter") {
-        event.preventDefault();
-        handleKey("ENTER");
-        return;
-      }
-      if (event.key === "Backspace") {
-        event.preventDefault();
-        handleKey("⌫");
-        return;
-      }
-      if (/^[a-zA-Z]$/.test(event.key)) {
-        event.preventDefault();
-        handleKey(event.key.toUpperCase());
-      }
-    });
+    const logoutBtn = document.getElementById("leaderboard-logout-button");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", logoutLeaderboardAccount);
+}
 
     closeModal.addEventListener("click", hideEndModal);
 
@@ -437,8 +363,12 @@
   }
 
   function openLeaderboard() {
-    leaderboardModal.classList.remove("hidden");
-    ensureLeaderboardHeader();
+	  const logoutBtn = document.getElementById("leaderboard-logout-button");
+if (logoutBtn) {
+  logoutBtn.style.display = userData.username ? "grid" : "none";
+}
+    
+    
 
     const userData = getUserData();
 
@@ -453,18 +383,22 @@
   }
 
   function logoutLeaderboardAccount() {
-    localStorage.removeItem(userKey);
-    hasSubmittedToLeaderboard = false;
-    usernameInput.value = "";
-    passwordInput.value = "";
-    usernameError.classList.add("hidden");
+  localStorage.removeItem(userKey);
 
-    const freshUser = getUserData();
-    localStorage.setItem(userKey, JSON.stringify(freshUser));
+  hasSubmittedToLeaderboard = false;
 
-    usernameView.classList.remove("hidden");
-    statsView.classList.add("hidden");
-  }
+  usernameInput.value = "";
+  passwordInput.value = "";
+  usernameError.classList.add("hidden");
+
+  // reset to fresh ghost account
+  const freshUser = { uuid: crypto.randomUUID(), username: null };
+  localStorage.setItem(userKey, JSON.stringify(freshUser));
+
+  // switch views properly
+  statsView.classList.add("hidden");
+  usernameView.classList.remove("hidden");
+}
 
   async function loadLeaderboardData(type) {
     lbLoading.classList.remove("hidden");
@@ -1005,4 +939,83 @@
       return null;
     }
   }
+  // --- FINAL FIXES & COMPLETION PATCH ---
+
+// Fix leaderboard opening + modal visibility
+function openLeaderboard() {
+  const userData = getUserData();
+
+  leaderboardModal.classList.remove("hidden");
+
+  const logoutBtn = document.getElementById("leaderboard-logout-button");
+  if (logoutBtn) {
+    logoutBtn.style.display = userData.username ? "grid" : "none";
+  }
+
+  if (!userData.username) {
+    usernameView.classList.remove("hidden");
+    statsView.classList.add("hidden");
+  } else {
+    usernameView.classList.add("hidden");
+    statsView.classList.remove("hidden");
+    tabBtns[0].click();
+  }
+}
+
+// Close leaderboard when clicking outside card
+leaderboardModal.addEventListener("click", (e) => {
+  if (!leaderboardCard.contains(e.target)) {
+    leaderboardModal.classList.add("hidden");
+  }
+});
+
+// Hint button binding
+if (hintButton) {
+  hintButton.addEventListener("click", showHint);
+}
+
+// Physical keyboard support
+document.addEventListener("keydown", (e) => {
+  if (gameOver || isSubmitting) return;
+
+  if (e.key === "Enter") {
+    handleKey("ENTER");
+  } else if (e.key === "Backspace") {
+    handleKey("⌫");
+  } else {
+    const letter = e.key.toUpperCase();
+    if (/^[A-Z]$/.test(letter)) {
+      handleKey(letter);
+    }
+  }
+});
+
+// Prevent scrolling on spacebar (mobile UX fix)
+window.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    e.preventDefault();
+  }
+});
+
+// Resize responsiveness
+window.addEventListener("resize", () => {
+  boardEl.style.setProperty("--tile-size", computeTileSize() + "px");
+});
+
+// Ensure leaderboard button always works
+if (leaderboardBtn) {
+  leaderboardBtn.addEventListener("click", openLeaderboard);
+}
+
+// Ensure modal closes properly
+if (closeModal) {
+  closeModal.addEventListener("click", hideEndModal);
+}
+
+// Optional: close end modal on background click
+modal.addEventListener("click", (e) => {
+  if (e.target === modal) {
+    hideEndModal();
+  }
+});
 })();

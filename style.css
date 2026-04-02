@@ -466,6 +466,39 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   color: var(--correct);
 }
 
+/* Leaderboard header with logout */
+.lb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+/* Red logout button */
+.leaderboard-logout {
+  width: 2.2rem;
+  height: 2.2rem;
+  border: none;
+  background: transparent;
+  color: #d32f2f;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.leaderboard-logout svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.leaderboard-logout:hover {
+  opacity: 0.75;
+}
+
 .error-message {
   color: #d32f2f;
   margin-top: 0.5rem;

@@ -85,16 +85,15 @@
       </div>
 
       <div id="stats-view" class="hidden">
-        <div class="leaderboard-title-row">
-          <h2 class="modal__title">Leaderboards</h2>
-          <button id="logout-leaderboard" class="icon-button icon-button--small" type="button" aria-label="Log out">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <path d="M16 17l5-5-5-5"></path>
-              <path d="M21 12H9"></path>
-            </svg>
-          </button>
-        </div>
+  <div class="lb-header">
+    <h2 class="modal__title">Leaderboards</h2>
+    <button id="leaderboard-logout-button" class="leaderboard-logout" type="button" aria-label="Log out">
+      <svg viewBox="0 0 24 24">
+        <path d="M16 17l5-5-5-5M21 12H9"></path>
+        <path d="M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"></path>
+      </svg>
+    </button>
+  </div>
         <div class="tabs">
           <button class="tab-btn active" data-tab="avg">Avg Guesses</button>
           <button class="tab-btn" data-tab="streak">Winstreak</button>
