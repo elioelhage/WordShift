@@ -26,6 +26,13 @@
       </div>
 
       <div class="topbar__right">
+        <button id="notif-button" class="icon-button" type="button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </button>
+
         <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
@@ -36,6 +43,7 @@
             <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
           </svg>
         </button>
+
         <button id="hint-button" class="icon-button hint-button" type="button" aria-label="Hint">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18h6"></path>
@@ -44,6 +52,7 @@
           </svg>
           <span id="hint-badge" class="hint-badge">2</span>
         </button>
+
         <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode">
           <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
         </button>
@@ -71,6 +80,21 @@
     </div>
   </div>
 
+  <div id="notif-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal__card">
+      <button id="close-notif" class="close-top-right">×</button>
+      <h2 class="modal__title">Notifications</h2>
+      <p class="modal__countdown" style="margin-bottom: 1rem;">Get reminded to play!</p>
+      <select id="notif-select" class="text-input" style="margin-bottom: 1rem;">
+        <option value="off">Off</option>
+        <option value="daily">Daily</option>
+        <option value="2days">Every 2 Days</option>
+        <option value="weekly">Weekly</option>
+      </select>
+      <button id="save-notif-btn" class="primary-button">Save Settings</button>
+    </div>
+  </div>
+
   <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal__card leaderboard-card">
       <button id="close-leaderboard" class="close-top-right">×</button>
@@ -85,15 +109,15 @@
       </div>
 
       <div id="stats-view" class="hidden">
-  <div class="lb-header">
-    <h2 class="modal__title">Leaderboards</h2>
-    <button id="leaderboard-logout-button" class="leaderboard-logout" type="button" aria-label="Log out">
-      <svg viewBox="0 0 24 24">
-        <path d="M16 17l5-5-5-5M21 12H9"></path>
-        <path d="M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"></path>
-      </svg>
-    </button>
-  </div>
+        <div class="lb-header">
+          <h2 class="modal__title">Leaderboards</h2>
+          <button id="leaderboard-logout-button" class="leaderboard-logout" type="button" aria-label="Log out">
+            <svg viewBox="0 0 24 24">
+              <path d="M16 17l5-5-5-5M21 12H9"></path>
+              <path d="M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"></path>
+            </svg>
+          </button>
+        </div>
         <div class="tabs">
           <button class="tab-btn active" data-tab="avg">Avg Guesses</button>
           <button class="tab-btn" data-tab="streak">Winstreak</button>

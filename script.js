@@ -3,9 +3,7 @@
   const CURRENT_VERSION = "v2.0";
   if (localStorage.getItem("wordle-version") !== CURRENT_VERSION) {
     Object.keys(localStorage).forEach(key => {
-      if (key.startsWith("wordle-")) {
-        localStorage.removeItem(key);
-      }
+      if (key.startsWith("wordle-")) localStorage.removeItem(key);
     });
     localStorage.setItem("wordle-version", CURRENT_VERSION);
     window.location.reload(true);
@@ -56,8 +54,14 @@
   const lbLoading = document.getElementById("lb-loading");
   const lbList = document.getElementById("lb-list");
 
-  const wordCache = {};
+  // Notifications
+  const notifBtn = document.getElementById("notif-button");
+  const notifModal = document.getElementById("notif-modal");
+  const closeNotifBtn = document.getElementById("close-notif");
+  const notifSelect = document.getElementById("notif-select");
+  const saveNotifBtn = document.getElementById("save-notif-btn");
 
+  const wordCache = {};
   const today = new Date();
   const localDateAsUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
   const daysPassed = Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
@@ -65,13 +69,8 @@
   if (WORD_SOURCE !== "supabase" && daysPassed >= DAILY_WORDS.length) {
     boardEl.innerHTML = `
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 1rem;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" style="width: 3rem; height: 3rem; margin-bottom: 1rem;">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
         <h2 style="margin: 0 0 0.5rem; color: var(--text);">Out of Words</h2>
-        <p style="margin: 0; color: var(--muted); font-size: 0.95rem;">We've exhausted the local dictionary. Check back tomorrow!</p>
+        <p style="margin: 0; color: var(--muted); font-size: 0.95rem;">Check back tomorrow!</p>
       </div>
     `;
     keyboardEl.style.opacity = "0.5";
@@ -80,23 +79,43 @@
   }
 
   const solutionIndex = daysPassed;
-
   let solution = "";
   let wordCategory = "";
   let wordLength = 0;
   let maxRows = 0;
 
+  const storageKey = `wordle-mobile-${solutionIndex}`;
+  const themeKey = "wordle-mobile-theme";
+  const userKey = "wordle-user-data-v2";
+
+  let currentRow = 0;
+  let currentGuess = "";
+  let boardState = [];
+  let gameOver = false;
+  let isSubmitting = false;
+  let countdownTimer = null;
+  let messageTimer = null;
+  let hintsUsed = 0;
+  let hasSubmittedToLeaderboard = false;
+
+  function generateUUID() { return crypto.randomUUID(); }
+
+  function getUserData() {
+    let data = localStorage.getItem(userKey);
+    if (!data) {
+      data = { uuid: generateUUID(), username: null };
+      localStorage.setItem(userKey, JSON.stringify(data));
+    } else {
+      data = JSON.parse(data);
+    }
+    return data;
+  }
+
   async function fetchTodaysWord() {
     if (WORD_SOURCE === "supabase") {
       try {
-        const { data, error } = await supabase
-          .from('words')
-          .select('word, category')
-          .eq('day_index', solutionIndex)
-          .single();
-
+        const { data, error } = await supabase.from('words').select('word, category').eq('day_index', solutionIndex).single();
         if (error) throw error;
-
         solution = data.word.toUpperCase();
         wordCategory = data.category;
       } catch (err) {
@@ -113,38 +132,42 @@
 
     wordLength = solution.length;
     maxRows = wordLength <= 5 ? 6 : wordLength + 1;
-  }
 
-  const storageKey = `wordle-mobile-${solutionIndex}`;
-  const themeKey = "wordle-mobile-theme";
-  const userKey = "wordle-user-data-v2";
+    // --- NEW: SYNC STATE FROM DATABASE ON LOAD ---
+    const userData = getUserData();
+    if (userData.username) {
+      try {
+        const { data: remoteSync, error: syncErr } = await supabase
+          .from('leaderboards')
+          .select('saved_state')
+          .eq('uuid', userData.uuid)
+          .maybeSingle();
 
-  let currentRow = 0;
-  let currentGuess = "";
-  let boardState = [];
-  let gameOver = false;
-  let isSubmitting = false;
-  let countdownTimer = null;
-  let messageTimer = null;
-  let hintsUsed = 0;
-  let hasSubmittedToLeaderboard = false;
+        if (!syncErr && remoteSync && remoteSync.saved_state) {
+          const dbState = remoteSync.saved_state;
+          const localState = loadState();
 
-  function generateUUID() {
-    return crypto.randomUUID();
-  }
+          const localIsCurrent = localState && localState.solutionIndex === solutionIndex;
+          const dbIsCurrent = dbState.solutionIndex === solutionIndex;
 
-  function getUserData() {
-    let data = localStorage.getItem(userKey);
-    if (!data) {
-      data = { uuid: generateUUID(), username: null };
-      localStorage.setItem(userKey, JSON.stringify(data));
-    } else {
-      data = JSON.parse(data);
+          if (dbIsCurrent) {
+            if (!localIsCurrent) {
+              localStorage.setItem(storageKey, JSON.stringify(dbState));
+            } else {
+              // Both are for today. Take the one with more progress
+              const localProgress = localState.currentRow + (localState.gameOver ? 1 : 0);
+              const dbProgress = dbState.currentRow + (dbState.gameOver ? 1 : 0);
+              if (dbProgress > localProgress) {
+                localStorage.setItem(storageKey, JSON.stringify(dbState));
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Sync fetch failed:", e);
+      }
     }
-    return data;
   }
-
-  
 
   fetchTodaysWord().then(() => {
     boardState = Array.from({ length: maxRows }, () => null);
@@ -169,7 +192,6 @@
     updateHintBadge();
     bindEvents();
     
-
     if (gameOver) showEndModal(Boolean(savedState?.won));
   });
 
@@ -198,10 +220,7 @@
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
   }
 
-  function moonIcon() {
-    return `<path d="M20 13.2A7.8 7.8 0 0 1 10.8 4a8.8 8.8 0 1 0 9.2 9.2Z"></path>`;
-  }
-
+  function moonIcon() { return `<path d="M20 13.2A7.8 7.8 0 0 1 10.8 4a8.8 8.8 0 1 0 9.2 9.2Z"></path>`; }
   function sunIcon() {
     return `
       <circle cx="12" cy="12" r="4.2"></circle>
@@ -227,7 +246,6 @@
         const tile = document.createElement("div");
         tile.className = "tile";
         tile.id = `tile-${r}-${c}`;
-        tile.setAttribute("aria-label", `Row ${r + 1} column ${c + 1}`);
         row.appendChild(tile);
       }
       boardEl.appendChild(row);
@@ -237,10 +255,8 @@
   function computeTileSize() {
     const vw = window.innerWidth || 375;
     const vh = window.innerHeight || 700;
-    const boardPadding = 28;
-    const gap = 5;
-    const widthFit = (vw - boardPadding - gap * (wordLength - 1)) / wordLength;
-    const heightFit = (vh * 0.42 - gap * (maxRows - 1)) / maxRows;
+    const widthFit = (vw - 28 - 5 * (wordLength - 1)) / wordLength;
+    const heightFit = (vh * 0.42 - 5 * (maxRows - 1)) / maxRows;
     return Math.max(25, Math.min(58, Math.floor(Math.min(widthFit, heightFit))));
   }
 
@@ -271,14 +287,49 @@
 
   function bindEvents() {
     const logoutBtn = document.getElementById("leaderboard-logout-button");
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", logoutLeaderboardAccount);
-}
-
+    if (logoutBtn) logoutBtn.addEventListener("click", logoutLeaderboardAccount);
     closeModal.addEventListener("click", hideEndModal);
 
     leaderboardBtn.addEventListener("click", openLeaderboard);
     closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
+
+    // Notifications Events
+    if (notifBtn) {
+      notifBtn.addEventListener("click", () => {
+        notifSelect.value = localStorage.getItem("wordle-notif-pref") || "off";
+        notifModal.classList.remove("hidden");
+      });
+    }
+
+    if (closeNotifBtn) {
+      closeNotifBtn.addEventListener("click", () => notifModal.classList.add("hidden"));
+    }
+
+    if (saveNotifBtn) {
+      saveNotifBtn.addEventListener("click", async () => {
+        const pref = notifSelect.value;
+        if (pref !== "off" && "Notification" in window) {
+          let perm = Notification.permission;
+          if (perm !== "granted") perm = await Notification.requestPermission();
+          if (perm !== "granted") {
+            alert("Notifications are disabled in your browser. Please allow them.");
+            return;
+          } else {
+            // Confirm to user
+            new Notification("Notifications Enabled!", {
+              body: `We'll remind you ${pref}.`,
+              icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/></svg>"
+            });
+          }
+        }
+        localStorage.setItem("wordle-notif-pref", pref);
+        const userData = getUserData();
+        if (userData.username) {
+          supabase.from('leaderboards').update({ notification_pref: pref }).eq('uuid', userData.uuid).then();
+        }
+        notifModal.classList.add("hidden");
+      });
+    }
 
     saveUsernameBtn.addEventListener("click", async () => {
       const name = usernameInput.value.trim();
@@ -302,9 +353,10 @@ if (logoutBtn) {
       saveUsernameBtn.disabled = true;
 
       try {
+        // PULLING saved_state ON LOGIN FOR SYNC
         const { data: existingUser, error: fetchError } = await supabase
           .from('leaderboards')
-          .select('uuid, password')
+          .select('uuid, password, saved_state')
           .eq('username', name)
           .maybeSingle();
 
@@ -315,6 +367,13 @@ if (logoutBtn) {
             userData.uuid = existingUser.uuid;
             userData.username = name;
             localStorage.setItem(userKey, JSON.stringify(userData));
+
+            // Apply state sync cleanly if it exists
+            if (existingUser.saved_state && existingUser.saved_state.solutionIndex === solutionIndex) {
+               localStorage.setItem(storageKey, JSON.stringify(existingUser.saved_state));
+               window.location.reload(); // Reload seamlessly
+               return;
+            }
           } else {
             usernameError.textContent = "Username taken or wrong password.";
             usernameError.classList.remove("hidden");
@@ -331,11 +390,12 @@ if (logoutBtn) {
               winstreak: 0,
               max_winstreak: 0,
               total_hints: 0,
-              last_hint_day_index: null
+              last_hint_day_index: null,
+              saved_state: null, 
+              notification_pref: 'off'
             }
           ]);
           if (insertError) throw insertError;
-
           userData.username = name;
           localStorage.setItem(userKey, JSON.stringify(userData));
         }
@@ -363,14 +423,10 @@ if (logoutBtn) {
   }
 
   function openLeaderboard() {
-	  const logoutBtn = document.getElementById("leaderboard-logout-button");
-if (logoutBtn) {
-  logoutBtn.style.display = userData.username ? "grid" : "none";
-}
-    
-    
-
+    leaderboardModal.classList.remove("hidden");
+    const logoutBtn = document.getElementById("leaderboard-logout-button");
     const userData = getUserData();
+    if (logoutBtn) logoutBtn.style.display = userData.username ? "grid" : "none";
 
     if (!userData.username) {
       usernameView.classList.remove("hidden");
@@ -383,22 +439,17 @@ if (logoutBtn) {
   }
 
   function logoutLeaderboardAccount() {
-  localStorage.removeItem(userKey);
-
-  hasSubmittedToLeaderboard = false;
-
-  usernameInput.value = "";
-  passwordInput.value = "";
-  usernameError.classList.add("hidden");
-
-  // reset to fresh ghost account
-  const freshUser = { uuid: crypto.randomUUID(), username: null };
-  localStorage.setItem(userKey, JSON.stringify(freshUser));
-
-  // switch views properly
-  statsView.classList.add("hidden");
-  usernameView.classList.remove("hidden");
-}
+    localStorage.removeItem(userKey);
+    hasSubmittedToLeaderboard = false;
+    usernameInput.value = "";
+    passwordInput.value = "";
+    usernameError.classList.add("hidden");
+    
+    const freshUser = { uuid: crypto.randomUUID(), username: null };
+    localStorage.setItem(userKey, JSON.stringify(freshUser));
+    statsView.classList.add("hidden");
+    usernameView.classList.remove("hidden");
+  }
 
   async function loadLeaderboardData(type) {
     lbLoading.classList.remove("hidden");
@@ -408,15 +459,11 @@ if (logoutBtn) {
 
     try {
       let data = [];
-
       if (type === "avg") {
-        const { data: res, error } = await supabase
-          .from('leaderboards')
+        const { data: res, error } = await supabase.from('leaderboards')
           .select('username, games_played, total_guesses, total_hints, last_hint_day_index')
           .order('games_played', { ascending: false });
-
         if (error) throw error;
-
         if (res && res.length > 0) {
           data = res.map(p => ({
             ...p,
@@ -424,12 +471,9 @@ if (logoutBtn) {
           })).sort((a, b) => a.avg - b.avg).slice(0, 50);
         }
       } else if (type === "streak") {
-        const { data: res, error } = await supabase
-          .from('leaderboards')
+        const { data: res, error } = await supabase.from('leaderboards')
           .select('username, winstreak, max_winstreak, total_hints, last_hint_day_index')
-          .order('max_winstreak', { ascending: false })
-          .limit(50);
-
+          .order('max_winstreak', { ascending: false }).limit(50);
         if (error) throw error;
         if (res) data = res;
       }
@@ -438,15 +482,11 @@ if (logoutBtn) {
       lbList.classList.remove("hidden");
 
       if (data.length === 0) {
-        const msg = type === "avg"
-          ? "No games played yet. Be the first!"
-          : "No streaks to show yet. Win some games!";
-        lbList.innerHTML = `<li class="lb-item" style="justify-content:center; color: var(--muted); font-size:0.9rem;">${msg}</li>`;
+        lbList.innerHTML = `<li class="lb-item" style="justify-content:center; color: var(--muted); font-size:0.9rem;">No data found.</li>`;
         return;
       }
 
       const currentUser = getUserData().username;
-
       data.forEach((player, index) => {
         const li = document.createElement("li");
         li.className = "lb-item";
@@ -454,56 +494,31 @@ if (logoutBtn) {
         else if (index === 1) li.classList.add("rank-2");
         else if (index === 2) li.classList.add("rank-3");
 
-        let medal = "";
-        if (index === 0) medal = "🥇 ";
-        else if (index === 1) medal = "🥈 ";
-        else if (index === 2) medal = "🥉 ";
-
-        const scoreVal = type === "avg"
-          ? player.avg
-          : (player.max_winstreak ?? player.winstreak ?? 0);
-
-        let hintBadge = "";
-        if (player.last_hint_day_index === solutionIndex) {
-          hintBadge = ` <span style="font-size: 0.85em; opacity: 0.9;" title="Used a hint today">💡</span>`;
-        }
-
+        let medal = index === 0 ? "🥇 " : index === 1 ? "🥈 " : index === 2 ? "🥉 " : "";
+        const scoreVal = type === "avg" ? player.avg : (player.max_winstreak ?? player.winstreak ?? 0);
+        let hintBadge = player.last_hint_day_index === solutionIndex ? ` <span style="font-size: 0.85em; opacity: 0.9;" title="Used a hint today">💡</span>` : "";
         let displayName = player.username + hintBadge;
+        if (player.username === currentUser) displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
 
-        if (player.username === currentUser) {
-          displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
-        }
-
-        li.innerHTML = `
-          <div><span class="rank">#${index + 1}</span> ${medal}${displayName}</div>
-          <div class="score">${scoreVal}</div>
-        `;
-
+        li.innerHTML = `<div><span class="rank">#${index + 1}</span> ${medal}${displayName}</div><div class="score">${scoreVal}</div>`;
         lbList.appendChild(li);
       });
     } catch (e) {
       console.error("Leaderboard Error", e);
       lbLoading.classList.add("hidden");
       lbList.classList.remove("hidden");
-      lbList.innerHTML = `<li class="lb-item" style="justify-content:center; color: var(--muted); font-size:0.9rem;">Failed to load. Check your connection.</li>`;
+      lbList.innerHTML = `<li class="lb-item" style="justify-content:center; color: var(--muted); font-size:0.9rem;">Failed to load.</li>`;
     }
   }
 
   async function updateUserStats(won, rawGuesses, hints) {
     if (hasSubmittedToLeaderboard) return;
-
     const userData = getUserData();
     if (!userData.username) return;
 
     const scaledGuesses = rawGuesses * GUESS_SCALE;
-
     try {
-      const { data: userRecord, error: fetchError } = await supabase
-        .from('leaderboards')
-        .select('*')
-        .eq('uuid', userData.uuid)
-        .maybeSingle();
-
+      const { data: userRecord, error: fetchError } = await supabase.from('leaderboards').select('*').eq('uuid', userData.uuid).maybeSingle();
       if (fetchError || !userRecord) return;
 
       const newWinstreak = won ? userRecord.winstreak + 1 : 0;
@@ -515,24 +530,17 @@ if (logoutBtn) {
         total_hints: (userRecord.total_hints || 0) + hints,
         last_hint_day_index: hints > 0 ? solutionIndex : userRecord.last_hint_day_index ?? null
       };
-
       await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
-
       hasSubmittedToLeaderboard = true;
       saveState();
-    } catch (e) {
-      console.error("Error updating stats", e);
-    }
+    } catch (e) { console.error("Error updating stats", e); }
   }
 
   function updateHintBadge() {
     const hintsLeft = 2 - hintsUsed;
     hintBadge.textContent = Math.max(0, hintsLeft);
-    if (hintsLeft <= 0) {
-      hintBadge.classList.add("empty");
-    } else {
-      hintBadge.classList.remove("empty");
-    }
+    if (hintsLeft <= 0) hintBadge.classList.add("empty");
+    else hintBadge.classList.remove("empty");
   }
 
   function showHintPopup(title, body) {
@@ -540,53 +548,19 @@ if (logoutBtn) {
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.id = "hint-overlay";
-      overlay.style.cssText = [
-        "position:fixed", "inset:0", "z-index:999",
-        "display:flex", "align-items:center", "justify-content:center",
-        "background:rgba(0,0,0,0.45)", "animation:fadeIn 0.15s ease"
-      ].join(";");
-
-      if (!document.getElementById("hint-overlay-style")) {
-        const s = document.createElement("style");
-        s.id = "hint-overlay-style";
-        s.textContent = [
-          "@keyframes fadeIn{from{opacity:0}to{opacity:1}}",
-          "@keyframes popIn{from{transform:scale(0.88);opacity:0}to{transform:scale(1);opacity:1}}",
-          "#hint-card{animation:popIn 0.18s ease;background:var(--bg);border:1.5px solid var(--border);",
-          "border-radius:16px;padding:28px 32px;min-width:260px;max-width:88vw;text-align:center;",
-          "box-shadow:0 8px 32px rgba(0,0,0,0.22);}",
-          "#hint-card .hint-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;",
-          "color:var(--subtext);margin-bottom:10px;font-weight:600;}",
-          "#hint-card .hint-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;}",
-          "#hint-card .hint-body{font-size:22px;font-weight:700;color:var(--text);margin-bottom:22px;line-height:1.3;}",
-          "#hint-card .hint-close{display:inline-block;padding:9px 28px;border-radius:8px;",
-          "background:var(--text);color:var(--bg);font-size:14px;font-weight:600;",
-          "border:none;cursor:pointer;letter-spacing:0.02em;}"
-        ].join("");
-        document.head.appendChild(s);
-      }
-
+      overlay.style.cssText = "position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);animation:fadeIn 0.15s ease;";
+      
+      const s = document.createElement("style");
+      s.textContent = "@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes popIn{from{transform:scale(0.88);opacity:0}to{transform:scale(1);opacity:1}}#hint-card{animation:popIn 0.18s ease;background:var(--bg);border:1.5px solid var(--border);border-radius:16px;padding:28px 32px;min-width:260px;max-width:88vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.22);}#hint-card .hint-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--subtext);margin-bottom:10px;font-weight:600;}#hint-card .hint-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;}#hint-card .hint-body{font-size:22px;font-weight:700;color:var(--text);margin-bottom:22px;line-height:1.3;}#hint-card .hint-close{display:inline-block;padding:9px 28px;border-radius:8px;background:var(--text);color:var(--bg);font-size:14px;font-weight:600;border:none;cursor:pointer;letter-spacing:0.02em;}";
+      document.head.appendChild(s);
       document.body.appendChild(overlay);
     }
-
-    overlay.innerHTML = `
-      <div id="hint-card">
-        <div class="hint-label">Hint</div>
-        <div class="hint-title">${title}</div>
-        <div class="hint-body">${body}</div>
-        <button class="hint-close" id="hint-close-btn">Got it</button>
-      </div>
-    `;
-
+    overlay.innerHTML = `<div id="hint-card"><div class="hint-label">Hint</div><div class="hint-title">${title}</div><div class="hint-body">${body}</div><button class="hint-close" id="hint-close-btn">Got it</button></div>`;
     overlay.style.display = "flex";
 
-    const close = () => {
-      overlay.style.display = "none";
-    };
+    const close = () => overlay.style.display = "none";
     document.getElementById("hint-close-btn").addEventListener("click", close);
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) close();
-    });
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
   }
 
   function showHint() {
@@ -598,15 +572,9 @@ if (logoutBtn) {
         .then(response => response.ok ? response.json() : Promise.reject())
         .then(data => {
           if (data && data[0] && data[0].meanings && data[0].meanings[0].definitions) {
-            const definition = data[0].meanings[0].definitions[0].definition;
-            showHintPopup("Definition", definition);
-          } else {
-            throw new Error();
-          }
-        })
-        .catch(() => {
-          showHintPopup("Category", wordCategory);
-        });
+            showHintPopup("Definition", data[0].meanings[0].definitions[0].definition);
+          } else throw new Error();
+        }).catch(() => showHintPopup("Category", wordCategory));
       hintsUsed++;
       updateHintBadge();
       saveState();
@@ -618,12 +586,9 @@ if (logoutBtn) {
       for (const row of boardState) {
         if (!row) continue;
         for (let i = 0; i < wordLength; i++) {
-          if (row.colors[i] === "correct" || row.colors[i] === "present") {
-            correctLetters.add(row.guess[i]);
-          }
+          if (row.colors[i] === "correct" || row.colors[i] === "present") correctLetters.add(row.guess[i]);
         }
       }
-
       const unrevealed = solution.split("").filter(l => !correctLetters.has(l));
 
       if (unrevealed.length > 0) {
@@ -635,18 +600,13 @@ if (logoutBtn) {
       } else {
         showHintPopup("You're close!", "You've found all the letters —<br>now find their spots!");
       }
-      return;
     }
   }
 
   function handleKey(key) {
     if (gameOver || isSubmitting) return;
 
-    if (key === "ENTER") {
-      submitGuess();
-      return;
-    }
-
+    if (key === "ENTER") return submitGuess();
     if (key === "⌫") {
       if (!currentGuess.length) return;
       currentGuess = currentGuess.slice(0, -1);
@@ -654,7 +614,6 @@ if (logoutBtn) {
       saveState();
       return;
     }
-
     if (/^[A-Z]$/.test(key) && currentGuess.length < wordLength) {
       currentGuess += key;
       animateTilePop();
@@ -685,7 +644,6 @@ if (logoutBtn) {
     for (let r = 0; r < maxRows; r += 1) {
       const rowData = boardState[r];
       if (!rowData) continue;
-
       const guess = rowData.guess || "";
       const colors = rowData.colors || [];
       for (let c = 0; c < wordLength; c += 1) {
@@ -711,12 +669,10 @@ if (logoutBtn) {
 
     const guess = currentGuess.toUpperCase();
     isSubmitting = true;
-
     messageEl.textContent = "Loading...";
     messageEl.classList.add("show");
 
     const valid = await isValidWord(guess.toLowerCase());
-
     messageEl.classList.remove("show");
 
     if (!valid) {
@@ -729,7 +685,6 @@ if (logoutBtn) {
     const colors = getTileColors(guess, solution);
     boardState[currentRow] = { guess, colors };
     saveState();
-
     animateFlip(currentRow, guess, colors);
 
     window.setTimeout(() => {
@@ -739,24 +694,20 @@ if (logoutBtn) {
         saveState(true);
         showMessage("Solved.");
         showEndModal(true);
-        isSubmitting = false;
-        return;
-      }
-
-      currentRow += 1;
-      currentGuess = "";
-
-      if (currentRow >= maxRows) {
-        gameOver = true;
-        updateUserStats(false, maxRows, hintsUsed);
-        saveState(false);
-        showMessage(`The word was ${solution}.`);
-        showEndModal(false);
       } else {
-        updateBoard();
-        saveState();
+        currentRow += 1;
+        currentGuess = "";
+        if (currentRow >= maxRows) {
+          gameOver = true;
+          updateUserStats(false, maxRows, hintsUsed);
+          saveState(false);
+          showMessage(`The word was ${solution}.`);
+          showEndModal(false);
+        } else {
+          updateBoard();
+          saveState();
+        }
       }
-
       isSubmitting = false;
     }, wordLength * 280 + 420);
   }
@@ -773,7 +724,6 @@ if (logoutBtn) {
         guessLetters[i] = null;
       }
     }
-
     for (let i = 0; i < wordLength; i += 1) {
       const letter = guessLetters[i];
       if (letter && answerLetters.includes(letter)) {
@@ -781,7 +731,6 @@ if (logoutBtn) {
         answerLetters[answerLetters.indexOf(letter)] = null;
       }
     }
-
     return colors;
   }
 
@@ -789,7 +738,6 @@ if (logoutBtn) {
     for (let i = 0; i < wordLength; i += 1) {
       const tile = document.getElementById(`tile-${rowIndex}-${i}`);
       if (!tile) continue;
-
       window.setTimeout(() => {
         tile.classList.add("flip");
         window.setTimeout(() => {
@@ -817,11 +765,7 @@ if (logoutBtn) {
     if (!key) return;
 
     const priority = { absent: 0, present: 1, correct: 2 };
-    const existing = key.classList.contains("correct") ? "correct"
-      : key.classList.contains("present") ? "present"
-      : key.classList.contains("absent") ? "absent"
-      : null;
-
+    const existing = key.classList.contains("correct") ? "correct" : key.classList.contains("present") ? "present" : key.classList.contains("absent") ? "absent" : null;
     if (existing && priority[existing] >= priority[color]) return;
 
     key.classList.remove("correct", "present", "absent");
@@ -850,19 +794,12 @@ if (logoutBtn) {
 
   async function isValidWord(word) {
     if (word.length !== wordLength) return false;
-
     if (DAILY_WORDS.some(w => w.word.toLowerCase() === word)) return true;
-
     if (!/^[a-z]+$/.test(word)) return false;
-
-    if (wordCache[word] !== undefined) {
-      return wordCache[word];
-    }
+    if (wordCache[word] !== undefined) return wordCache[word];
 
     try {
-      const response = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`
-      );
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
       const result = response.ok;
       wordCache[word] = result;
       return result;
@@ -888,24 +825,17 @@ if (logoutBtn) {
 
   function startCountdown() {
     if (countdownTimer) clearInterval(countdownTimer);
-
     const update = () => {
       const now = new Date();
       const tomorrow = new Date();
       tomorrow.setHours(24, 0, 0, 0);
       const diff = tomorrow.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        countdownEl.textContent = "00:00:00";
-        return;
-      }
-
+      if (diff <= 0) return countdownEl.textContent = "00:00:00";
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
       countdownEl.textContent = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
     };
-
     update();
     countdownTimer = setInterval(update, 1000);
   }
@@ -929,93 +859,46 @@ if (logoutBtn) {
       hasSubmittedToLeaderboard
     };
     localStorage.setItem(storageKey, JSON.stringify(state));
+
+    // --- NEW: UPLOAD STATE TO SUPABASE ---
+    const userData = getUserData();
+    if (userData.username) {
+      supabase.from('leaderboards').update({ saved_state: state }).eq('uuid', userData.uuid).then(({error}) => {
+         if(error) console.error("Failed to sync state to DB", error);
+      });
+    }
   }
 
   function loadState() {
     try {
       const raw = localStorage.getItem(storageKey);
       return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
+    } catch { return null; }
+  }
+
+  // --- FINAL BINDINGS ---
+  leaderboardModal.addEventListener("click", (e) => {
+    if (!leaderboardCard.contains(e.target)) leaderboardModal.classList.add("hidden");
+  });
+  
+  notifModal.addEventListener("click", (e) => {
+    if (e.target === notifModal) notifModal.classList.add("hidden");
+  });
+
+  if (hintButton) hintButton.addEventListener("click", showHint);
+
+  document.addEventListener("keydown", (e) => {
+    if (gameOver || isSubmitting) return;
+    if (e.key === "Enter") handleKey("ENTER");
+    else if (e.key === "Backspace") handleKey("⌫");
+    else {
+      const letter = e.key.toUpperCase();
+      if (/^[A-Z]$/.test(letter)) handleKey(letter);
     }
-  }
-  // --- FINAL FIXES & COMPLETION PATCH ---
+  });
 
-// Fix leaderboard opening + modal visibility
-function openLeaderboard() {
-  const userData = getUserData();
+  window.addEventListener("keydown", (e) => { if (e.code === "Space") e.preventDefault(); });
+  window.addEventListener("resize", () => boardEl.style.setProperty("--tile-size", computeTileSize() + "px"));
+  modal.addEventListener("click", (e) => { if (e.target === modal) hideEndModal(); });
 
-  leaderboardModal.classList.remove("hidden");
-
-  const logoutBtn = document.getElementById("leaderboard-logout-button");
-  if (logoutBtn) {
-    logoutBtn.style.display = userData.username ? "grid" : "none";
-  }
-
-  if (!userData.username) {
-    usernameView.classList.remove("hidden");
-    statsView.classList.add("hidden");
-  } else {
-    usernameView.classList.add("hidden");
-    statsView.classList.remove("hidden");
-    tabBtns[0].click();
-  }
-}
-
-// Close leaderboard when clicking outside card
-leaderboardModal.addEventListener("click", (e) => {
-  if (!leaderboardCard.contains(e.target)) {
-    leaderboardModal.classList.add("hidden");
-  }
-});
-
-// Hint button binding
-if (hintButton) {
-  hintButton.addEventListener("click", showHint);
-}
-
-// Physical keyboard support
-document.addEventListener("keydown", (e) => {
-  if (gameOver || isSubmitting) return;
-
-  if (e.key === "Enter") {
-    handleKey("ENTER");
-  } else if (e.key === "Backspace") {
-    handleKey("⌫");
-  } else {
-    const letter = e.key.toUpperCase();
-    if (/^[A-Z]$/.test(letter)) {
-      handleKey(letter);
-    }
-  }
-});
-
-// Prevent scrolling on spacebar (mobile UX fix)
-window.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
-    e.preventDefault();
-  }
-});
-
-// Resize responsiveness
-window.addEventListener("resize", () => {
-  boardEl.style.setProperty("--tile-size", computeTileSize() + "px");
-});
-
-// Ensure leaderboard button always works
-if (leaderboardBtn) {
-  leaderboardBtn.addEventListener("click", openLeaderboard);
-}
-
-// Ensure modal closes properly
-if (closeModal) {
-  closeModal.addEventListener("click", hideEndModal);
-}
-
-// Optional: close end modal on background click
-modal.addEventListener("click", (e) => {
-  if (e.target === modal) {
-    hideEndModal();
-  }
-});
 })();
