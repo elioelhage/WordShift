@@ -335,6 +335,26 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   flex-direction: column;
 }
 
+.leaderboard-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-right: 2rem;
+}
+
+.icon-button--small {
+  width: 2.2rem;
+  height: 2.2rem;
+  box-shadow: none;
+  background: var(--surface-2);
+}
+
+.icon-button--small svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
 .close-top-right {
   position: absolute;
   top: 12px;

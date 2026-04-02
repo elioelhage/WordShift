@@ -2,17 +2,14 @@
   // --- AUTOMATIC CACHE WIPE (UPGRADE TO V2) ---
   const CURRENT_VERSION = "v2.0";
   if (localStorage.getItem("wordle-version") !== CURRENT_VERSION) {
-    // Find all old game data and delete it
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith("wordle-")) {
         localStorage.removeItem(key);
       }
     });
-    // Set the new version so this only runs exactly once per person
     localStorage.setItem("wordle-version", CURRENT_VERSION);
-    // Force reload the page to apply the fresh state
     window.location.reload(true);
-    return; // Stop the rest of the script from running until reload finishes
+    return;
   }
   // ---------------------------------------------
 
@@ -22,18 +19,16 @@
   const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
   const WORD_SOURCE = "supabase";
-  const GUESS_SCALE = 10;  // multiply real guesses by this for DB storage
+  const GUESS_SCALE = 10;
 
-  // Fallback word list (only used if supabase fails)
   const safeWords = typeof WORDS !== "undefined" ? WORDS : [
     { word: "CEDAR", category: "Lebanon" },
-    { word: "RUINS", category: "Lebanon" } 
+    { word: "RUINS", category: "Lebanon" }
   ];
   const DAILY_WORDS = safeWords.filter(obj => obj.word && /^[a-zA-Z]+$/.test(obj.word));
-  
-  // Fixed launch date
+
   const launchDate = Date.UTC(2026, 3, 1);
-  
+
   const boardEl = document.getElementById("board");
   const keyboardEl = document.getElementById("keyboard");
   const messageEl = document.getElementById("message");
@@ -47,12 +42,12 @@
   const countdownEl = document.getElementById("countdown");
   const closeModal = document.getElementById("close-modal");
 
-  // Leaderboard Elements
   const usernameInput = document.getElementById("username-input");
-  const passwordInput = document.getElementById("password-input"); 
+  const passwordInput = document.getElementById("password-input");
   const leaderboardBtn = document.getElementById("leaderboard-button");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
+  const leaderboardCard = document.querySelector(".leaderboard-card");
   const usernameView = document.getElementById("username-view");
   const statsView = document.getElementById("stats-view");
   const saveUsernameBtn = document.getElementById("save-username-btn");
@@ -66,7 +61,7 @@
   const today = new Date();
   const localDateAsUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
   const daysPassed = Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
-  
+
   if (WORD_SOURCE !== "supabase" && daysPassed >= DAILY_WORDS.length) {
     boardEl.innerHTML = `
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 1rem;">
@@ -85,7 +80,7 @@
   }
 
   const solutionIndex = daysPassed;
-  
+
   let solution = "";
   let wordCategory = "";
   let wordLength = 0;
@@ -104,7 +99,6 @@
 
         solution = data.word.toUpperCase();
         wordCategory = data.category;
-        
       } catch (err) {
         console.error("Database query failed:", err);
         const obj = DAILY_WORDS[solutionIndex % DAILY_WORDS.length];
@@ -116,14 +110,14 @@
       solution = obj.word.toUpperCase();
       wordCategory = obj.category;
     }
-    
+
     wordLength = solution.length;
     maxRows = wordLength <= 5 ? 6 : wordLength + 1;
   }
 
   const storageKey = `wordle-mobile-${solutionIndex}`;
   const themeKey = "wordle-mobile-theme";
-  const userKey = "wordle-user-data-v2"; 
+  const userKey = "wordle-user-data-v2";
 
   let currentRow = 0;
   let currentGuess = "";
@@ -150,6 +144,62 @@
     return data;
   }
 
+  function ensureLeaderboardHeader() {
+    if (!leaderboardCard) return;
+    if (document.getElementById("leaderboard-header")) return;
+
+    const header = document.createElement("div");
+    header.id = "leaderboard-header";
+    header.style.cssText = [
+      "display:flex",
+      "align-items:center",
+      "justify-content:space-between",
+      "gap:0.75rem",
+      "margin:0.15rem 2.2rem 0.8rem 0"
+    ].join(";");
+
+    const title = document.createElement("h2");
+    title.className = "modal__title";
+    title.textContent = "Leaderboards";
+    title.style.margin = "0";
+
+    const logoutBtn = document.createElement("button");
+    logoutBtn.type = "button";
+    logoutBtn.id = "leaderboard-logout-button";
+    logoutBtn.setAttribute("aria-label", "Log out");
+    logoutBtn.title = "Log out";
+    logoutBtn.style.cssText = [
+      "width:2rem",
+      "height:2rem",
+      "border:none",
+      "background:transparent",
+      "padding:0",
+      "display:grid",
+      "place-items:center",
+      "cursor:pointer",
+      "color:var(--muted)",
+      "flex:0 0 auto"
+    ].join(";");
+    logoutBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10 17l-1 0"></path>
+        <path d="M14 17h-4"></path>
+        <path d="M14 7l4 4-4 4"></path>
+        <path d="M18 11H8"></path>
+        <path d="M8 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"></path>
+      </svg>
+    `;
+
+    logoutBtn.addEventListener("click", logoutLeaderboardAccount);
+
+    header.appendChild(title);
+    header.appendChild(logoutBtn);
+    leaderboardCard.insertBefore(header, leaderboardCard.firstChild);
+
+    const innerTitle = statsView.querySelector(".modal__title");
+    if (innerTitle) innerTitle.classList.add("hidden");
+  }
+
   fetchTodaysWord().then(() => {
     boardState = Array.from({ length: maxRows }, () => null);
 
@@ -172,6 +222,7 @@
     updateKeyboardColorsFromBoard();
     updateHintBadge();
     bindEvents();
+    ensureLeaderboardHeader();
 
     if (gameOver) showEndModal(Boolean(savedState?.won));
   });
@@ -201,7 +252,9 @@
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
   }
 
-  function moonIcon() { return `<path d="M20 13.2A7.8 7.8 0 0 1 10.8 4a8.8 8.8 0 1 0 9.2 9.2Z"></path>`; }
+  function moonIcon() {
+    return `<path d="M20 13.2A7.8 7.8 0 0 1 10.8 4a8.8 8.8 0 1 0 9.2 9.2Z"></path>`;
+  }
 
   function sunIcon() {
     return `
@@ -248,9 +301,9 @@
   function buildKeyboard() {
     keyboardEl.innerHTML = "";
     const rows = [
-      ["Q","W","E","R","T","Y","U","I","O","P"],
-      ["A","S","D","F","G","H","J","K","L"],
-      ["ENTER","Z","X","C","V","B","N","M","⌫"]
+      ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+      ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+      ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⌫"]
     ];
 
     rows.forEach((letters) => {
@@ -278,7 +331,7 @@
     });
 
     document.addEventListener("keydown", (event) => {
-      if (leaderboardModal.classList.contains("hidden") === false) return; 
+      if (leaderboardModal.classList.contains("hidden") === false) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === "Enter") {
         event.preventDefault();
@@ -297,17 +350,16 @@
     });
 
     closeModal.addEventListener("click", hideEndModal);
-    
-    // Leaderboard Events
+
     leaderboardBtn.addEventListener("click", openLeaderboard);
     closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
-    
+
     saveUsernameBtn.addEventListener("click", async () => {
-        const name = usernameInput.value.trim();
-        const rawPass = passwordInput.value.trim();
-        const pass = await hashPassword(rawPass); 
-        usernameError.classList.add("hidden");
-      
+      const name = usernameInput.value.trim();
+      const rawPass = passwordInput.value.trim();
+      const pass = await hashPassword(rawPass);
+      usernameError.classList.add("hidden");
+
       if (name.length < 3) {
         usernameError.textContent = "Name too short (min 3 characters)";
         usernameError.classList.remove("hidden");
@@ -318,7 +370,7 @@
         usernameError.classList.remove("hidden");
         return;
       }
-      
+
       const userData = getUserData();
       saveUsernameBtn.textContent = "Saving...";
       saveUsernameBtn.disabled = true;
@@ -329,6 +381,8 @@
           .select('uuid, password')
           .eq('username', name)
           .maybeSingle();
+
+        if (fetchError) throw fetchError;
 
         if (existingUser) {
           if (existingUser.password === pass) {
@@ -342,27 +396,27 @@
           }
         } else {
           const { error: insertError } = await supabase.from('leaderboards').insert([
-            { 
-              uuid: userData.uuid, 
-              username: name, 
-              password: pass, 
-              games_played: 0, 
-              total_guesses: 0, 
-              winstreak: 0, 
+            {
+              uuid: userData.uuid,
+              username: name,
+              password: pass,
+              games_played: 0,
+              total_guesses: 0,
+              winstreak: 0,
               max_winstreak: 0,
-              total_hints: 0
+              total_hints: 0,
+              last_hint_day_index: null
             }
           ]);
           if (insertError) throw insertError;
-          
+
           userData.username = name;
           localStorage.setItem(userKey, JSON.stringify(userData));
         }
-        
+
         usernameView.classList.add("hidden");
         statsView.classList.remove("hidden");
         loadLeaderboardData("avg");
-
       } catch (error) {
         console.error("Save error:", error);
         usernameError.textContent = "Could not save. Try again.";
@@ -382,19 +436,34 @@
     });
   }
 
-  // --- LEADERBOARD LOGIC ---
   function openLeaderboard() {
     leaderboardModal.classList.remove("hidden");
+    ensureLeaderboardHeader();
+
     const userData = getUserData();
-    
+
     if (!userData.username) {
       usernameView.classList.remove("hidden");
       statsView.classList.add("hidden");
     } else {
       usernameView.classList.add("hidden");
       statsView.classList.remove("hidden");
-      tabBtns[0].click(); // Default to avg tab
+      tabBtns[0].click();
     }
+  }
+
+  function logoutLeaderboardAccount() {
+    localStorage.removeItem(userKey);
+    hasSubmittedToLeaderboard = false;
+    usernameInput.value = "";
+    passwordInput.value = "";
+    usernameError.classList.add("hidden");
+
+    const freshUser = getUserData();
+    localStorage.setItem(userKey, JSON.stringify(freshUser));
+
+    usernameView.classList.remove("hidden");
+    statsView.classList.add("hidden");
   }
 
   async function loadLeaderboardData(type) {
@@ -409,9 +478,9 @@
       if (type === "avg") {
         const { data: res, error } = await supabase
           .from('leaderboards')
-          .select('username, games_played, total_guesses, total_hints')
+          .select('username, games_played, total_guesses, total_hints, last_hint_day_index')
           .order('games_played', { ascending: false });
-        
+
         if (error) throw error;
 
         if (res && res.length > 0) {
@@ -420,14 +489,13 @@
             avg: ((p.total_guesses / GUESS_SCALE) / p.games_played).toFixed(2)
           })).sort((a, b) => a.avg - b.avg).slice(0, 50);
         }
-
       } else if (type === "streak") {
         const { data: res, error } = await supabase
           .from('leaderboards')
-          .select('username, winstreak, max_winstreak, total_hints')
+          .select('username, winstreak, max_winstreak, total_hints, last_hint_day_index')
           .order('max_winstreak', { ascending: false })
           .limit(50);
-          
+
         if (error) throw error;
         if (res) data = res;
       }
@@ -456,14 +524,14 @@
         if (index === 0) medal = "🥇 ";
         else if (index === 1) medal = "🥈 ";
         else if (index === 2) medal = "🥉 ";
-        
+
         const scoreVal = type === "avg"
           ? player.avg
           : (player.max_winstreak ?? player.winstreak ?? 0);
-        
+
         let hintBadge = "";
-        if (player.total_hints > 0) {
-          hintBadge = ` <span style="font-size: 0.8em; opacity: 0.8;" title="${player.total_hints} hints used all-time">💡${player.total_hints}</span>`;
+        if (player.last_hint_day_index === solutionIndex) {
+          hintBadge = ` <span style="font-size: 0.85em; opacity: 0.9;" title="Used a hint today">💡</span>`;
         }
 
         let displayName = player.username + hintBadge;
@@ -471,7 +539,7 @@
         if (player.username === currentUser) {
           displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
         }
-        
+
         li.innerHTML = `
           <div><span class="rank">#${index + 1}</span> ${medal}${displayName}</div>
           <div class="score">${scoreVal}</div>
@@ -479,7 +547,6 @@
 
         lbList.appendChild(li);
       });
-
     } catch (e) {
       console.error("Leaderboard Error", e);
       lbLoading.classList.add("hidden");
@@ -490,11 +557,11 @@
 
   async function updateUserStats(won, rawGuesses, hints) {
     if (hasSubmittedToLeaderboard) return;
-    
-    const userData = getUserData();
-    if (!userData.username) return; 
 
-    const scaledGuesses = rawGuesses * GUESS_SCALE; 
+    const userData = getUserData();
+    if (!userData.username) return;
+
+    const scaledGuesses = rawGuesses * GUESS_SCALE;
 
     try {
       const { data: userRecord, error: fetchError } = await supabase
@@ -511,14 +578,14 @@
         total_guesses: userRecord.total_guesses + scaledGuesses,
         winstreak: newWinstreak,
         max_winstreak: Math.max(newWinstreak, userRecord.max_winstreak ?? 0),
-        total_hints: (userRecord.total_hints || 0) + hints
+        total_hints: (userRecord.total_hints || 0) + hints,
+        last_hint_day_index: hints > 0 ? solutionIndex : userRecord.last_hint_day_index ?? null
       };
 
       await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
-        
+
       hasSubmittedToLeaderboard = true;
       saveState();
-
     } catch (e) {
       console.error("Error updating stats", e);
     }
@@ -579,9 +646,13 @@
 
     overlay.style.display = "flex";
 
-    const close = () => { overlay.style.display = "none"; };
+    const close = () => {
+      overlay.style.display = "none";
+    };
     document.getElementById("hint-close-btn").addEventListener("click", close);
-    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
   }
 
   function showHint() {
@@ -730,7 +801,7 @@
     window.setTimeout(() => {
       if (guess === solution) {
         gameOver = true;
-        updateUserStats(true, currentRow + 1, hintsUsed); 
+        updateUserStats(true, currentRow + 1, hintsUsed);
         saveState(true);
         showMessage("Solved.");
         showEndModal(true);
@@ -743,7 +814,7 @@
 
       if (currentRow >= maxRows) {
         gameOver = true;
-        updateUserStats(false, maxRows, hintsUsed); 
+        updateUserStats(false, maxRows, hintsUsed);
         saveState(false);
         showMessage(`The word was ${solution}.`);
         showEndModal(false);
@@ -911,7 +982,7 @@
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
- 
+
   function saveState(won = null) {
     const state = {
       solutionIndex,
@@ -921,7 +992,7 @@
       won,
       boardState,
       hintsUsed,
-      hasSubmittedToLeaderboard 
+      hasSubmittedToLeaderboard
     };
     localStorage.setItem(storageKey, JSON.stringify(state));
   }
