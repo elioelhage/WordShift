@@ -37,13 +37,12 @@
 
   // Leaderboard Elements
   const usernameInput = document.getElementById("username-input");
-  const passwordInput = document.getElementById("password-input"); // ADD THIS LINE
+  const passwordInput = document.getElementById("password-input"); 
   const leaderboardBtn = document.getElementById("leaderboard-button");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
   const usernameView = document.getElementById("username-view");
   const statsView = document.getElementById("stats-view");
-  const usernameInput = document.getElementById("username-input");
   const saveUsernameBtn = document.getElementById("save-username-btn");
   const usernameError = document.getElementById("username-error");
   const tabBtns = document.querySelectorAll(".tab-btn");
@@ -353,24 +352,6 @@
         usernameError.classList.remove("hidden");
       } finally {
         saveUsernameBtn.textContent = "Login / Register";
-        saveUsernameBtn.disabled = false;
-      }
-    });
-        
-        // Success! Update local storage and swap views
-        userData.username = name;
-        localStorage.setItem(userKey, JSON.stringify(userData));
-        
-        usernameView.classList.add("hidden");
-        statsView.classList.remove("hidden");
-        loadLeaderboardData("avg");
-
-      } catch (error) {
-        console.error("Save error:", error);
-        usernameError.textContent = "Could not save. Try again.";
-        usernameError.classList.remove("hidden");
-      } finally {
-        saveUsernameBtn.textContent = "Save Name";
         saveUsernameBtn.disabled = false;
       }
     });
