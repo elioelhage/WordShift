@@ -888,7 +888,14 @@
   if (hintButton) hintButton.addEventListener("click", showHint);
 
   document.addEventListener("keydown", (e) => {
+    // Stop the game from capturing keystrokes if you are typing in the login inputs
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    
     if (gameOver || isSubmitting) return;
+    
+    // Safeguard against weird browser autofill events that have no key property
+    if (!e.key) return;
+
     if (e.key === "Enter") handleKey("ENTER");
     else if (e.key === "Backspace") handleKey("⌫");
     else {
