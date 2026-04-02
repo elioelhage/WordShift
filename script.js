@@ -282,8 +282,9 @@
     closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
     
     saveUsernameBtn.addEventListener("click", async () => {
-      const name = usernameInput.value.trim();
-      const pass = passwordInput.value.trim();
+		const name = usernameInput.value.trim();
+		const rawPass = passwordInput.value.trim();
+		const pass = await hashPassword(rawPass); // Now 'pass' is a secure string of gibberish!
       usernameError.classList.add("hidden");
       
       if (name.length < 3) {
@@ -891,6 +892,14 @@
     countdownTimer = setInterval(update, 1000);
   }
 
+// Scrambles the password into a secure hash before sending to Supabase
+  async function hashPassword(password) {
+    const msgBuffer = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+ 
   function saveState(won = null) {
     const state = {
       solutionIndex,
