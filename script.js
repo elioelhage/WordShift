@@ -652,14 +652,18 @@
     if (gameOver || isSubmitting) return;
 
     if (hintsUsed === 0) {
-      showHintPopup("Loading...", "Looking up the word...");
-      fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${solution.toLowerCase()}`)
-        .then(response => response.ok ? response.json() : Promise.reject())
-        .then(data => {
-          if (data && data[0] && data[0].meanings && data[0].meanings[0].definitions) {
-            showHintPopup("Definition", data[0].meanings[0].definitions[0].definition);
-          } else throw new Error();
-        }).catch(() => showHintPopup("Category", wordCategory));
+      // Less-revealing first hint: only indicate whether the word has repeated letters
+      const hasRepeat = (() => {
+        const counts = {};
+        for (const ch of solution) {
+          counts[ch] = (counts[ch] || 0) + 1;
+          if (counts[ch] > 1) return true;
+        }
+        return false;
+      })();
+
+      const body = hasRepeat ? "This word contains repeated letters." : "This word contains no repeated letters.";
+      showHintPopup("Letter Pattern", body);
       hintsUsed++;
       updateHintBadge();
       saveState();
