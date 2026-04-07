@@ -52,6 +52,18 @@ body {
   touch-action: manipulation;
 }
 
+body .app-shell {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 240ms ease, transform 240ms ease, filter 240ms ease;
+}
+
+body.page-transition-out .app-shell {
+  opacity: 0;
+  transform: translateY(8px) scale(0.992);
+  filter: blur(2px);
+}
+
 .hidden { display: none !important; }
 
 .app-loader {

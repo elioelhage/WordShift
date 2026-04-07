@@ -40,6 +40,7 @@
   const endTitle = document.getElementById("end-title");
   const countdownEl = document.getElementById("countdown");
   const closeModal = document.getElementById("close-modal");
+  const wordleStarsLink = document.getElementById("wordle-stars-link");
 
   const usernameInput = document.getElementById("username-input");
   const passwordInput = document.getElementById("password-input");
@@ -297,6 +298,23 @@
     const logoutBtn = document.getElementById("leaderboard-logout-button");
     if (logoutBtn) logoutBtn.addEventListener("click", logoutLeaderboardAccount);
     closeModal.addEventListener("click", hideEndModal);
+
+    if (wordleStarsLink) {
+      wordleStarsLink.addEventListener("click", (e) => {
+        if (e.defaultPrevented) return;
+        if (e.button !== 0) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+        const href = wordleStarsLink.getAttribute("href");
+        if (!href) return;
+
+        e.preventDefault();
+        document.body.classList.add("page-transition-out");
+        window.setTimeout(() => {
+          window.location.href = href;
+        }, 240);
+      });
+    }
 
     // Initialize global tooltip portal (so tooltips are not clipped by modal/tab overflow)
     initGlobalTooltips();
