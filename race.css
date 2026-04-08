@@ -31,10 +31,25 @@
   width: min(95vw, 30rem);
   display: grid;
   gap: 0.8rem;
+  padding: 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--shadow);
 }
 
 .race-create-btn {
   max-width: 100%;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--correct) 74%, #fff 26%), var(--correct));
+  color: #fff;
+  letter-spacing: 0.03em;
+  border: 1px solid color-mix(in srgb, var(--correct) 72%, #000 28%);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--correct) 36%, transparent);
+}
+
+.race-create-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
 }
 
 .race-card {
@@ -99,11 +114,18 @@
 
 .race-join-row .text-input {
   margin-top: 0;
+  border-radius: 12px;
+  border-width: 2px;
 }
 
 .race-join-row .primary-button {
   width: auto;
   min-width: 6.2rem;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 12px;
+  font-weight: 800;
 }
 
 .room-actions {
@@ -166,11 +188,26 @@
 }
 
 .opponent-pressure {
-  margin: 0.5rem 0 0;
+  margin: 0.58rem 0 0;
   min-height: 1.25rem;
-  color: color-mix(in srgb, var(--present) 72%, var(--text));
-  font-weight: 700;
-  font-size: 0.9rem;
+  color: color-mix(in srgb, var(--present) 70%, var(--text));
+  font-weight: 900;
+  font-size: 0.98rem;
+  border: 1px solid color-mix(in srgb, var(--present) 35%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--present) 14%, transparent);
+  padding: 0.45rem 0.62rem;
+  letter-spacing: 0.01em;
+}
+
+.opponent-pressure.pressure-pulse {
+  animation: pressurePulse 0.42s ease;
+}
+
+@keyframes pressurePulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 
 .race-game-top {
