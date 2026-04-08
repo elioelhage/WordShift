@@ -17,21 +17,21 @@
   const statusEl = document.getElementById("race-status");
 
   const roomKey = "wordle-race-room";
+  const userKey = "wordle-user-data-v2";
   const clientKey = "wordle-race-client-id";
-  const ROOM_TABLE = "battle_words";
+  const WORD_TABLE = "battle_words";
   const PLAYER_TABLE = "battle_players";
-
-  const ROOM_CODE_FIELDS = ["room_code", "code", "room", "battle_code"];
-  const ROOM_HOST_FIELDS = ["host_client_id", "host_id", "created_by", "owner_id"];
-  const ROOM_STATUS_FIELDS = ["status", "state"];
 
   const PLAYER_ROOM_FIELDS = ["room_code", "code", "room", "battle_code"];
   const PLAYER_ID_FIELDS = ["client_id", "player_id", "uuid", "user_id"];
   const PLAYER_ROLE_FIELDS = ["role", "player_role", "side"];
+  const PLAYER_NAME_FIELDS = ["username", "player_name", "display_name", "name"];
+  const PLAYER_WORD_FIELDS = ["word", "target_word", "battle_word", "race_word"];
 
   let currentRoom = null;
   let currentRole = null;
   let roomPoller = null;
+  let currentUser = null;
 
   function getClientId() {
     let id = localStorage.getItem(clientKey);
@@ -40,6 +40,21 @@
       localStorage.setItem(clientKey, id);
     }
     return id;
+  }
+
+  function getUserData() {
+    try {
+      const raw = localStorage.getItem(userKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function setControlsEnabled(enabled) {
+    createRoomBtn.disabled = !enabled;
+    joinRoomBtn.disabled = !enabled;
+    roomInput.disabled = !enabled;
   }
 
   function uniquePayloads(payloads) {
@@ -65,18 +80,19 @@
     return { ok: false, error: lastError };
   }
 
-  async function findRoomByCode(code) {
-    for (const field of ROOM_CODE_FIELDS) {
+  async function fetchRandomBattleWord() {
+    if (!supabase) return null;
+    const maxId = 670;
+    for (let i = 0; i < 4; i += 1) {
+      const randomId = Math.floor(Math.random() * maxId) + 1;
       const { data, error } = await supabase
-        .from(ROOM_TABLE)
-        .select("*")
-        .eq(field, code)
-        .limit(1)
+        .from(WORD_TABLE)
+        .select("word")
+        .eq("id", randomId)
         .maybeSingle();
-
-      if (!error) return { room: data, roomCodeField: field };
+      if (!error && data?.word) return String(data.word).toUpperCase();
     }
-    return { room: null, roomCodeField: ROOM_CODE_FIELDS[0] };
+    return null;
   }
 
   async function countPlayersInRoom(code) {
@@ -91,35 +107,23 @@
     return -1;
   }
 
-  async function ensureRoomRecord(code) {
-    if (!supabase) return false;
-
-    const found = await findRoomByCode(code);
-    if (found.room) return true;
-
-    const clientId = getClientId();
-    const payloads = [];
-    for (const roomCodeField of ROOM_CODE_FIELDS) {
-      payloads.push({ [roomCodeField]: code });
-      for (const hostField of ROOM_HOST_FIELDS) {
-        payloads.push({ [roomCodeField]: code, [hostField]: clientId });
-        for (const statusField of ROOM_STATUS_FIELDS) {
-          payloads.push({ [roomCodeField]: code, [hostField]: clientId, [statusField]: "waiting" });
-        }
-      }
-      for (const statusField of ROOM_STATUS_FIELDS) {
-        payloads.push({ [roomCodeField]: code, [statusField]: "waiting" });
-      }
+  async function roomExists(code) {
+    for (const roomField of PLAYER_ROOM_FIELDS) {
+      const { data, error } = await supabase
+        .from(PLAYER_TABLE)
+        .select("*")
+        .eq(roomField, code)
+        .limit(1)
+        .maybeSingle();
+      if (!error && data) return true;
+      if (!error && !data) return false;
     }
-
-    const result = await tryInsert(ROOM_TABLE, payloads);
-    return result.ok;
+    return false;
   }
 
-  async function upsertPlayerRecord(code, role) {
-    if (!supabase) return false;
-
-    const clientId = getClientId();
+  async function registerPlayerRow(code, role) {
+    const userIdentifier = currentUser?.uuid || getClientId();
+    const userName = currentUser?.username || "Player";
 
     for (const roomField of PLAYER_ROOM_FIELDS) {
       for (const idField of PLAYER_ID_FIELDS) {
@@ -127,19 +131,31 @@
           .from(PLAYER_TABLE)
           .select("*")
           .eq(roomField, code)
-          .eq(idField, clientId)
+          .eq(idField, userIdentifier)
           .limit(1)
           .maybeSingle();
         if (!check.error && check.data) return true;
       }
     }
 
+    const hostWord = role === "host" ? await fetchRandomBattleWord() : null;
+
     const payloads = [];
     for (const roomField of PLAYER_ROOM_FIELDS) {
       for (const idField of PLAYER_ID_FIELDS) {
-        payloads.push({ [roomField]: code, [idField]: clientId });
         for (const roleField of PLAYER_ROLE_FIELDS) {
-          payloads.push({ [roomField]: code, [idField]: clientId, [roleField]: role });
+          payloads.push({ [roomField]: code, [idField]: userIdentifier, [roleField]: role });
+          for (const nameField of PLAYER_NAME_FIELDS) {
+            payloads.push({ [roomField]: code, [idField]: userIdentifier, [roleField]: role, [nameField]: userName });
+          }
+          if (hostWord) {
+            for (const wordField of PLAYER_WORD_FIELDS) {
+              payloads.push({ [roomField]: code, [idField]: userIdentifier, [roleField]: role, [wordField]: hostWord });
+              for (const nameField of PLAYER_NAME_FIELDS) {
+                payloads.push({ [roomField]: code, [idField]: userIdentifier, [roleField]: role, [nameField]: userName, [wordField]: hostWord });
+              }
+            }
+          }
         }
       }
     }
@@ -221,6 +237,37 @@
     statusEl.textContent = text;
   }
 
+  async function ensureAuthenticatedUser() {
+    currentUser = getUserData();
+
+    if (!currentUser?.username) {
+      setControlsEnabled(false);
+      setStatus("Login required: create/login your account from the main game leaderboard first.");
+      return false;
+    }
+
+    if (!supabase) {
+      setControlsEnabled(false);
+      setStatus("Supabase client not loaded on this page.");
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from("leaderboards")
+      .select("uuid, username")
+      .eq("uuid", currentUser.uuid)
+      .maybeSingle();
+
+    if (error || !data?.username) {
+      setControlsEnabled(false);
+      setStatus("Account not found in DB. Login again from the main page.");
+      return false;
+    }
+
+    setControlsEnabled(true);
+    return true;
+  }
+
   function setRoom(code, role) {
     const cleanCode = sanitizeRoomCode(code);
     if (!cleanCode) return;
@@ -248,24 +295,29 @@
     url.searchParams.set("room", cleanCode);
     window.history.replaceState({}, "", url);
 
-    connectRoomOnline(cleanCode, role);
+    void connectRoomOnline(cleanCode, role);
   }
 
   async function connectRoomOnline(code, role) {
-    if (!supabase) {
-      setStatus("Supabase client not loaded on this page.");
-      return;
+    if (!(await ensureAuthenticatedUser())) return;
+
+    if (role === "guest") {
+      const exists = await roomExists(code);
+      if (!exists) {
+        setStatus("Room not found online. Check code.");
+        return;
+      }
+
+      const count = await countPlayersInRoom(code);
+      if (count >= 2) {
+        setStatus("This room already has 2 players.");
+        return;
+      }
     }
 
-    const roomOk = role === "host" ? await ensureRoomRecord(code) : Boolean((await findRoomByCode(code)).room);
-    if (!roomOk) {
-      setStatus(role === "host" ? "Could not create room in DB." : "Room not found online. Check code.");
-      return;
-    }
-
-    const playerOk = await upsertPlayerRecord(code, role);
+    const playerOk = await registerPlayerRow(code, role);
     if (!playerOk) {
-      setStatus("Connected to room, but could not register player row.");
+      setStatus("Could not register you in battle_players (column mismatch or RLS block).");
       return;
     }
 
@@ -273,11 +325,13 @@
   }
 
   async function createRoom() {
+    if (!(await ensureAuthenticatedUser())) return;
     const code = randomRoomCode();
     setRoom(code, "host");
   }
 
   async function joinRoom() {
+    if (!(await ensureAuthenticatedUser())) return;
     const cleanCode = sanitizeRoomCode(roomInput.value);
     roomInput.value = cleanCode;
     if (cleanCode.length !== 6) {
@@ -288,6 +342,8 @@
   }
 
   function restoreLastRoom() {
+    if (!currentUser?.username) return;
+
     const roomFromUrl = sanitizeRoomCode(new URLSearchParams(window.location.search).get("room"));
     if (roomFromUrl) {
       roomInput.value = roomFromUrl;
@@ -351,5 +407,10 @@
     if (roomPoller) clearInterval(roomPoller);
   });
 
-  restoreLastRoom();
+  ensureAuthenticatedUser().then((ok) => {
+    if (ok) {
+      setStatus(`Logged in as ${currentUser.username}. Create or join a 1v1 room.`);
+      restoreLastRoom();
+    }
+  });
 })();
