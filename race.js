@@ -145,18 +145,48 @@
     return null;
   }
 
-  async function roomExists(code) {
-    for (const roomField of PLAYER_ROOM_FIELDS) {
-      const { data, error } = await supabase
-        .from(PLAYER_TABLE)
-        .select("*")
-        .eq(roomField, code)
-        .limit(1)
-        .maybeSingle();
-      if (!error && data) return true;
-      if (!error && !data) return false;
+  function roomCodeToWordId(code) {
+    let hash = 0;
+    const clean = String(code || "").toUpperCase();
+    for (let i = 0; i < clean.length; i += 1) {
+      hash = (hash * 31 + clean.charCodeAt(i)) % 670;
     }
-    return false;
+    return (hash % 670) + 1;
+  }
+
+  async function fetchBattleWordById(id) {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from(WORD_TABLE)
+      .select("word")
+      .eq("id", id)
+      .maybeSingle();
+    if (error || !data?.word) return null;
+    return String(data.word).toUpperCase();
+  }
+
+  async function ensureWordForRoom(code) {
+    if (currentWord) return currentWord;
+
+    const hydrated = await hydrateWordFromRoom();
+    if (hydrated && currentWord) return currentWord;
+
+    const derivedId = roomCodeToWordId(code);
+    const derivedWord = await fetchBattleWordById(derivedId);
+    if (derivedWord) {
+      currentWord = derivedWord;
+      wordLength = derivedWord.length;
+      return derivedWord;
+    }
+
+    const fallback = await fetchRandomBattleWord();
+    if (fallback) {
+      currentWord = fallback;
+      wordLength = fallback.length;
+      return fallback;
+    }
+
+    return null;
   }
 
   async function registerPlayerRow(code, role) {
@@ -449,9 +479,9 @@
       return;
     }
 
-    const hasWord = currentWord || (await hydrateWordFromRoom());
+    const hasWord = await ensureWordForRoom(currentRoom);
     if (!hasWord) {
-      setStatus("Could not get race word from room yet.");
+      setStatus("Could not get race word yet.");
       return;
     }
 
@@ -606,18 +636,10 @@
   async function connectRoomOnline(code, role) {
     if (!(await ensureAuthenticatedUser())) return;
 
-    if (role === "guest") {
-      const exists = await roomExists(code);
-      if (!exists) {
-        setStatus("Room not found online. Check code.");
-        return;
-      }
-
-      const count = await countPlayersInRoom(code);
-      if (count >= 2) {
-        setStatus("This room already has 2 players.");
-        return;
-      }
+    const count = await countPlayersInRoom(code);
+    if (count >= 2) {
+      setStatus("This room already has 2 players.");
+      return;
     }
 
     const playerOk = await registerPlayerRow(code, role);
@@ -625,6 +647,8 @@
       setStatus("Could not register you in battle_players (column mismatch or RLS block).");
       return;
     }
+
+    await ensureWordForRoom(code);
 
     startRoomPolling();
   }
