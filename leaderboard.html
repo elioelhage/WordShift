@@ -101,14 +101,6 @@
       white-space: nowrap;
     }
 
-    .leaderboard-info {
-      margin: 0.42rem 0 0;
-      max-width: 62ch;
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.45;
-    }
-
     .top-actions {
       display: flex;
       align-items: center;
@@ -251,7 +243,6 @@
       color: #1f1a07;
       box-shadow: 0 14px 28px rgba(255, 195, 45, 0.34);
       padding: 1.22rem 1.28rem;
-      transform: scale(1.01);
     }
 
     .item.rank-2 {
@@ -263,7 +254,6 @@
       box-shadow: 0 14px 30px rgba(111, 130, 156, 0.38);
       padding: 1.24rem 1.34rem;
       min-height: 4.25rem;
-      transform: scale(1.018);
     }
 
     :root:not([data-theme="dark"]) .item.rank-2 {
@@ -297,7 +287,6 @@
       box-shadow: 0 12px 24px rgba(170, 99, 44, 0.3);
       padding: 1.1rem 1.22rem;
       min-height: 3.85rem;
-      transform: scale(1.006);
     }
 
     .item.rank-1 .rank,
@@ -524,35 +513,6 @@
       .btn { padding: 0.48rem 0.72rem; }
       .score { font-size: 0.95rem; }
     }
-
-    @media (min-width: 920px) {
-      .item.rank-1 {
-        transform: scale(1.05);
-        padding: 1.3rem 1.4rem;
-      }
-
-      .item.rank-2 {
-        transform: scale(1.028);
-        padding: 1.12rem 1.2rem;
-      }
-
-      .item.rank-3 {
-        transform: scale(1.012);
-        padding: 1rem 1.08rem;
-      }
-
-      .item.rank-1 .score { font-size: 1.35rem; }
-      .item.rank-2 .score { font-size: 1.18rem; }
-      .item.rank-3 .score { font-size: 1.06rem; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .item.rank-1,
-      .item.rank-2,
-      .item.rank-3 {
-        transform: none;
-      }
-    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -572,7 +532,6 @@
           </svg>
           <h1>Leaderboard</h1>
         </div>
-        <p class="leaderboard-info">Avg score decays over time to reward active players: after a 7-day grace period, we apply a +0.8% penalty per inactive day (capped at +25%) to the displayed average.</p>
       </div>
 
       <div class="top-actions">
@@ -598,9 +557,6 @@
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
       const GUESS_SCALE = 10;
       const launchDate = Date.UTC(2026, 3, 1);
-      const DECAY_GRACE_DAYS = 7;
-      const DECAY_PER_DAY = 0.008;
-      const DECAY_MAX = 0.25;
 
       const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
       const listEl = document.getElementById("lb-list");
@@ -623,25 +579,6 @@
       }
 
       const todayIndex = getCurrentSolutionIndex();
-
-      function getLastActiveIndex(player) {
-        if (typeof player?.last_played_day_index === "number" && Number.isFinite(player.last_played_day_index)) {
-          return player.last_played_day_index;
-        }
-        if (player?.saved_state && typeof player.saved_state.solutionIndex === "number" && Number.isFinite(player.saved_state.solutionIndex)) {
-          return player.saved_state.solutionIndex;
-        }
-        return null;
-      }
-
-      function getDecayFactor(player) {
-        const lastActive = getLastActiveIndex(player);
-        if (lastActive === null) return 1;
-        const idleDays = Math.max(0, todayIndex - lastActive);
-        const penalizedDays = Math.max(0, idleDays - DECAY_GRACE_DAYS);
-        const penalty = Math.min(DECAY_MAX, penalizedDays * DECAY_PER_DAY);
-        return 1 + penalty;
-      }
 
       const medalSvg = {
         0: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#8a6700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
@@ -737,14 +674,10 @@
 
           const rows = (data || [])
             .filter((p) => p.username && Number(p.games_played) > 0)
-            .map((p) => {
-              const rawAvg = ((Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1));
-              const decayFactor = getDecayFactor(p);
-              return {
-                ...p,
-                avg: (rawAvg * decayFactor).toFixed(2)
-              };
-            })
+            .map((p) => ({
+              ...p,
+              avg: ((Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1)).toFixed(2)
+            }))
             .sort((a, b) => Number(a.avg) - Number(b.avg))
             .slice(0, 50);
 

@@ -308,17 +308,6 @@ a.icon-button {
   transform: translateY(0);
 }
 
-#race-lobby-button {
-  background: linear-gradient(145deg, color-mix(in srgb, var(--correct) 76%, #fff 24%), color-mix(in srgb, var(--correct) 88%, #000 12%));
-  border-color: color-mix(in srgb, var(--correct) 72%, #000 28%);
-  color: #fff;
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--correct) 34%, transparent);
-}
-
-#race-lobby-button:hover {
-  background: linear-gradient(145deg, color-mix(in srgb, var(--correct) 84%, #fff 16%), color-mix(in srgb, var(--correct) 92%, #000 8%));
-}
-
 .account-menu-wrap {
   position: relative;
 }

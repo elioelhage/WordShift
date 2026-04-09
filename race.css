@@ -11,14 +11,6 @@
   backdrop-filter: none;
 }
 
-.race-lobby-description {
-  margin: 0.45rem 0 0;
-  max-width: 64ch;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.46;
-}
-
 #race-back-button {
   touch-action: manipulation;
   transition: transform 120ms ease, box-shadow 180ms ease, background-color 180ms ease;
@@ -64,16 +56,16 @@
 
 .race-create-btn {
   max-width: 100%;
-  background: linear-gradient(140deg, #5fcb79 0%, #35ad59 55%, #248748 100%);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--correct) 74%, #fff 26%), var(--correct));
   color: #fff;
   letter-spacing: 0.03em;
-  border: 1px solid #237743;
-  box-shadow: 0 12px 25px rgba(35, 135, 72, 0.38);
+  border: 1px solid color-mix(in srgb, var(--correct) 72%, #000 28%);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--correct) 36%, transparent);
 }
 
 .race-create-btn:hover {
   transform: translateY(-1px);
-  filter: brightness(1.07) saturate(1.06);
+  filter: brightness(1.02);
 }
 
 .race-card {
