@@ -133,8 +133,9 @@
 
     :root:not([data-theme="dark"]) .shell {
       background:
-        radial-gradient(140% 120% at 0% 0%, rgba(106, 170, 100, 0.14), transparent 54%),
-        linear-gradient(165deg, #0f1116 0%, #171a22 52%, #101318 100%);
+        radial-gradient(145% 120% at 0% 0%, rgba(106, 170, 100, 0.22), transparent 52%),
+        radial-gradient(120% 95% at 100% 0%, rgba(96, 165, 250, 0.16), transparent 58%),
+        linear-gradient(165deg, #0c0f14 0%, #171b24 48%, #0d1118 100%);
       border-color: #34363a;
       box-shadow: 0 20px 48px rgba(0, 0, 0, 0.36);
     }
@@ -241,7 +242,7 @@
       border: 1px solid #eebd3b;
       color: #1f1a07;
       box-shadow: 0 14px 28px rgba(255, 195, 45, 0.34);
-      transform: scale(1.015);
+      transform: scale(1.022);
     }
 
     .item.rank-2 {
@@ -264,18 +265,7 @@
         0 16px 34px rgba(118, 138, 164, 0.42);
       outline: 2px solid rgba(120, 141, 169, 0.68);
       outline-offset: -1px;
-      transform: scale(1.012);
-      position: relative;
-      overflow: hidden;
-    }
-
-    :root:not([data-theme="dark"]) .item.rank-2::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: linear-gradient(112deg, transparent 0%, rgba(255, 255, 255, 0.38) 42%, transparent 72%);
-      mix-blend-mode: screen;
+      transform: scale(1.014);
     }
 
     :root[data-theme="dark"] .item.rank-2 {
@@ -294,6 +284,7 @@
       border: 1px solid #9f5d2a;
       color: #24160c;
       box-shadow: 0 12px 24px rgba(170, 99, 44, 0.3);
+      transform: scale(1.006);
     }
 
     .left {

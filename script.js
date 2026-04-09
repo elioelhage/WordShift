@@ -1398,7 +1398,7 @@
 
   function showEndModal(won) {
     if (won) {
-      endTitle.textContent = "You got it.";
+      endTitle.innerHTML = `You got it, the word was <span class="modal-word-highlight">${solution}</span>`;
     } else {
       endTitle.innerHTML = `The word was <span class="modal-word-highlight">${solution}</span>`;
     }
