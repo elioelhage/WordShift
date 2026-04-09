@@ -70,6 +70,7 @@
   const walkthroughPrevBtn = document.getElementById("walkthrough-prev");
   const walkthroughNextBtn = document.getElementById("walkthrough-next");
   const walkthroughAccountBtn = document.getElementById("walkthrough-account");
+  const walkthroughActions = walkthroughModal?.querySelector(".walkthrough-actions");
 
   const wordCache = {};
 
@@ -134,6 +135,7 @@
   let loaderFailsafeTimer = null;
   let walkthroughLengthTimer = null;
   let walkthroughLengthFrame = 0;
+  let walkthroughSkipHideTimer = null;
 
   function safeHardRefresh(delay = 220) {
     const url = new URL(window.location.href);
@@ -187,7 +189,7 @@
     },
     {
       title: "Turn on reminders",
-      body: "Enable notifications to get a ping at 12:00 PM, and again at 4:00 PM if you still haven’t solved today’s word.",
+      body: "Turn on reminders to do the daily Wordle.",
       demo: "notify",
       pulse: false
     },
@@ -476,11 +478,31 @@
     walkthroughCard?.classList.toggle("pulse-account", Boolean(step.pulse));
     const isLastStep = walkthroughStep === walkthroughSteps.length - 1;
     const hideSkip = walkthroughStep >= 3;
-    walkthroughSkipBtn?.classList.toggle("hidden", hideSkip);
+    walkthroughActions?.classList.toggle("skip-collapsed", hideSkip);
+    if (walkthroughSkipBtn) {
+      if (hideSkip) {
+        walkthroughSkipBtn.classList.add("is-leaving");
+        if (walkthroughSkipHideTimer) clearTimeout(walkthroughSkipHideTimer);
+        walkthroughSkipHideTimer = window.setTimeout(() => {
+          walkthroughSkipBtn.classList.add("hidden");
+          walkthroughSkipBtn.classList.remove("is-leaving");
+          walkthroughSkipHideTimer = null;
+        }, 180);
+      } else {
+        if (walkthroughSkipHideTimer) {
+          clearTimeout(walkthroughSkipHideTimer);
+          walkthroughSkipHideTimer = null;
+        }
+        walkthroughSkipBtn.classList.remove("hidden");
+        requestAnimationFrame(() => walkthroughSkipBtn.classList.remove("is-leaving"));
+      }
+    }
     walkthroughPrevBtn.disabled = walkthroughStep === 0;
     walkthroughNextBtn.textContent = isLastStep ? "Play without account" : "Next";
     if (walkthroughAccountBtn) walkthroughAccountBtn.textContent = "Play with account";
     walkthroughAccountBtn?.classList.toggle("hidden", !isLastStep);
+    walkthroughAccountBtn?.classList.toggle("account-cta-primary", isLastStep);
+    walkthroughNextBtn?.classList.toggle("walkthrough-next-secondary", isLastStep);
   }
 
   function openWalkthrough() {

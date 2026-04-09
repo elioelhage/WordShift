@@ -595,6 +595,13 @@ a.icon-button {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
+  align-items: center;
+}
+
+.walkthrough-actions.skip-collapsed {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 22rem);
+  margin-inline: auto;
 }
 
 .walkthrough-skip,
@@ -608,6 +615,34 @@ a.icon-button {
 .walkthrough-account {
   white-space: normal;
   line-height: 1.15;
+}
+
+.walkthrough-skip {
+  transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.walkthrough-skip.is-leaving {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.97);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.walkthrough-next-secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.walkthrough-account.account-cta-primary {
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: 0 10px 22px rgba(255, 255, 255, 0.26), 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
+:root:not([data-theme="dark"]) .walkthrough-account.account-cta-primary {
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
 }
 
 .walkthrough-hint-showcase {
