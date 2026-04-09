@@ -101,6 +101,14 @@
       white-space: nowrap;
     }
 
+    .leaderboard-info {
+      margin: 0.42rem 0 0;
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
     .top-actions {
       display: flex;
       align-items: center;
@@ -532,6 +540,7 @@
           </svg>
           <h1>Leaderboard</h1>
         </div>
+        <p class="leaderboard-info">Decay applies only to the current top 3: after 4 inactive days, average score gets +0.15 every 2 days. Everyone else has no decay.</p>
       </div>
 
       <div class="top-actions">
@@ -557,6 +566,9 @@
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
       const GUESS_SCALE = 10;
       const launchDate = Date.UTC(2026, 3, 1);
+  const DECAY_START_AFTER_DAYS = 4;
+  const DECAY_STEP_DAYS = 2;
+  const DECAY_STEP_VALUE = 0.15;
 
       const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
       const listEl = document.getElementById("lb-list");
@@ -579,6 +591,28 @@
       }
 
       const todayIndex = getCurrentSolutionIndex();
+
+      function getLastActiveIndex(player) {
+        if (typeof player?.last_played_day_index === "number" && Number.isFinite(player.last_played_day_index)) {
+          return player.last_played_day_index;
+        }
+        if (player?.saved_state && typeof player.saved_state.solutionIndex === "number" && Number.isFinite(player.saved_state.solutionIndex)) {
+          return player.saved_state.solutionIndex;
+        }
+        return null;
+      }
+
+      function getTopThreeDecayPenalty(player) {
+        const lastActive = getLastActiveIndex(player);
+        if (lastActive === null) return 0;
+
+        const idleDays = Math.max(0, todayIndex - lastActive);
+        if (idleDays <= DECAY_START_AFTER_DAYS) return 0;
+
+        const elapsedAfterGrace = idleDays - DECAY_START_AFTER_DAYS;
+        const steps = Math.floor(elapsedAfterGrace / DECAY_STEP_DAYS);
+        return steps * DECAY_STEP_VALUE;
+      }
 
       const medalSvg = {
         0: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#8a6700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
@@ -676,12 +710,25 @@
             .filter((p) => p.username && Number(p.games_played) > 0)
             .map((p) => ({
               ...p,
-              avg: ((Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1)).toFixed(2)
+              rawAvg: (Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1)
             }))
-            .sort((a, b) => Number(a.avg) - Number(b.avg))
+            .sort((a, b) => Number(a.rawAvg) - Number(b.rawAvg));
+
+          rows.slice(0, 3).forEach((p) => {
+            p.decayPenalty = getTopThreeDecayPenalty(p);
+          });
+
+          const rankedRows = rows
+            .map((p) => ({
+              ...p,
+              decayPenalty: Number(p.decayPenalty || 0),
+              avgValue: Number(p.rawAvg) + Number(p.decayPenalty || 0),
+              avg: (Number(p.rawAvg) + Number(p.decayPenalty || 0)).toFixed(2)
+            }))
+            .sort((a, b) => Number(a.avgValue) - Number(b.avgValue))
             .slice(0, 50);
 
-          renderRows(rows);
+          renderRows(rankedRows);
         } catch (err) {
           console.error("Leaderboard load failed:", err);
           renderState("Failed to load leaderboard.");
