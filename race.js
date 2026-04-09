@@ -44,6 +44,7 @@
   const historyKeyPrefix = "wordle-race-history-";
   const PLAYER_TABLE = "battle_players";
   const WORD_TABLE = "battle_words";
+  const RACE_WORD_LENGTH = 4;
 
   const FALLBACK_WORDS = [
     "ABLE", "AREA", "BIRD", "BLUE", "BOAT", "CODE", "COLD", "CROW", "DEEP", "DRAW",
@@ -77,6 +78,7 @@
   let currentWordId = null;
   let myHistorySet = new Set();
   let opponentHistorySet = new Set();
+  let supabaseWordPool = null;
   let terminatedRooms = new Set();
   let opponentName = "Opponent";
   let opponentProgress = 0;
@@ -306,7 +308,8 @@
         void sendRaceEvent("ready", {
           uuid: currentUser.uuid,
           username: currentUser.username,
-          ready: true
+          ready: true,
+          history: Array.from(myHistorySet)
         });
       }
     }, 2200);
@@ -350,7 +353,7 @@
       const raw = localStorage.getItem(`${historyKeyPrefix}${currentUser.uuid}`);
       const parsed = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(parsed)) return new Set();
-      return new Set(parsed.map(v => Number(v)).filter(v => Number.isFinite(v) && v > 0));
+      return new Set(parsed.map((v) => normalizeWordKey(v)).filter(Boolean));
     } catch {
       return new Set();
     }
@@ -358,13 +361,14 @@
 
   function saveMyHistory() {
     if (!currentUser?.uuid) return;
-    const arr = Array.from(myHistorySet).sort((a, b) => a - b);
+    const arr = Array.from(myHistorySet).filter(Boolean).sort();
     localStorage.setItem(`${historyKeyPrefix}${currentUser.uuid}`, JSON.stringify(arr));
   }
 
   function markCurrentWordPlayed() {
-    if (!currentWordId) return;
-    myHistorySet.add(currentWordId);
+    const key = normalizeWordKey(currentWord);
+    if (!key) return;
+    myHistorySet.add(key);
     saveMyHistory();
   }
 
@@ -399,6 +403,12 @@
 
   function sanitizeRoomCode(value) {
     return (value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  }
+
+  function normalizeWordKey(value) {
+    const clean = String(value || "").toUpperCase().replace(/[^A-Z]/g, "");
+    if (clean.length !== RACE_WORD_LENGTH) return null;
+    return clean;
   }
 
   function randomRoomCode() {
@@ -442,52 +452,107 @@
     }
   }
 
-  function roomCodeToWordId(code) {
-    let hash = 0;
-    const clean = String(code || "").toUpperCase();
-    for (let i = 0; i < clean.length; i += 1) {
-      hash = (hash * 31 + clean.charCodeAt(i)) % 670;
+  function combinedBlockedWords() {
+    const blocked = new Set();
+    for (const value of myHistorySet) {
+      const key = normalizeWordKey(value);
+      if (key) blocked.add(key);
     }
-    return (hash % 670) + 1;
-  }
-
-  async function fetchBattleWordById(id) {
-    const { data, error } = await supabase
-      .from(WORD_TABLE)
-      .select("word")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (error || !data?.word) return null;
-    return String(data.word).toUpperCase();
-  }
-
-  function chooseWordIdForRoom(roomCode) {
-    const preferred = roomCodeToWordId(roomCode);
-    const blocked = new Set([...myHistorySet, ...opponentHistorySet]);
-
-    for (let offset = 0; offset < 670; offset += 1) {
-      const candidate = ((preferred - 1 + offset) % 670) + 1;
-      if (!blocked.has(candidate)) return candidate;
+    for (const value of opponentHistorySet) {
+      const key = normalizeWordKey(value);
+      if (key) blocked.add(key);
     }
-
-    return preferred;
+    return blocked;
   }
 
-  function fallbackWordForRoom(code) {
-    const idx = (roomCodeToWordId(code) - 1) % FALLBACK_WORDS.length;
-    return FALLBACK_WORDS[Math.max(0, idx)] || "RACE";
+  function randomAlphaWord(length = RACE_WORD_LENGTH) {
+    const vowels = "AEIOU";
+    const consonants = "BCDFGHJKLMNPQRSTVWXYZ";
+    let out = "";
+    for (let i = 0; i < length; i += 1) {
+      const pool = i % 2 === 1 ? vowels : consonants;
+      out += pool[Math.floor(Math.random() * pool.length)];
+    }
+    return out;
   }
 
-  async function ensureWordForRoom(code) {
+  async function isDictionaryWordOfLength(word, length = RACE_WORD_LENGTH) {
+    if (!word || word.length !== length) return false;
+    const cacheKey = `dict:${word}`;
+    if (wordValidationCache[cacheKey] !== undefined) return wordValidationCache[cacheKey];
+    try {
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`);
+      const ok = response.ok;
+      wordValidationCache[cacheKey] = ok;
+      return ok;
+    } catch {
+      wordValidationCache[cacheKey] = false;
+      return false;
+    }
+  }
+
+  async function pickDictionaryWord(blocked, length = RACE_WORD_LENGTH, maxAttempts = 24) {
+    for (let i = 0; i < maxAttempts; i += 1) {
+      const candidate = randomAlphaWord(length);
+      if (blocked.has(candidate)) continue;
+      const ok = await isDictionaryWordOfLength(candidate, length);
+      if (ok) return candidate;
+    }
+    return null;
+  }
+
+  async function getSupabaseWordPool() {
+    if (supabaseWordPool) return supabaseWordPool;
+    try {
+      const { data, error } = await supabase
+        .from(WORD_TABLE)
+        .select("word")
+        .limit(1200);
+      if (error) throw error;
+
+      const unique = new Set();
+      for (const row of data || []) {
+        const key = normalizeWordKey(row?.word);
+        if (key) unique.add(key);
+      }
+      supabaseWordPool = Array.from(unique);
+      return supabaseWordPool;
+    } catch {
+      supabaseWordPool = [];
+      return supabaseWordPool;
+    }
+  }
+
+  function pickFallbackWord(blocked) {
+    const pool = FALLBACK_WORDS.map((w) => normalizeWordKey(w)).filter(Boolean);
+    const available = pool.filter((w) => !blocked.has(w));
+    if (available.length > 0) return available[Math.floor(Math.random() * available.length)];
+    if (pool.length > 0) return pool[Math.floor(Math.random() * pool.length)];
+    return "RACE";
+  }
+
+  async function ensureWordForGame() {
     if (currentWord) return currentWord;
 
-    currentWordId = chooseWordIdForRoom(code);
-    const remote = await fetchBattleWordById(currentWordId);
-    const chosen = remote || fallbackWordForRoom(code);
+    const blocked = combinedBlockedWords();
+    const fromDictionary = await pickDictionaryWord(blocked);
+    if (fromDictionary) {
+      currentWord = fromDictionary;
+      wordLength = currentWord.length;
+      currentWordId = null;
+      return currentWord;
+    }
+
+    const pool = await getSupabaseWordPool();
+    const available = pool.filter((w) => !blocked.has(w));
+    const chosen = available.length > 0
+      ? available[Math.floor(Math.random() * available.length)]
+      : pickFallbackWord(blocked);
+
     currentWord = chosen;
-    wordLength = chosen.length;
-    return chosen;
+    wordLength = currentWord.length;
+    currentWordId = null;
+    return currentWord;
   }
 
   function formatStopwatch(ms) {
@@ -729,8 +794,8 @@
 
     startBroadcasted = true;
     const startAt = Date.now() + 800;
-    if (!currentWord) await ensureWordForRoom(currentRoom);
-    await sendRaceEvent("word_selected", { word: currentWord, wordId: currentWordId });
+    if (!currentWord) await ensureWordForGame();
+    await sendRaceEvent("word_selected", { word: currentWord, wordKey: normalizeWordKey(currentWord) });
     await sendRaceEvent("race_start", { startAt });
     setStatus("Both ready. Starting race...");
   }
@@ -745,7 +810,6 @@
     }
 
     applyLobbyRole(role, roomCode);
-    await ensureWordForRoom(roomCode);
 
     if (channel) {
       try {
@@ -763,6 +827,9 @@
         if (!payload || payload.uuid === currentUser.uuid) return;
         markOpponentSeen();
         opponentName = payload.username || opponentName || "Opponent";
+        if (Array.isArray(payload.history)) {
+          opponentHistorySet = new Set(payload.history.map((v) => normalizeWordKey(v)).filter(Boolean));
+        }
         opponentReady = Boolean(payload.ready);
         updatePresenceUI();
         setStatus(opponentReady ? "Opponent is ready. Waiting for you." : "Opponent is not ready yet.");
@@ -773,7 +840,7 @@
         markOpponentSeen();
         opponentName = payload.username || opponentName || "Opponent";
         const arr = Array.isArray(payload.history) ? payload.history : [];
-        opponentHistorySet = new Set(arr.map(v => Number(v)).filter(v => Number.isFinite(v) && v > 0));
+        opponentHistorySet = new Set(arr.map((v) => normalizeWordKey(v)).filter(Boolean));
         if (typeof payload.ready === "boolean") opponentReady = payload.ready;
         const best = Number(payload.bestCorrect);
         if (raceStarted && Number.isFinite(best) && best > opponentBestCorrect) {
@@ -814,10 +881,9 @@
       .on("broadcast", { event: "word_selected" }, ({ payload }) => {
         if (!payload?.word) return;
         markOpponentSeen();
-        currentWord = String(payload.word).toUpperCase();
+        currentWord = normalizeWordKey(payload.word) || String(payload.word).toUpperCase();
         wordLength = currentWord.length;
-        const idNum = Number(payload.wordId);
-        if (Number.isFinite(idNum) && idNum > 0) currentWordId = idNum;
+        currentWordId = null;
       })
       .on("broadcast", { event: "race_start" }, ({ payload }) => {
         markOpponentSeen();
@@ -939,7 +1005,8 @@
     await sendRaceEvent("ready", {
       uuid: currentUser.uuid,
       username: currentUser.username,
-      ready: true
+      ready: true,
+      history: Array.from(myHistorySet)
     });
     await sendProfile();
 
@@ -1148,7 +1215,8 @@
       void sendRaceEvent("ready", {
         uuid: currentUser.uuid,
         username: currentUser.username,
-        ready: true
+        ready: true,
+        history: Array.from(myHistorySet)
       });
     }
   });

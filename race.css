@@ -270,8 +270,10 @@
   display: block;
   flex: 1 1 auto;
   min-height: 0;
-  max-height: none;
+  height: min(40vh, 19rem);
+  max-height: min(40vh, 19rem);
   overflow-y: auto;
+  overflow-anchor: none;
   padding-right: 0.25rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -285,6 +287,7 @@
 
 #race-game .board {
   margin: 0 auto;
+  align-content: start;
 }
 
 #race-game .keyboard-wrap {
@@ -365,7 +368,8 @@
 
 @media (max-width: 620px) {
   #race-game .board-wrap {
-    max-height: none;
+    height: min(30vh, 13rem);
+    max-height: min(30vh, 13rem);
     padding-right: 0;
   }
 

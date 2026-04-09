@@ -50,6 +50,7 @@
   const accountMenuButton = document.getElementById("account-menu-button");
   const accountMenuPanel = document.getElementById("account-menu-panel");
   const accountActionBtn = document.getElementById("account-action-btn");
+  const passafloraThemeBtn = document.getElementById("passaflora-theme-btn");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
   const leaderboardCard = document.querySelector(".leaderboard-card");
@@ -571,14 +572,24 @@
       setTheme(nextTheme);
       localStorage.setItem(themeKey, nextTheme);
     });
+
+    passafloraThemeBtn?.addEventListener("click", () => {
+      setTheme("passaflora");
+      localStorage.setItem(themeKey, "passaflora");
+      accountMenuPanel?.classList.add("hidden");
+      accountMenuButton?.setAttribute("aria-expanded", "false");
+      showMessage("Passaflora theme on.");
+    });
   }
 
   function setTheme(theme) {
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
-    themeToggle.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
-    themeIcon.innerHTML = theme === "dark" ? sunIcon() : moonIcon();
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
+    const isDark = theme === "dark";
+    themeToggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+    themeIcon.innerHTML = isDark ? sunIcon() : moonIcon();
+    const themeColor = isDark ? "#121213" : (theme === "passaflora" ? "#eaf9ef" : "#ffffff");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
   }
 
   function moonIcon() { return `<path d="M20 13.2A7.8 7.8 0 0 1 10.8 4a8.8 8.8 0 1 0 9.2 9.2Z"></path>`; }

@@ -13,7 +13,10 @@
         var theme = saved || (prefersDark ? "dark" : "light");
         document.documentElement.setAttribute("data-theme", theme);
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
+        if (meta) {
+          var color = theme === "dark" ? "#121213" : (theme === "passaflora" ? "#eaf9ef" : "#ffffff");
+          meta.setAttribute("content", color);
+        }
       } catch (_) {}
     })();
   </script>
@@ -94,6 +97,7 @@
           </button>
           <div id="account-menu-panel" class="account-menu-panel hidden" role="menu" aria-label="Account actions">
             <button id="account-action-btn" class="account-menu-item" type="button" role="menuitem">Sign in / Sign up</button>
+            <button id="passaflora-theme-btn" class="account-menu-item" type="button" role="menuitem">Passaflora theme</button>
           </div>
         </div>
       </div>
