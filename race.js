@@ -27,6 +27,7 @@
   const raceBoardEl = document.getElementById("race-board");
   const raceKeyboardEl = document.getElementById("race-keyboard");
   const raceStopwatchEl = document.getElementById("race-stopwatch");
+  const raceLeaveButton = document.getElementById("race-leave-button");
   const opponentPressureEl = document.getElementById("opponent-pressure");
   const raceMessageEl = document.getElementById("race-game-message");
   const appLoader = document.getElementById("app-loader");
@@ -82,6 +83,9 @@
   let selfBestCorrect = 0;
   let opponentBestCorrect = 0;
   let profileHeartbeatTimer = null;
+  let opponentWatchdogTimer = null;
+  let lastOpponentSeenTs = 0;
+  let opponentLeftHandled = false;
   let leaveResolver = null;
   let lastBackPressTs = 0;
   const wordValidationCache = {};
@@ -136,6 +140,7 @@
     if (card) {
       card.classList.toggle("win", won);
       card.classList.toggle("lose", !won);
+      card.classList.remove("left");
     }
 
     raceResultModalEl.classList.remove("hidden");
@@ -224,7 +229,8 @@
       uuid: currentUser.uuid,
       username: currentUser.username,
       history: Array.from(myHistorySet),
-      ready: selfReady
+      ready: selfReady,
+      bestCorrect: selfBestCorrect
     });
   }
 
@@ -232,6 +238,57 @@
     if (!profileHeartbeatTimer) return;
     clearInterval(profileHeartbeatTimer);
     profileHeartbeatTimer = null;
+  }
+
+  function stopOpponentWatchdog() {
+    if (!opponentWatchdogTimer) return;
+    clearInterval(opponentWatchdogTimer);
+    opponentWatchdogTimer = null;
+  }
+
+  function markOpponentSeen() {
+    lastOpponentSeenTs = Date.now();
+  }
+
+  function handleOpponentLeft(reasonName) {
+    if (opponentLeftHandled || !currentRoom) return;
+    opponentLeftHandled = true;
+    raceFinished = true;
+    stopStopwatch();
+    const quitter = reasonName || opponentName || "Opponent";
+
+    setRaceMessage(`${quitter} left. Match cancelled.`);
+    setStatus("Room closed.");
+
+    showRaceResultModal({
+      won: true,
+      winnerName: currentUser?.username || "You",
+      winnerMs: raceElapsedMs,
+      word: currentWord || "-"
+    });
+
+    const card = raceResultModalEl?.querySelector(".race-result-card");
+    if (card) {
+      card.classList.remove("win", "lose");
+      card.classList.add("left");
+    }
+    if (raceResultKickerEl) raceResultKickerEl.textContent = "Match Cancelled";
+    if (raceResultTitleEl) raceResultTitleEl.textContent = "Opponent Left";
+    if (raceResultDetailsEl) {
+      raceResultDetailsEl.innerHTML = `${quitter} left the room.<br>This match has been closed.`;
+    }
+
+    if (currentRoom) terminatedRooms.add(currentRoom);
+  }
+
+  function startOpponentWatchdog() {
+    stopOpponentWatchdog();
+    opponentWatchdogTimer = setInterval(() => {
+      if (!currentRoom || !raceStarted || raceFinished || opponentLeftHandled) return;
+      if (!lastOpponentSeenTs) return;
+      if (Date.now() - lastOpponentSeenTs < 8500) return;
+      handleOpponentLeft(opponentName || "Opponent");
+    }, 1200);
   }
 
   function startProfileHeartbeat() {
@@ -580,6 +637,7 @@
     currentGuess = "";
     raceStarted = true;
     raceFinished = false;
+    opponentLeftHandled = false;
     opponentProgress = 0;
   selfBestCorrect = 0;
   opponentBestCorrect = 0;
@@ -588,6 +646,7 @@
     renderRaceBoard();
     setRaceMessage("Race started. Unlimited tries. Same Wordle rules.");
     setOpponentPressure(`${opponentName || "Opponent"}: 0/${wordLength} letters locked in`);
+    startOpponentWatchdog();
     startStopwatch(startAt);
   }
 
@@ -604,6 +663,8 @@
     selfReady = false;
     opponentReady = false;
     startBroadcasted = false;
+  opponentLeftHandled = false;
+  lastOpponentSeenTs = Date.now();
 
     if (raceTimer) {
       clearInterval(raceTimer);
@@ -621,6 +682,7 @@
     updatePresenceUI();
     void sendProfile();
     startProfileHeartbeat();
+    startOpponentWatchdog();
   }
 
   async function sendRaceEvent(event, payload) {
@@ -693,6 +755,7 @@
     channel
       .on("broadcast", { event: "ready" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid) return;
+        markOpponentSeen();
         opponentName = payload.username || opponentName || "Opponent";
         opponentReady = Boolean(payload.ready);
         updatePresenceUI();
@@ -701,19 +764,33 @@
       })
       .on("broadcast", { event: "profile" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid) return;
+        markOpponentSeen();
         opponentName = payload.username || opponentName || "Opponent";
         const arr = Array.isArray(payload.history) ? payload.history : [];
         opponentHistorySet = new Set(arr.map(v => Number(v)).filter(v => Number.isFinite(v) && v > 0));
         if (typeof payload.ready === "boolean") opponentReady = payload.ready;
+        const best = Number(payload.bestCorrect);
+        if (raceStarted && Number.isFinite(best) && best > opponentBestCorrect) {
+          opponentBestCorrect = Math.max(0, Math.min(wordLength, best));
+          opponentProgress = opponentBestCorrect;
+          if (opponentProgress > 0 && opponentProgress < wordLength) {
+            setOpponentPressure(`${opponentName}: ${opponentProgress}/${wordLength} letters locked in`);
+            opponentPressureEl?.classList.remove("pressure-pulse");
+            void opponentPressureEl?.offsetWidth;
+            opponentPressureEl?.classList.add("pressure-pulse");
+          }
+        }
         updatePresenceUI();
         setStatus(`${opponentName} joined the room.`);
       })
       .on("broadcast", { event: "presence_ping" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid) return;
+        markOpponentSeen();
         void sendProfile();
       })
       .on("broadcast", { event: "guess_progress" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid || !raceStarted || raceFinished) return;
+        markOpponentSeen();
         opponentName = payload.username || opponentName || "Opponent";
         const payloadLen = Number(payload.wordLength);
         const expectedLen = Number.isFinite(payloadLen) && payloadLen > 0 ? payloadLen : wordLength;
@@ -730,12 +807,14 @@
       })
       .on("broadcast", { event: "word_selected" }, ({ payload }) => {
         if (!payload?.word) return;
+        markOpponentSeen();
         currentWord = String(payload.word).toUpperCase();
         wordLength = currentWord.length;
         const idNum = Number(payload.wordId);
         if (Number.isFinite(idNum) && idNum > 0) currentWordId = idNum;
       })
       .on("broadcast", { event: "race_start" }, ({ payload }) => {
+        markOpponentSeen();
         const startAt = Number(payload?.startAt) || Date.now();
         setStatus("Race started.");
         enterRaceStage(startAt);
@@ -744,6 +823,7 @@
         if (!payload) return;
         if (payload.uuid === currentUser.uuid) return;
         if (raceFinished) return;
+        markOpponentSeen();
 
         raceFinished = true;
         stopStopwatch();
@@ -761,28 +841,11 @@
       })
       .on("broadcast", { event: "race_abort" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid) return;
+        markOpponentSeen();
         const roomCode = String(payload.roomCode || currentRoom || "");
         if (roomCode) terminatedRooms.add(roomCode);
         if (!currentRoom || roomCode !== currentRoom) return;
-
-        raceFinished = true;
-        stopStopwatch();
-        const quitter = payload.username || "Opponent";
-        setRaceMessage(`${quitter} left. Match cancelled.`);
-        setStatus("Room closed.");
-
-        showRaceResultModal({
-          won: true,
-          winnerName: currentUser?.username || "You",
-          winnerMs: raceElapsedMs,
-          word: currentWord || "-"
-        });
-
-        if (raceResultKickerEl) raceResultKickerEl.textContent = "Match Cancelled";
-        if (raceResultTitleEl) raceResultTitleEl.textContent = "Opponent Left";
-        if (raceResultDetailsEl) {
-          raceResultDetailsEl.innerHTML = `${quitter} left the room.<br>This match has been closed.`;
-        }
+        handleOpponentLeft(payload.username || "Opponent");
       });
 
     channel.subscribe((status) => {
@@ -793,7 +856,9 @@
           uuid: currentUser.uuid,
           username: currentUser.username
         });
+        markOpponentSeen();
         startProfileHeartbeat();
+        startOpponentWatchdog();
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
         setStatus("Connection unstable. Re-syncing room...");
       } else if (status === "CLOSED") {
@@ -804,6 +869,9 @@
     selfReady = false;
     opponentReady = false;
     opponentName = "Opponent";
+  opponentLeftHandled = false;
+  lastOpponentSeenTs = Date.now();
+  opponentBestCorrect = 0;
     startBroadcasted = false;
     readyBtn.disabled = false;
     readyBtn.textContent = "Ready";
@@ -825,6 +893,8 @@
     opponentProgress = 0;
     selfBestCorrect = 0;
     opponentBestCorrect = 0;
+  opponentLeftHandled = false;
+  lastOpponentSeenTs = 0;
 
     if (raceTimer) {
       clearInterval(raceTimer);
@@ -837,6 +907,7 @@
     }
 
     stopProfileHeartbeat();
+  stopOpponentWatchdog();
 
     const url = new URL(window.location.href);
     url.searchParams.delete("room");
@@ -1017,6 +1088,15 @@
   raceBackButton?.addEventListener("touchend", onBackPress, { passive: false });
   raceBackButton?.addEventListener("pointerup", onBackPress);
 
+  raceLeaveButton?.addEventListener("click", (e) => {
+    e.preventDefault();
+    void handleBackAttempt("index.html");
+  });
+  raceLeaveButton?.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    void handleBackAttempt("index.html");
+  }, { passive: false });
+
   raceResultOkBtn?.addEventListener("click", () => {
     closeRaceResultAndReturn();
   });
@@ -1041,6 +1121,7 @@
 
   window.addEventListener("beforeunload", async () => {
     stopProfileHeartbeat();
+    stopOpponentWatchdog();
     if (raceTimer) clearInterval(raceTimer);
     if (channel) {
       try {
