@@ -65,10 +65,15 @@
 
     .top {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 0.8rem;
       margin-bottom: 0.9rem;
+    }
+
+    .top-copy {
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .title-wrap {
@@ -113,6 +118,8 @@
       display: flex;
       align-items: center;
       gap: 0.45rem;
+      flex: 0 0 auto;
+      align-self: flex-start;
     }
 
     .btn {
@@ -527,7 +534,7 @@
 <body>
   <div class="page">
     <header class="top">
-      <div>
+      <div class="top-copy">
   <p class="eyebrow">WordShift</p>
         <div class="title-wrap">
           <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -540,7 +547,7 @@
           </svg>
           <h1>Leaderboard</h1>
         </div>
-        <p class="leaderboard-info">Decay applies only to the current top 3: after 4 inactive days, average score gets +0.15 every 2 days. Everyone else has no decay.</p>
+        <p class="leaderboard-info">Welcome to the WordShift Leaderboard. Rankings are based on average guesses, with an activity adjustment applied only to the top three players: after 4 inactive days, a +0.15 penalty is added every 2 days; all other positions remain unaffected by decay.</p>
       </div>
 
       <div class="top-actions">
