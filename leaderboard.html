@@ -68,7 +68,7 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 0.8rem;
-      margin-bottom: 0.9rem;
+      margin-bottom: 0.4rem;
     }
 
     .top-copy {
@@ -107,8 +107,8 @@
     }
 
     .leaderboard-info {
-      margin: 0.42rem 0 0;
-      max-width: 60ch;
+      margin: 0 0 1.2rem;
+      max-width: 100%;
       color: var(--muted);
       font-size: 0.88rem;
       line-height: 1.45;
@@ -535,7 +535,7 @@
   <div class="page">
     <header class="top">
       <div class="top-copy">
-  <p class="eyebrow">WordShift</p>
+        <p class="eyebrow">WordShift</p>
         <div class="title-wrap">
           <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
@@ -547,13 +547,14 @@
           </svg>
           <h1>Leaderboard</h1>
         </div>
-        <p class="leaderboard-info">Welcome to the WordShift Leaderboard. Rankings are based on average guesses, with an activity adjustment applied only to the top three players: after 4 inactive days, a +0.15 penalty is added every 2 days; all other positions remain unaffected by decay.</p>
       </div>
 
       <div class="top-actions">
         <a class="btn" href="index.html">Back</a>
       </div>
     </header>
+    
+    <p class="leaderboard-info">Welcome to the WordShift Leaderboard. Rankings are based on average guesses, with an activity adjustment applied only to the top three players: after 4 inactive days, a +0.15 penalty is added every 2 days; all other positions remain unaffected by decay.</p>
 
     <section class="shell" aria-label="Leaderboard list">
       <div class="meta">
