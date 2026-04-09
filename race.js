@@ -84,13 +84,20 @@
   let opponentProgress = 0;
   let selfBestCorrect = 0;
   let opponentBestCorrect = 0;
+  let opponentPresent = false;
+  let roomOpenedAt = 0;
+  let roomIdleTimer = null;
   let profileHeartbeatTimer = null;
   let opponentWatchdogTimer = null;
   let lastOpponentSeenTs = 0;
   let opponentLeftHandled = false;
+  let raceDrawSent = false;
   let leaveResolver = null;
   let lastBackPressTs = 0;
   const wordValidationCache = {};
+  const ROOM_IDLE_LIMIT_MS = 7 * 60 * 1000;
+  const DRAW_LIMIT_MS = 10 * 60 * 1000;
+  const OPPONENT_RECONNECT_GRACE_MS = 90 * 1000;
 
   function syncViewportHeight() {
     const rawHeight = window.visualViewport?.height || window.innerHeight;
@@ -103,8 +110,11 @@
     setTimeout(() => appLoader.classList.add("is-hidden"), 140);
   }
 
-  function setStatus(text) {
+  function setStatus(text, tone = "info") {
+    if (!statusEl) return;
     statusEl.textContent = text;
+    statusEl.classList.remove("info", "success", "warn", "loud");
+    statusEl.classList.add(tone);
   }
 
   function setRaceMessage(text) {
@@ -123,31 +133,42 @@
     el.classList.toggle("not-ready", !ready);
   }
 
+  function getOpponentDisplayName() {
+    return opponentPresent ? (opponentName || "Opponent") : "Waiting for opponent to join";
+  }
+
   function updatePresenceUI() {
     if (presenceSelfNameEl) {
       presenceSelfNameEl.textContent = currentUser?.username ? `${currentUser.username} (You)` : "You";
     }
     if (presenceOpponentNameEl) {
-      presenceOpponentNameEl.textContent = opponentName || "Waiting for opponent…";
+      presenceOpponentNameEl.textContent = getOpponentDisplayName();
     }
     setReadyBadge(presenceSelfReadyEl, selfReady);
     setReadyBadge(presenceOpponentReadyEl, opponentReady);
   }
 
-  function showRaceResultModal({ won, winnerName, winnerMs, word }) {
+  function showRaceResultModal({ won, winnerName, winnerMs, word, isDraw = false }) {
     if (!raceResultModalEl) return;
     const shownWord = (word || currentWord || "").toUpperCase();
     const finalWinnerName = winnerName || (won ? currentUser?.username || "You" : opponentName || "Opponent");
     const finalWinnerMs = Number.isFinite(winnerMs) ? winnerMs : won ? raceElapsedMs : null;
 
-    raceResultKickerEl.textContent = "Race Complete";
-    raceResultTitleEl.textContent = won ? "You Won 🏁" : "You Lost";
-    raceResultDetailsEl.innerHTML = `${finalWinnerName} won${finalWinnerMs !== null ? ` in <strong>${formatStopwatch(finalWinnerMs)}</strong>` : ""}.<br>Word was: <strong>${shownWord}</strong>`;
+    if (isDraw) {
+      raceResultKickerEl.textContent = "Time limit reached";
+      raceResultTitleEl.textContent = "Draw";
+      raceResultDetailsEl.innerHTML = `10:00 reached with no winner.<br>Word was: <strong>${shownWord}</strong>`;
+    } else {
+      raceResultKickerEl.textContent = "Race Complete";
+      raceResultTitleEl.textContent = won ? "You Won 🏁" : "You Lost";
+      raceResultDetailsEl.innerHTML = `${finalWinnerName} won${finalWinnerMs !== null ? ` in <strong>${formatStopwatch(finalWinnerMs)}</strong>` : ""}.<br>Word was: <strong>${shownWord}</strong>`;
+    }
 
     const card = raceResultModalEl.querySelector(".race-result-card");
     if (card) {
+      card.classList.toggle("draw", isDraw);
       card.classList.toggle("win", won);
-      card.classList.toggle("lose", !won);
+      card.classList.toggle("lose", !won && !isDraw);
       card.classList.remove("left");
     }
 
@@ -255,7 +276,51 @@
   }
 
   function markOpponentSeen() {
+    opponentPresent = true;
     lastOpponentSeenTs = Date.now();
+  }
+
+  function stopRoomIdleWatchdog() {
+    if (!roomIdleTimer) return;
+    clearInterval(roomIdleTimer);
+    roomIdleTimer = null;
+  }
+
+  function startRoomIdleWatchdog() {
+    stopRoomIdleWatchdog();
+    roomIdleTimer = setInterval(() => {
+      if (!currentRoom || raceStarted || raceFinished || opponentPresent) return;
+      if (!roomOpenedAt) return;
+      if (Date.now() - roomOpenedAt < ROOM_IDLE_LIMIT_MS) return;
+      setStatus("Room expired after 7 minutes with no second player.", "warn");
+      void terminateCurrentRoomForAll("room_idle_timeout", false);
+    }, 5000);
+  }
+
+  async function handleRaceDraw(localTrigger = false, remoteWord = null) {
+    if (raceFinished) return;
+    raceFinished = true;
+    stopStopwatch();
+    markCurrentWordPlayed();
+    setRaceMessage("10:00 reached — this match is a draw.");
+    setStatus("Match drawn at 10:00.", "warn");
+
+    if (localTrigger && channel && !raceDrawSent) {
+      raceDrawSent = true;
+      await sendRaceEvent("race_draw", {
+        uuid: currentUser.uuid,
+        username: currentUser.username,
+        word: currentWord
+      });
+    }
+
+    showRaceResultModal({
+      won: false,
+      winnerName: null,
+      winnerMs: null,
+      word: remoteWord || currentWord,
+      isDraw: true
+    });
   }
 
   function handleOpponentLeft(reasonName) {
@@ -294,7 +359,13 @@
     opponentWatchdogTimer = setInterval(() => {
       if (!currentRoom || !raceStarted || raceFinished || opponentLeftHandled) return;
       if (!lastOpponentSeenTs) return;
-      if (Date.now() - lastOpponentSeenTs < 8500) return;
+      if (!opponentPresent) return;
+      const sinceSeen = Date.now() - lastOpponentSeenTs;
+      if (sinceSeen < 25000) return;
+      if (sinceSeen < OPPONENT_RECONNECT_GRACE_MS) {
+        setStatus("Opponent connection unstable. Waiting for reconnection…", "warn");
+        return;
+      }
       handleOpponentLeft(opponentName || "Opponent");
     }, 1200);
   }
@@ -564,7 +635,11 @@
 
   function tickStopwatch() {
     if (!raceStarted || raceFinished) return;
-    raceStopwatchEl.textContent = formatStopwatch(Date.now() - raceStartTs);
+    const elapsed = Date.now() - raceStartTs;
+    raceStopwatchEl.textContent = formatStopwatch(elapsed);
+    if (elapsed >= DRAW_LIMIT_MS) {
+      void handleRaceDraw(true);
+    }
   }
 
   function startStopwatch(startAt) {
@@ -709,6 +784,7 @@
     raceStarted = true;
     raceFinished = false;
     opponentLeftHandled = false;
+  raceDrawSent = false;
     opponentProgress = 0;
   selfBestCorrect = 0;
   opponentBestCorrect = 0;
@@ -716,7 +792,7 @@
     buildRaceKeyboard();
     renderRaceBoard();
     setRaceMessage("Race started. Unlimited tries. Same Wordle rules.");
-    setOpponentPressure(`${opponentName || "Opponent"}: 0/${wordLength} letters locked in`);
+    setOpponentPressure(`${getOpponentDisplayName()}: 0/${wordLength} letters locked in`);
     startOpponentWatchdog();
     startStopwatch(startAt);
   }
@@ -735,6 +811,7 @@
     opponentReady = false;
     startBroadcasted = false;
   opponentLeftHandled = false;
+  raceDrawSent = false;
   lastOpponentSeenTs = Date.now();
 
     if (raceTimer) {
@@ -749,7 +826,7 @@
     readyBtn.textContent = "Ready";
     setOpponentPressure("");
     setRaceMessage("Waiting to start…");
-    setStatus("Round finished. Ready up for another game.");
+  setStatus("Round finished. Toggle Ready when you want a rematch.", "info");
     updatePresenceUI();
     void sendProfile();
     startProfileHeartbeat();
@@ -778,12 +855,12 @@
       roomRoleEl.textContent = "You are Host";
       roomHintEl.textContent = "Share this code with your challenger.";
       copyLinkBtn.classList.remove("hidden");
-      setStatus("Room created. Waiting for challenger to join and ready up.");
+      setStatus("Room live. Share code. Room expires in 7 minutes if no one joins.", "loud");
     } else {
       roomRoleEl.textContent = "You are Challenger";
       roomHintEl.textContent = "You joined this room. Ready up to start.";
       copyLinkBtn.classList.add("hidden");
-      setStatus("Joined room. Click Ready.");
+      setStatus("Connected. Toggle Ready when prepared.", "success");
     }
     updatePresenceUI();
   }
@@ -827,12 +904,13 @@
         if (!payload || payload.uuid === currentUser.uuid) return;
         markOpponentSeen();
         opponentName = payload.username || opponentName || "Opponent";
+        opponentPresent = true;
         if (Array.isArray(payload.history)) {
           opponentHistorySet = new Set(payload.history.map((v) => normalizeWordKey(v)).filter(Boolean));
         }
         opponentReady = Boolean(payload.ready);
         updatePresenceUI();
-        setStatus(opponentReady ? "Opponent is ready. Waiting for you." : "Opponent is not ready yet.");
+        setStatus(opponentReady ? `${opponentName} is ready. You can start now.` : `${opponentName} is in room.`, opponentReady ? "success" : "info");
         void maybeStartRace();
       })
       .on("broadcast", { event: "profile" }, ({ payload }) => {
@@ -854,7 +932,7 @@
           }
         }
         updatePresenceUI();
-        setStatus(`${opponentName} joined the room.`);
+        setStatus(`${opponentName} joined the room.`, "success");
       })
       .on("broadcast", { event: "presence_ping" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid) return;
@@ -888,7 +966,7 @@
       .on("broadcast", { event: "race_start" }, ({ payload }) => {
         markOpponentSeen();
         const startAt = Number(payload?.startAt) || Date.now();
-        setStatus("Race started.");
+        setStatus("Race started. 10-minute limit active.", "loud");
         enterRaceStage(startAt);
       })
       .on("broadcast", { event: "race_finish" }, ({ payload }) => {
@@ -903,13 +981,18 @@
         opponentName = payload.username || opponentName || "Opponent";
         setRaceMessage(`You lost. ${opponentName} solved first.`);
         setOpponentPressure(`${opponentName} finished the word.`);
-        setStatus("Race complete.");
+        setStatus("Race complete.", "success");
         showRaceResultModal({
           won: false,
           winnerName: opponentName,
           winnerMs: Number(payload.elapsedMs),
           word: payload.word || currentWord
         });
+      })
+      .on("broadcast", { event: "race_draw" }, ({ payload }) => {
+        if (!payload || payload.uuid === currentUser.uuid || raceFinished) return;
+        markOpponentSeen();
+        void handleRaceDraw(false, payload.word || currentWord);
       })
       .on("broadcast", { event: "race_abort" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid) return;
@@ -922,7 +1005,7 @@
 
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
-        setStatus(role === "host" ? "Room live. Share code and click Ready." : "Connected to room. Click Ready.");
+        setStatus(role === "host" ? "Room online. Share code and toggle Ready." : "Room connected. Toggle Ready to queue.", "loud");
         void sendProfile();
         void sendRaceEvent("presence_ping", {
           uuid: currentUser.uuid,
@@ -932,21 +1015,25 @@
         startProfileHeartbeat();
         startOpponentWatchdog();
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        setStatus("Connection unstable. Re-syncing room...");
+        setStatus("Connection unstable. Re-syncing room...", "warn");
       } else if (status === "CLOSED") {
-        setStatus("Connection closed. Rejoin room if needed.");
+        setStatus("Connection closed. Rejoin room if needed.", "warn");
       }
     });
 
     selfReady = false;
     opponentReady = false;
-    opponentName = "Opponent";
+    opponentName = "";
+    opponentPresent = false;
   opponentLeftHandled = false;
   lastOpponentSeenTs = Date.now();
   opponentBestCorrect = 0;
+  roomOpenedAt = Date.now();
     startBroadcasted = false;
     readyBtn.disabled = false;
     readyBtn.textContent = "Ready";
+    readyBtn.classList.remove("is-ready");
+    startRoomIdleWatchdog();
     updatePresenceUI();
   }
 
@@ -965,6 +1052,7 @@
     opponentProgress = 0;
     selfBestCorrect = 0;
     opponentBestCorrect = 0;
+    opponentPresent = false;
   opponentLeftHandled = false;
   lastOpponentSeenTs = 0;
 
@@ -980,6 +1068,7 @@
 
     stopProfileHeartbeat();
   stopOpponentWatchdog();
+  stopRoomIdleWatchdog();
 
     const url = new URL(window.location.href);
     url.searchParams.delete("room");
@@ -990,28 +1079,40 @@
     createStage.classList.remove("hidden");
     readyBtn.disabled = false;
     readyBtn.textContent = "Ready";
-    setStatus("Create room or join with a code.");
+    setStatus("Create room or join with a code.", "info");
     setOpponentPressure("");
   }
 
   async function handleReady() {
-    if (!currentRoom || raceStarted) return;
+    if (!currentRoom || raceStarted || startBroadcasted) return;
 
-    selfReady = true;
-    readyBtn.disabled = true;
-    readyBtn.textContent = "Ready ✓";
+    selfReady = !selfReady;
+    readyBtn.disabled = false;
+    readyBtn.textContent = selfReady ? "Ready ✓" : "Ready";
+    readyBtn.classList.toggle("is-ready", selfReady);
     updatePresenceUI();
 
     await sendRaceEvent("ready", {
       uuid: currentUser.uuid,
       username: currentUser.username,
-      ready: true,
+      ready: selfReady,
       history: Array.from(myHistorySet)
     });
     await sendProfile();
 
-    setStatus(opponentReady ? "Both ready. Starting..." : "Ready. Waiting for opponent...");
-    await maybeStartRace();
+    if (selfReady && opponentReady) {
+      setStatus("Both ready. Starting...", "success");
+      readyBtn.disabled = true;
+      readyBtn.textContent = "Starting…";
+      await maybeStartRace();
+      return;
+    }
+
+    if (selfReady) {
+      setStatus(opponentPresent ? `${opponentName} is in room. Waiting for them to ready.` : "Ready set. Waiting for opponent to join.", "info");
+    } else {
+      setStatus("You are unready.", "info");
+    }
   }
 
   async function createRoom() {

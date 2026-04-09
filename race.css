@@ -148,6 +148,26 @@
   margin-top: 0.7rem;
 }
 
+#ready-btn {
+  background: linear-gradient(140deg, color-mix(in srgb, var(--correct) 70%, #fff 30%), var(--correct));
+  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--correct) 76%, #000 24%);
+  box-shadow: 0 9px 20px color-mix(in srgb, var(--correct) 30%, transparent);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#ready-btn.is-ready {
+  background: linear-gradient(140deg, #3f8f4d, #2f7a40);
+  color: #fff;
+  border-color: #2b6f39;
+  box-shadow: 0 10px 22px rgba(47, 122, 64, 0.34);
+}
+
+#ready-btn:disabled {
+  opacity: 0.92;
+}
+
 .player-presence {
   margin-top: 0.8rem;
   display: grid;
@@ -200,7 +220,33 @@
   margin: 0.9rem 0 0;
   min-height: 1.25rem;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+  border-radius: 11px;
+  padding: 0.48rem 0.6rem;
+}
+
+.race-status.info {
+  color: var(--muted);
+}
+
+.race-status.success {
+  color: color-mix(in srgb, var(--correct) 78%, var(--text));
+  border-color: color-mix(in srgb, var(--correct) 46%, var(--border));
+  background: color-mix(in srgb, var(--correct) 12%, transparent);
+}
+
+.race-status.warn {
+  color: color-mix(in srgb, #f59e0b 72%, var(--text));
+  border-color: color-mix(in srgb, #f59e0b 38%, var(--border));
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+}
+
+.race-status.loud {
+  color: color-mix(in srgb, #3b82f6 72%, var(--text));
+  border-color: color-mix(in srgb, #3b82f6 42%, var(--border));
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
 }
 
 .opponent-pressure {
@@ -339,6 +385,13 @@
   background: var(--surface);
   background:
     radial-gradient(120% 85% at 0% 0%, color-mix(in srgb, #3b82f6 14%, transparent), transparent 58%),
+    linear-gradient(165deg, color-mix(in srgb, var(--bg) 90%, var(--surface) 10%), var(--surface));
+}
+
+.race-result-card.draw {
+  border-color: color-mix(in srgb, #60a5fa 58%, var(--border));
+  background:
+    radial-gradient(120% 85% at 0% 0%, color-mix(in srgb, #60a5fa 14%, transparent), transparent 58%),
     linear-gradient(165deg, color-mix(in srgb, var(--bg) 90%, var(--surface) 10%), var(--surface));
 }
 
