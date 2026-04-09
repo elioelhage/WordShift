@@ -131,6 +131,16 @@
       padding: 1rem;
     }
 
+    :root:not([data-theme="dark"]) .shell {
+      background: #121213;
+      border-color: #34363a;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.36);
+    }
+
+    :root:not([data-theme="dark"]) .shell .meta {
+      color: #a0a4af;
+    }
+
     .meta {
       display: flex;
       justify-content: space-between;
@@ -285,6 +295,38 @@
     .item.rank-2 .rank,
     .item.rank-3 .rank {
       color: rgba(20, 20, 20, 0.65);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-1 .rank,
+    :root:not([data-theme="dark"]) .item.rank-2 .rank,
+    :root:not([data-theme="dark"]) .item.rank-3 .rank {
+      font-size: 0.96rem;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      padding: 0.14rem 0.46rem;
+      border-radius: 999px;
+      line-height: 1;
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-1 .rank {
+      color: #5b4300;
+      background: rgba(255, 225, 120, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(226, 173, 33, 0.6), 0 3px 10px rgba(239, 178, 33, 0.35);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-2 .rank {
+      color: #1f2c3f;
+      background: rgba(228, 236, 247, 0.96);
+      box-shadow: inset 0 0 0 1px rgba(137, 156, 180, 0.62), 0 3px 10px rgba(120, 141, 169, 0.3);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-3 .rank {
+      color: #4b2a12;
+      background: rgba(228, 184, 138, 0.92);
+      box-shadow: inset 0 0 0 1px rgba(148, 89, 41, 0.55), 0 3px 10px rgba(170, 99, 44, 0.28);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
     }
 
     .medal {

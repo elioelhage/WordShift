@@ -1390,7 +1390,11 @@
   }
 
   function showEndModal(won) {
-    endTitle.textContent = won ? "You got it." : `The word was ${solution}`;
+    if (won) {
+      endTitle.textContent = "You got it.";
+    } else {
+      endTitle.innerHTML = `The word was <span class="modal-word-highlight">${solution}</span>`;
+    }
     modal.classList.remove("hidden");
     startCountdown();
   }

@@ -478,6 +478,13 @@ a.icon-button {
 .modal__title { margin: 0; font-size: clamp(1.35rem, 4.8vw, 1.8rem); }
 .modal__countdown { min-height: 1.2rem; margin: 0.55rem 0 1rem; color: var(--muted); font-size: 0.96rem; }
 
+.modal-word-highlight {
+  color: var(--correct);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .primary-button { width: 100%; border: none; border-radius: 14px; background: var(--text); color: var(--bg); padding: 0.9rem 1rem; font-weight: 800; cursor: pointer; }
 
 .close-top-right { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 24px; color: var(--muted); cursor: pointer; }
