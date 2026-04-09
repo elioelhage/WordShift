@@ -56,13 +56,11 @@
   <a id="race-lobby-button" class="icon-button" href="race.html" aria-label="Open race lobby" title="Race lobby">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M5 3v18"></path>
-            <path d="M5 4h9l-2 3 2 3H5"></path>
-            <path d="M19 8v13"></path>
-            <path d="M19 9h-8l2 3-2 3h8"></path>
+            <path d="M5 4h12l-2.2 4 2.2 4H5"></path>
           </svg>
         </a>
 
-        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards">
+        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards" title="Leaderboards">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
             <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
@@ -85,6 +83,19 @@
         <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode">
           <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
         </button>
+
+        <div class="account-menu-wrap">
+          <button id="account-menu-button" class="icon-button" type="button" aria-label="Account menu" title="Account menu" aria-expanded="false" aria-controls="account-menu-panel">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="5" cy="12" r="2"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+              <circle cx="19" cy="12" r="2"></circle>
+            </svg>
+          </button>
+          <div id="account-menu-panel" class="account-menu-panel hidden" role="menu" aria-label="Account actions">
+            <button id="account-action-btn" class="account-menu-item" type="button" role="menuitem">Sign in / Sign up</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -130,12 +141,6 @@
       <div id="stats-view" class="hidden">
         <div class="lb-header">
           <h2 class="modal__title">Leaderboards</h2>
-          <button id="leaderboard-logout-button" class="leaderboard-logout" type="button" aria-label="Log out" title="Log out" style="display:none;">
-            <svg viewBox="0 0 24 24">
-              <path d="M16 17l5-5-5-5M21 12H9"></path>
-              <path d="M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"></path>
-            </svg>
-          </button>
         </div>
         <div class="tab-content">
           <div id="lb-loading" class="lb-loading">Loading...</div>

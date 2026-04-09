@@ -35,6 +35,9 @@
   const raceResultTitleEl = document.getElementById("race-result-title");
   const raceResultDetailsEl = document.getElementById("race-result-details");
   const raceResultOkBtn = document.getElementById("race-result-ok");
+  const raceLeaveModalEl = document.getElementById("race-leave-modal");
+  const raceLeaveCancelBtn = document.getElementById("race-leave-cancel");
+  const raceLeaveConfirmBtn = document.getElementById("race-leave-confirm");
 
   const userKey = "wordle-user-data-v2";
   const historyKeyPrefix = "wordle-race-history-";
@@ -79,6 +82,8 @@
   let selfBestCorrect = 0;
   let opponentBestCorrect = 0;
   let profileHeartbeatTimer = null;
+  let leaveResolver = null;
+  let lastBackPressTs = 0;
   const wordValidationCache = {};
 
   function hideLoader() {
@@ -149,6 +154,27 @@
     return Boolean(currentRoom && raceStarted && !raceFinished);
   }
 
+  function askLeaveConfirmation() {
+    return new Promise((resolve) => {
+      if (!raceLeaveModalEl) {
+        resolve(false);
+        return;
+      }
+      leaveResolver = resolve;
+      raceLeaveModalEl.classList.remove("hidden");
+      raceLeaveConfirmBtn?.focus();
+    });
+  }
+
+  function closeLeaveModal(result) {
+    if (raceLeaveModalEl) raceLeaveModalEl.classList.add("hidden");
+    if (leaveResolver) {
+      const done = leaveResolver;
+      leaveResolver = null;
+      done(Boolean(result));
+    }
+  }
+
   async function terminateCurrentRoomForAll(reason, byUserAction = false) {
     if (!currentRoom) return;
     const roomCode = currentRoom;
@@ -178,10 +204,8 @@
       return;
     }
 
-    const first = window.confirm("Are you sure you want to leave this room? This will end the match for both players.");
-    if (!first) return;
-    const second = window.confirm("Final confirmation: leave now and end this room for both players?");
-    if (!second) return;
+    const confirmed = await askLeaveConfirmation();
+    if (!confirmed) return;
 
     await terminateCurrentRoomForAll("manual_leave", true);
     window.location.href = destinationHref || "index.html";
@@ -978,14 +1002,29 @@
     void handleReady();
   });
 
-  raceBackButton?.addEventListener("click", (e) => {
+  const onBackPress = (e) => {
     e.preventDefault();
+    const now = Date.now();
+    if (now - lastBackPressTs < 260) return;
+    lastBackPressTs = now;
+    raceBackButton?.classList.add("pressed");
+    window.setTimeout(() => raceBackButton?.classList.remove("pressed"), 140);
     const href = raceBackButton.getAttribute("href") || "index.html";
     void handleBackAttempt(href);
-  });
+  };
+
+  raceBackButton?.addEventListener("click", onBackPress);
+  raceBackButton?.addEventListener("touchend", onBackPress, { passive: false });
+  raceBackButton?.addEventListener("pointerup", onBackPress);
 
   raceResultOkBtn?.addEventListener("click", () => {
     closeRaceResultAndReturn();
+  });
+
+  raceLeaveCancelBtn?.addEventListener("click", () => closeLeaveModal(false));
+  raceLeaveConfirmBtn?.addEventListener("click", () => closeLeaveModal(true));
+  raceLeaveModalEl?.addEventListener("click", (e) => {
+    if (e.target === raceLeaveModalEl) closeLeaveModal(false);
   });
 
   document.addEventListener("keydown", (e) => {

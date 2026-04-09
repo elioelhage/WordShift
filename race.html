@@ -50,7 +50,6 @@
 					</svg>
 					<h1>Race Lobby</h1>
 				</div>
-				<p class="author-credit">Private rooms (host + opponent)</p>
 			</div>
 
 			<div class="topbar__right">
@@ -136,6 +135,18 @@
 			<h2 class="modal__title" id="race-result-title">Result</h2>
 			<p class="modal__countdown" id="race-result-details"></p>
 			<button id="race-result-ok" class="primary-button" type="button">OK</button>
+		</div>
+	</div>
+
+	<div id="race-leave-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="race-leave-title">
+		<div class="modal__card race-leave-card">
+			<p class="modal__kicker">Leave room</p>
+			<h2 id="race-leave-title" class="modal__title">Leave this match?</h2>
+			<p class="modal__countdown">If you leave now, this room and match end for both players.</p>
+			<div class="race-leave-actions">
+				<button id="race-leave-cancel" class="primary-button race-leave-cancel" type="button">Stay</button>
+				<button id="race-leave-confirm" class="primary-button race-leave-confirm" type="button">Leave room</button>
+			</div>
 		</div>
 	</div>
 

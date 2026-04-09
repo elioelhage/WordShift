@@ -10,6 +10,20 @@
   backdrop-filter: none;
 }
 
+#race-back-button {
+  touch-action: manipulation;
+  transition: transform 120ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+#race-back-button:hover {
+  transform: translateY(-1px);
+}
+
+#race-back-button:active,
+#race-back-button.pressed {
+  transform: translateY(1px) scale(0.98);
+}
+
 .race-main {
   flex: 1;
   display: grid;
@@ -280,6 +294,29 @@
 
 .race-result-card.lose {
   border-color: color-mix(in srgb, var(--present) 48%, var(--border));
+}
+
+.race-leave-card {
+  border-radius: 24px;
+  background:
+    radial-gradient(120% 85% at 0% 0%, color-mix(in srgb, var(--present) 10%, transparent), transparent 58%),
+    linear-gradient(165deg, color-mix(in srgb, var(--bg) 90%, var(--surface) 10%), var(--surface));
+}
+
+.race-leave-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.race-leave-cancel {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.race-leave-confirm {
+  background: linear-gradient(140deg, #dc2626, #b91c1c);
+  color: #fff;
 }
 
 @media (max-width: 620px) {

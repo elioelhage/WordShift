@@ -45,6 +45,9 @@
   const passwordInput = document.getElementById("password-input");
   const leaderboardBtn = document.getElementById("leaderboard-button");
   const raceLobbyBtn = document.getElementById("race-lobby-button");
+  const accountMenuButton = document.getElementById("account-menu-button");
+  const accountMenuPanel = document.getElementById("account-menu-panel");
+  const accountActionBtn = document.getElementById("account-action-btn");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
   const leaderboardCard = document.querySelector(".leaderboard-card");
@@ -204,11 +207,9 @@
     hideAppLoader();
 
     if (raceLoginIntent) {
-      openLeaderboard();
+      openAuthModal("Login to continue to Race Lobby.");
       usernameView.classList.remove("hidden");
       statsView.classList.add("hidden");
-      usernameError.textContent = "Login to continue to Race Lobby.";
-      usernameError.classList.remove("hidden");
       const cleanUrl = new URL(window.location.href);
       cleanUrl.searchParams.delete("raceLogin");
       cleanUrl.searchParams.delete("room");
@@ -360,36 +361,57 @@
   }
 
   function bindEvents() {
-    const logoutBtn = document.getElementById("leaderboard-logout-button");
-    if (logoutBtn) {
-      let logoutTriggered = false;
-      const triggerLogout = (e) => {
-        e.preventDefault();
-        if (logoutTriggered) return;
-        logoutTriggered = true;
-        logoutLeaderboardAccount();
-        window.setTimeout(() => { logoutTriggered = false; }, 260);
-      };
-      logoutBtn.addEventListener("pointerup", triggerLogout);
-      logoutBtn.addEventListener("click", triggerLogout);
-    }
     closeModal.addEventListener("click", hideEndModal);
 
     // Initialize global tooltip portal (so tooltips are not clipped by modal/tab overflow)
     initGlobalTooltips();
 
-    leaderboardBtn.addEventListener("click", openLeaderboard);
+    leaderboardBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.body.classList.add("page-transition-out");
+      window.setTimeout(() => {
+        window.location.href = "leaderboard.html";
+      }, 200);
+    });
+
+    accountMenuButton?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isHidden = accountMenuPanel.classList.contains("hidden");
+      accountMenuPanel.classList.toggle("hidden", !isHidden);
+      accountMenuButton.setAttribute("aria-expanded", String(isHidden));
+      refreshAccountMenuAction();
+    });
+
+    accountActionBtn?.addEventListener("click", () => {
+      const userData = getUserData();
+      accountMenuPanel.classList.add("hidden");
+      accountMenuButton?.setAttribute("aria-expanded", "false");
+
+      if (userData?.username) {
+        logoutLeaderboardAccount();
+        showMessage("Logged out.");
+      } else {
+        openAuthModal("Sign in to sync your stats across devices.");
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!accountMenuPanel || !accountMenuButton) return;
+      const insideMenu = accountMenuPanel.contains(e.target);
+      const insideBtn = accountMenuButton.contains(e.target);
+      if (!insideMenu && !insideBtn) {
+        accountMenuPanel.classList.add("hidden");
+        accountMenuButton.setAttribute("aria-expanded", "false");
+      }
+    });
+
     if (raceLobbyBtn) {
       raceLobbyBtn.addEventListener("click", (e) => {
         e.preventDefault();
         const userData = getUserData();
 
         if (!userData?.username) {
-          openLeaderboard();
-          usernameView.classList.remove("hidden");
-          statsView.classList.add("hidden");
-          usernameError.textContent = "Create or login to your account before entering Race Lobby.";
-          usernameError.classList.remove("hidden");
+          openAuthModal("Create or login to your account before entering Race Lobby.");
           return;
         }
 
@@ -399,7 +421,10 @@
         }, 200);
       });
     }
-    closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
+    closeLeaderboardBtn.addEventListener("click", () => {
+      leaderboardModal.classList.add("hidden");
+      usernameError.classList.add("hidden");
+    });
 
     saveUsernameBtn.addEventListener("click", async () => {
       const name = usernameInput.value.trim();
@@ -477,9 +502,12 @@
           return;
         }
 
-        usernameView.classList.add("hidden");
-        statsView.classList.remove("hidden");
-        loadLeaderboardData("avg");
+        leaderboardModal.classList.add("hidden");
+        usernameView.classList.remove("hidden");
+        statsView.classList.add("hidden");
+        usernameError.classList.add("hidden");
+        refreshAccountMenuAction();
+        showMessage("Account ready.");
       } catch (error) {
         console.error("Save error:", error);
         usernameError.textContent = "Could not save. Try again.";
@@ -490,13 +518,7 @@
       }
     });
 
-    tabBtns.forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        tabBtns.forEach(b => b.classList.remove("active"));
-        e.target.classList.add("active");
-        loadLeaderboardData(e.target.dataset.tab);
-      });
-    });
+    refreshAccountMenuAction();
   }
 
   function initializeDailyNotifications() {
@@ -639,19 +661,15 @@
     }, { passive: true });
   }
 
-  function openLeaderboard() {
+  function openAuthModal(promptText = "") {
     leaderboardModal.classList.remove("hidden");
-    const logoutBtn = document.getElementById("leaderboard-logout-button");
-    const userData = getUserData();
-    if (logoutBtn) logoutBtn.style.display = userData.username ? "grid" : "none";
-
-    if (!userData.username) {
-      usernameView.classList.remove("hidden");
-      statsView.classList.add("hidden");
+    usernameView.classList.remove("hidden");
+    statsView.classList.add("hidden");
+    if (promptText) {
+      usernameError.textContent = promptText;
+      usernameError.classList.remove("hidden");
     } else {
-      usernameView.classList.add("hidden");
-      statsView.classList.remove("hidden");
-      loadLeaderboardData("avg");
+      usernameError.classList.add("hidden");
     }
   }
 
@@ -666,6 +684,13 @@
     localStorage.setItem(userKey, JSON.stringify(freshUser));
     statsView.classList.add("hidden");
     usernameView.classList.remove("hidden");
+    refreshAccountMenuAction();
+  }
+
+  function refreshAccountMenuAction() {
+    if (!accountActionBtn) return;
+    const userData = getUserData();
+    accountActionBtn.textContent = userData?.username ? "Log out" : "Sign in / Sign up";
   }
 
   async function loadLeaderboardData(type) {
