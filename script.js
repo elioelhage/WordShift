@@ -120,6 +120,7 @@
   let loaderFailsafeTimer = null;
   let walkthroughLengthTimer = null;
   let walkthroughLengthFrame = 0;
+  let secureBootFailed = false;
 
   function safeHardRefresh(delay = 220) {
     const url = new URL(window.location.href);
@@ -143,6 +144,31 @@
     if (!loaderFailsafeTimer) return;
     clearTimeout(loaderFailsafeTimer);
     loaderFailsafeTimer = null;
+  }
+
+  function enterSecureBootFailureState(reasonText = "") {
+    secureBootFailed = true;
+    wordLength = 5;
+    maxRows = 6;
+    maxHints = 0;
+    boardState = Array.from({ length: maxRows }, () => null);
+
+    setupTheme();
+    setMetaText();
+    buildBoard();
+    buildKeyboard();
+    updateHintBadge();
+    bindEvents();
+    initializeDailyNotifications();
+    scheduleDayRolloverReset();
+
+    keyboardEl.style.opacity = "0.45";
+    keyboardEl.style.pointerEvents = "none";
+    gameOver = true;
+    isSubmitting = false;
+
+    const details = reasonText ? ` (${reasonText})` : "";
+    showMessage(`Daily service unavailable${details}. Deploy edge functions: wordle-session + wordle-guess.`);
   }
   let walkthroughStep = 0;
 
@@ -310,7 +336,8 @@
     maybeShowFirstTimeWalkthrough();
   }).catch((err) => {
     console.error("Initialization failed:", err);
-    showMessage("Something failed to load. Please try again.");
+    const rawMessage = typeof err?.message === "string" ? err.message : "";
+    enterSecureBootFailureState(rawMessage.slice(0, 140));
   }).finally(() => {
     hideAppLoader();
   });
@@ -1193,6 +1220,7 @@
   }
 
   function handleKey(key) {
+    if (secureBootFailed) return;
     if (gameOver || isSubmitting) return;
 
     if (key === "ENTER") return submitGuess();
