@@ -135,7 +135,6 @@
   let loaderFailsafeTimer = null;
   let walkthroughLengthTimer = null;
   let walkthroughLengthFrame = 0;
-  let walkthroughSkipHideTimer = null;
 
   function safeHardRefresh(delay = 220) {
     const url = new URL(window.location.href);
@@ -479,24 +478,8 @@
     const isLastStep = walkthroughStep === walkthroughSteps.length - 1;
     const hideSkip = walkthroughStep >= 3;
     walkthroughActions?.classList.toggle("skip-collapsed", hideSkip);
-    if (walkthroughSkipBtn) {
-      if (hideSkip) {
-        walkthroughSkipBtn.classList.add("is-leaving");
-        if (walkthroughSkipHideTimer) clearTimeout(walkthroughSkipHideTimer);
-        walkthroughSkipHideTimer = window.setTimeout(() => {
-          walkthroughSkipBtn.classList.add("hidden");
-          walkthroughSkipBtn.classList.remove("is-leaving");
-          walkthroughSkipHideTimer = null;
-        }, 180);
-      } else {
-        if (walkthroughSkipHideTimer) {
-          clearTimeout(walkthroughSkipHideTimer);
-          walkthroughSkipHideTimer = null;
-        }
-        walkthroughSkipBtn.classList.remove("hidden");
-        requestAnimationFrame(() => walkthroughSkipBtn.classList.remove("is-leaving"));
-      }
-    }
+    walkthroughActions?.classList.toggle("final-step-actions", isLastStep);
+    walkthroughSkipBtn?.classList.toggle("hidden", hideSkip);
     walkthroughPrevBtn.disabled = walkthroughStep === 0;
     walkthroughNextBtn.textContent = isLastStep ? "Play without account" : "Next";
     if (walkthroughAccountBtn) walkthroughAccountBtn.textContent = "Play with account";

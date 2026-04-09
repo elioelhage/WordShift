@@ -604,6 +604,11 @@ a.icon-button {
   margin-inline: auto;
 }
 
+.walkthrough-actions.skip-collapsed.final-step-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 34rem);
+}
+
 .walkthrough-skip,
 .walkthrough-prev,
 .walkthrough-account {
@@ -615,17 +620,6 @@ a.icon-button {
 .walkthrough-account {
   white-space: normal;
   line-height: 1.15;
-}
-
-.walkthrough-skip {
-  transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
-}
-
-.walkthrough-skip.is-leaving {
-  opacity: 0;
-  transform: translateY(-4px) scale(0.97);
-  filter: blur(1px);
-  pointer-events: none;
 }
 
 .walkthrough-next-secondary {
