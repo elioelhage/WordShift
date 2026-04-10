@@ -98,6 +98,7 @@
   const solutionIndex = daysPassed;
   const reminderSentPrefix = `wordle-reminder-sent-${solutionIndex}`;
   let solution = "";
+  let wordHash = "";
   let wordCategory = "";
   let wordLength = 0;
   let maxRows = 0;
@@ -203,6 +204,14 @@
 
   function generateUUID() { return crypto.randomUUID(); }
 
+  async function hashGuess(guess, dayIndex) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(guess.toLowerCase() + dayIndex.toString());
+    const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
   function getUserData() {
     let data = localStorage.getItem(userKey);
     if (!data) {
@@ -217,23 +226,26 @@
   async function fetchTodaysWord() {
     if (WORD_SOURCE === "supabase" && supabase) {
       try {
-        const { data, error } = await supabase.from('words').select('word, category').eq('day_index', solutionIndex).single();
+        const { data, error } = await supabase.from('words').select('word_hash, category, word_length').eq('day_index', solutionIndex).single();
         if (error) throw error;
-        solution = data.word.toUpperCase();
+        wordHash = data.word_hash;
         wordCategory = data.category;
+        wordLength = data.word_length; // Now fully dynamic again!
       } catch (err) {
         console.error("Database query failed:", err);
         const obj = DAILY_WORDS[solutionIndex % DAILY_WORDS.length];
         solution = obj.word.toUpperCase();
+        wordHash = "";
         wordCategory = obj.category;
+        wordLength = solution.length;
       }
     } else {
       const obj = DAILY_WORDS[solutionIndex];
       solution = obj.word.toUpperCase();
       wordCategory = obj.category;
+      wordLength = solution.length;
     }
 
-    wordLength = solution.length;
     maxRows = wordLength <= 5 ? 6 : wordLength + 1;
     maxHints = wordLength >= 7 ? 3 : 2; // Dynamic 3rd hint for 7+ letters
 
@@ -1190,6 +1202,12 @@
   function showHint() {
     if (gameOver || isSubmitting) return;
 
+    if (WORD_SOURCE === "supabase" && supabase && wordHash) {
+      // Cannot calculate hints locally if we don't hold the plaintext word.
+      showHintPopup("Hints Disabled", "Hints are disabled when playing the secure daily word because the client doesn't know the solution.");
+      return;
+    }
+
     if (hintsUsed === 0) {
       // Less-revealing first hint: only indicate whether the word has repeated letters
       const hasRepeat = (() => {
@@ -1353,13 +1371,36 @@
       return;
     }
 
-    const colors = getTileColors(guess, solution);
+    let colors = [];
+    let isMatch = false;
+
+    if (WORD_SOURCE === "supabase" && supabase && wordHash) {
+      const gHash = await hashGuess(guess, solutionIndex);
+      isMatch = (gHash === wordHash);
+      
+      const { data, error } = await supabase.rpc('check_guess', { 
+        p_day_index: solutionIndex, 
+        p_guess: guess.toLowerCase() 
+      });
+
+      if (error) {
+        console.error("Feedback RPC failed:", error);
+        showMessage("Server error checking guess.");
+        isSubmitting = false;
+        return;
+      }
+      colors = data;
+    } else {
+      isMatch = (guess === solution);
+      colors = getTileColors(guess, solution);
+    }
+
     boardState[currentRow] = { guess, colors };
     saveState();
     animateFlip(currentRow, guess, colors);
 
     window.setTimeout(() => {
-      if (guess === solution) {
+      if (isMatch) {
         gameOver = true;
         updateUserStats(true, currentRow + 1, hintsUsed);
         saveState(true);
@@ -1372,7 +1413,11 @@
           gameOver = true;
           updateUserStats(false, maxRows, hintsUsed);
           saveState(false);
-          showMessage(`The word was ${solution}.`);
+          if (WORD_SOURCE === "supabase" && supabase && wordHash) {
+            showMessage("Out of guesses. The word remains a secret!");
+          } else {
+            showMessage(`The word was ${solution}.`);
+          }
           showEndModal(false, true);
         } else {
           updateBoard();
@@ -1480,10 +1525,19 @@
 
   function showEndModal(won, force = false) {
     if (!force && localStorage.getItem(endModalSeenKey) === "1") return;
-    if (won) {
-      endTitle.innerHTML = `You got it, the word was <span class="modal-word-highlight">${solution}</span>`;
+    
+    if (wordHash && WORD_SOURCE === "supabase") {
+      if (won) {
+        endTitle.innerHTML = `You got it! Outstanding work.`;
+      } else {
+        endTitle.innerHTML = `Out of guesses. The word remains a secret!`;
+      }
     } else {
-      endTitle.innerHTML = `The word was <span class="modal-word-highlight">${solution}</span>`;
+      if (won) {
+        endTitle.innerHTML = `You got it, the word was <span class="modal-word-highlight">${solution}</span>`;
+      } else {
+        endTitle.innerHTML = `The word was <span class="modal-word-highlight">${solution}</span>`;
+      }
     }
     localStorage.setItem(endModalSeenKey, "1");
     modal.classList.remove("hidden");
