@@ -72,6 +72,8 @@
   const tabBtns = document.querySelectorAll(".tab-btn");
   const lbLoading = document.getElementById("lb-loading");
   const lbList = document.getElementById("lb-list");
+  const lbRulesToggle = document.getElementById("lb-rules-toggle");
+  const lbRulesPanel = document.getElementById("lb-rules-panel");
   const walkthroughModal = document.getElementById("walkthrough-modal");
   const walkthroughCard = walkthroughModal?.querySelector(".walkthrough-card");
   const walkthroughTitle = document.getElementById("walkthrough-title");
@@ -797,6 +799,15 @@
     closeLeaderboardBtn.addEventListener("click", () => {
       leaderboardModal.classList.add("hidden");
       usernameError.classList.add("hidden");
+      lbRulesPanel?.classList.add("hidden");
+      lbRulesToggle?.setAttribute("aria-expanded", "false");
+    });
+
+    lbRulesToggle?.addEventListener("click", () => {
+      if (!lbRulesPanel) return;
+      const isHidden = lbRulesPanel.classList.contains("hidden");
+      lbRulesPanel.classList.toggle("hidden", !isHidden);
+      lbRulesToggle.setAttribute("aria-expanded", String(isHidden));
     });
 
     walkthroughSkipBtn?.addEventListener("click", () => {
@@ -1178,7 +1189,8 @@
           .order('games_played', { ascending: false });
         if (error) throw error;
         if (res && res.length > 0) {
-          data = res
+          const currentUser = getUserData().username;
+          const ranked = res
             .map((p) => {
               const gamesPlayed = Number(p.games_played) || 0;
               if (gamesPlayed <= 0) return null;
@@ -1187,11 +1199,22 @@
               if (!Number.isFinite(rawAvg)) return null;
 
               const needsExtraGame = rawAvg <= LEADERBOARD_LOW_AVG_THRESHOLD && gamesPlayed < LEADERBOARD_LOW_AVG_MIN_GAMES;
-              if (needsExtraGame) return null;
+              if (needsExtraGame) {
+                return {
+                  ...p,
+                  isUnrated: true,
+                  avgRaw: rawAvg,
+                  avg: rawAvg.toFixed(2),
+                  rankScoreRaw: Number.POSITIVE_INFINITY,
+                  rankScore: "???",
+                  consistencyBonus: 0
+                };
+              }
 
               const streakBonus = applyConsistencyBonus(rawAvg, p.winstreak);
               return {
                 ...p,
+                isUnrated: false,
                 avgRaw: rawAvg,
                 avg: rawAvg.toFixed(2),
                 rankScoreRaw: streakBonus.score,
@@ -1201,11 +1224,19 @@
             })
             .filter(Boolean)
             .sort((a, b) => {
+              if (a.isUnrated !== b.isUnrated) return a.isUnrated ? 1 : -1;
               if (a.rankScoreRaw !== b.rankScoreRaw) return a.rankScoreRaw - b.rankScoreRaw;
               if (a.avgRaw !== b.avgRaw) return a.avgRaw - b.avgRaw;
               return (b.games_played || 0) - (a.games_played || 0);
             })
-            .slice(0, 50);
+            .map((p, i) => ({ ...p, leaderboardRank: i + 1 }));
+
+          data = ranked.slice(0, 50);
+
+          if (currentUser && !data.some((p) => p.username === currentUser)) {
+            const currentPlayer = ranked.find((p) => p.username === currentUser);
+            if (currentPlayer) data.push(currentPlayer);
+          }
         }
       }
 
@@ -1217,7 +1248,7 @@
         return;
       }
 
-      const currentUser = getUserData().username;
+  const currentUser = getUserData().username;
       
       const medal1 = `<svg class="lb-medal" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`;
       const medal2 = `<svg class="lb-medal" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`;
@@ -1226,12 +1257,14 @@
       data.forEach((player, index) => {
         const li = document.createElement("li");
         li.className = "lb-item";
-        if (index === 0) li.classList.add("rank-1");
-        else if (index === 1) li.classList.add("rank-2");
-        else if (index === 2) li.classList.add("rank-3");
+    const rankNumber = player.leaderboardRank ?? (index + 1);
+    if (rankNumber === 1) li.classList.add("rank-1");
+    else if (rankNumber === 2) li.classList.add("rank-2");
+    else if (rankNumber === 3) li.classList.add("rank-3");
+    if (player.isUnrated) li.classList.add("unrated-entry");
 
-        let medal = index === 0 ? medal1 : index === 1 ? medal2 : index === 2 ? medal3 : "";
-  const scoreVal = player.rankScore ?? player.avg;
+    let medal = rankNumber === 1 ? medal1 : rankNumber === 2 ? medal2 : rankNumber === 3 ? medal3 : "";
+  const scoreVal = player.isUnrated ? "???" : (player.rankScore ?? player.avg);
         
         let hintBadge = "";
         if (player.last_hint_day_index === solutionIndex) {
@@ -1246,20 +1279,22 @@
         if (player.username === currentUser) displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
 
         const streakDays = Number(player.winstreak) || 0;
-        const bonusText = Number(player.consistencyBonus) > 0
-          ? `<div class="lb-meta">Avg ${player.avg} guesses • ${streakDays}-day streak active</div>`
-          : `<div class="lb-meta">Avg ${player.avg} guesses</div>`;
+        const bonusText = player.isUnrated
+          ? `<div class="lb-meta">Unrated for now • complete one more day to unlock your score</div>`
+          : Number(player.consistencyBonus) > 0
+            ? `<div class="lb-meta">Avg ${player.avg} guesses • ${streakDays}-day streak active</div>`
+            : `<div class="lb-meta">Avg ${player.avg} guesses</div>`;
 
         li.innerHTML = `
           <div class="lb-left">
-            <span class="rank">#${index + 1}</span>
+            <span class="rank">#${rankNumber}</span>
             ${medal}
             <div class="lb-name">
               <div class="lb-name-main">${displayName}</div>
               ${bonusText}
             </div>
           </div>
-          <div class="lb-score">${scoreVal}</div>
+          <div class="lb-score ${player.isUnrated ? "unrated" : ""}">${scoreVal}</div>
         `;
         lbList.appendChild(li);
       });

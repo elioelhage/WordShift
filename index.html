@@ -151,6 +151,17 @@
           <h2 class="modal__title">Leaderboards</h2>
         </div>
         <p class="lb-subtitle">Rankings are based on average guesses, with a small consistency boost for active streaks.</p>
+        <button id="lb-rules-toggle" class="lb-rules-toggle" type="button" aria-expanded="false" aria-controls="lb-rules-panel">Leaderboard rules</button>
+        <div id="lb-rules-panel" class="lb-rules-panel hidden">
+          <p><strong>How ranking works</strong></p>
+          <ul>
+            <li><strong>Main score:</strong> your average guesses per game. Lower is better.</li>
+            <li><strong>Unrated (???):</strong> if your average is 3.00 or better and you only played 1 day, your score stays hidden until you finish one more day.</li>
+            <li><strong>Consistency bonus:</strong> active streaks can slightly improve your rank score.</li>
+            <li><strong>Bonus tiers:</strong> 3-day, 7-day, 21-day, and 50-day streaks.</li>
+            <li><strong>What resets streaks:</strong> skipping a day or failing a day resets it.</li>
+          </ul>
+        </div>
         <div class="tab-content">
           <div id="lb-loading" class="lb-loading">Loading...</div>
           <ul id="lb-list" class="lb-list hidden"></ul>
