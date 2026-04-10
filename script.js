@@ -363,6 +363,9 @@
       boardState = Array.from({ length: maxRows }, (_, i) => savedState.boardState?.[i] ?? null);
       hintsUsed = savedState.hintsUsed || 0;
       hasSubmittedToLeaderboard = savedState.hasSubmittedToLeaderboard || false;
+    } else {
+      // New day or fresh game - reset submission flag
+      hasSubmittedToLeaderboard = false;
     }
 
     setupTheme();
