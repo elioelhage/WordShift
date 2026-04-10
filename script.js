@@ -81,7 +81,7 @@
     return Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
   }
 
-  const daysPassed = getCurrentSolutionIndex();
+  const daysPassed = 11;
 
   if (WORD_SOURCE !== "supabase" && daysPassed >= DAILY_WORDS.length) {
     boardEl.innerHTML = `
