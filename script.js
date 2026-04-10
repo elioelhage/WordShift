@@ -1355,8 +1355,7 @@
         winstreak: userRecord.winstreak ?? 0,
         max_winstreak: userRecord.max_winstreak ?? 0,
         total_hints: (userRecord.total_hints || 0) + hints,
-        last_hint_day_index: hints > 0 ? solutionIndex : userRecord.last_hint_day_index ?? null,
-        last_played_day_index: solutionIndex
+        last_hint_day_index: hints > 0 ? solutionIndex : userRecord.last_hint_day_index ?? null
       };
       const { error: updateError } = await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
       if (updateError) {
