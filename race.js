@@ -563,26 +563,21 @@
   }
 
   async function pickDictionaryWord(blocked, length = RACE_WORD_LENGTH) {
-    const alphabet = "abcdefghijklmnopqrstuvwxyz";
-    const startChar = alphabet[Math.floor(Math.random() * alphabet.length)];
-    const pattern = startChar + "?".repeat(length - 1);
-    
     try {
-      const response = await fetch(`https://api.datamuse.com/words?sp=${pattern}&md=f&max=300`);
-      if (!response.ok) return null;
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from('battle_words')
+        .select('word');
+
+      if (error || !data || data.length === 0) {
+        console.error("Failed to fetch from battle_words:", error);
+        return null;
+      }
       
       const valid = data.filter(item => {
         if (!item.word || item.word.length !== length) return false;
         if (!/^[a-zA-Z]+$/.test(item.word)) return false;
-        
-        let freq = 0;
-        if (item.tags) {
-          const fTag = item.tags.find(t => t.startsWith('f:'));
-          if (fTag) freq = parseFloat(fTag.split(':')[1]);
-        }
-        // frequency > 1.0 filters out hyper-obscure vocabulary
-        return freq > 1.0;
+        const candidate = item.word.toUpperCase();
+        return !blocked.has(candidate);
       });
 
       if (valid.length === 0) return null;
