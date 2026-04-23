@@ -778,23 +778,14 @@
       let currentTab = "lifetime";
       let allPlayers = [];
 
-      function getWeekStart() {
+      function getCurrentSolutionIndex() {
         const now = new Date();
-        const dayOfWeek = now.getDay();
-        const start = new Date(now);
-        start.setDate(now.getDate() - dayOfWeek); // Sunday
-        start.setHours(0, 0, 0, 0);
-        return start.getTime();
+        const localDateAsUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        return Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
       }
 
-      function getWeekEnd() {
-        const now = new Date();
-        const dayOfWeek = now.getDay();
-        const end = new Date(now);
-        end.setDate(now.getDate() + (6 - dayOfWeek)); // Saturday
-        end.setHours(23, 59, 59, 999);
-        return end.getTime();
-      }
+      const todayIndex = getCurrentSolutionIndex();
+      const launchDate = Date.UTC(2026, 3, 1); // April 1, 2026
 
       const currentUser = (() => {
         try {
@@ -899,20 +890,10 @@
 
           ({ data, error } = await supabase
             .from("leaderboards")
-            .select("username, games_played, total_guesses, created_at, last_played_day_index, saved_state")
+            .select("username, games_played, total_guesses, created_at, last_played_day_index")
             .order("games_played", { ascending: false }));
 
-          if (error) {
-            ({ data, error } = await supabase
-              .from("leaderboards")
-              .select("username, games_played, total_guesses, created_at, saved_state")
-              .order("games_played", { ascending: false }));
-          }
-
           if (error) throw error;
-
-          const weekStart = getWeekStart();
-          const weekEnd = getWeekEnd();
 
           allPlayers = (data || [])
             .filter((p) => p.username)
@@ -922,15 +903,25 @@
               const GUESS_SCALE = 10; // Original system stored guesses * 10
               const rawAvg = gamesPlayed > 0 ? (totalGuesses / GUESS_SCALE) / gamesPlayed : 0;
 
-              // For weekly average, we'd need to filter games by date
-              // For now, using rawAvg as placeholder (you may need game-level timestamps)
-              const weeklyAvg = rawAvg;
+              // Get last played day index
+              let lastPlayedVal = Number(p.last_played_day_index);
+              if (Number.isNaN(lastPlayedVal)) {
+                lastPlayedVal = -999; // Far in the past if unknown
+              }
+
+              // Calculate days since last played
+              const daysSinceLastPlayed = todayIndex - lastPlayedVal;
+
+              // Check if player played this week (0-6 days ago, assuming week = 7 days)
+              const playedThisWeek = daysSinceLastPlayed >= 0 && daysSinceLastPlayed < 7;
 
               return {
                 ...p,
                 gamesPlayed,
                 rawAvg,
-                weeklyAvg,
+                weeklyAvg: rawAvg, // For now, use lifetime avg as weekly proxy
+                lastPlayedVal,
+                playedThisWeek,
                 rank: 0
               };
             });
@@ -955,7 +946,7 @@
         } else if (currentTab === "weekly") {
           metaLabelEl.textContent = "Top 50 • Lowest average this week";
           rows = [...allPlayers]
-            .filter((p) => p.gamesPlayed > 0)
+            .filter((p) => p.playedThisWeek && p.gamesPlayed > 0)
             .sort((a, b) => Number(a.weeklyAvg) - Number(b.weeklyAvg))
             .slice(0, 50);
         }
