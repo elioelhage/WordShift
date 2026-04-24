@@ -17,14 +17,15 @@
   // Keys are fetched from backend API (protected in Render environment variables)
   const API_URL = 'https://wordshift-api.onrender.com'; // Change to your Render URL
   let supabase = null;
-
-  // Fetch credentials from backend and initialize Supabase
-  (async () => {
+  
+  // Promise that resolves when Supabase is ready
+  const supabaseReady = (async () => {
     try {
       const res = await fetch(`${API_URL}/api/keys`);
       const { supabaseUrl, supabaseKey } = await res.json();
       supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
       console.log('✅ Supabase initialized from backend keys');
+      return true;
     } catch (err) {
       console.error('Failed to fetch Supabase keys from backend:', err);
       // Fallback: try to initialize with hardcoded keys (for development)
@@ -34,8 +35,10 @@
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8'
         );
         console.log('⚠️ Using fallback hardcoded keys (backend unavailable)');
+        return true;
       } catch (fallbackErr) {
         console.error('Failed to initialize Supabase:', fallbackErr);
+        return false;
       }
     }
   })();
@@ -375,11 +378,15 @@
 
   armLoaderFailsafe();
 
-  fetchTodaysWord().then(() => {
-    boardState = Array.from({ length: maxRows }, () => null);
+  // Wait for Supabase to be initialized before running game logic
+  (async () => {
+    await supabaseReady;
+    
+    fetchTodaysWord().then(() => {
+      boardState = Array.from({ length: maxRows }, () => null);
 
-    const savedState = loadState();
-    if (savedState && savedState.solutionIndex === solutionIndex) {
+      const savedState = loadState();
+      if (savedState && savedState.solutionIndex === solutionIndex) {
       currentRow = Math.min(savedState.currentRow ?? 0, maxRows - 1);
       currentGuess = typeof savedState.currentGuess === "string" ? savedState.currentGuess : "";
       gameOver = Boolean(savedState.gameOver);
@@ -401,7 +408,7 @@
     updateHintBadge();
     bindEvents();
     initializeDailyNotifications();
-  scheduleDayRolloverReset();
+    scheduleDayRolloverReset();
     if (raceLoginIntent) {
       openAuthModal("Login to continue to Race Lobby.");
       usernameView.classList.remove("hidden");
@@ -412,15 +419,16 @@
       window.history.replaceState({}, "", cleanUrl);
     }
     
-  if (gameOver) showEndModal(inferWonFromState(savedState));
+    if (gameOver) showEndModal(inferWonFromState(savedState));
 
     maybeShowFirstTimeWalkthrough();
-  }).catch((err) => {
-    console.error("Initialization failed:", err);
-    showMessage("Something failed to load. Please try again.");
-  }).finally(() => {
-    hideAppLoader();
-  });
+    }).catch((err) => {
+      console.error("Initialization failed:", err);
+      showMessage("Something failed to load. Please try again.");
+    }).finally(() => {
+      hideAppLoader();
+    });
+  })();
 
   function setWalkthroughSeen() {
     localStorage.setItem(walkthroughKey, "1");
