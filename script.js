@@ -406,7 +406,8 @@
       hintsUsed = savedState.hintsUsed || 0;
       hasSubmittedToLeaderboard = savedState.hasSubmittedToLeaderboard || false;
     } else {
-      // New day or fresh game - reset submission flag
+      // New day or fresh game - reset submission flag and keyboard lock
+      gameOver = false;
       hasSubmittedToLeaderboard = false;
     }
 

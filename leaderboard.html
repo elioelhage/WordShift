@@ -1071,28 +1071,8 @@
             return;
           }
 
-          // Weekly stats come from the backend because the daily sessions table is RLS-protected.
-          const weekFrom = Math.max(0, todayIndex - 7);
-          const weeklyMap = new Map();
-          weeklyStatsLoaded = false;
-          try {
-            const weeklyRes = await fetch(`${API_URL}/api/weekly-stats?weekFrom=${weekFrom}`);
-            const weeklyJson = await weeklyRes.json();
-            if (weeklyJson?.ok && Array.isArray(weeklyJson.stats)) {
-              weeklyJson.stats.forEach((entry) => {
-                if (entry?.uuid) weeklyMap.set(String(entry.uuid), entry);
-              });
-              weeklyStatsLoaded = true;
-            } else {
-              console.warn('Weekly stats endpoint returned no data:', weeklyJson);
-            }
-          } catch (e) {
-            console.warn('Could not fetch weekly stats from backend:', e);
-          }
-
-          if (!weeklyStatsLoaded) {
-            console.warn('Weekly leaderboard data is unavailable right now.');
-          }
+          // Weekly filter: use all-time average but only include players who played in the last 7 days
+          // (No backend fetch needed - filter client-side using lastPlayedVal)
 
           allPlayers = (data || [])
             .filter((p) => p.username)
@@ -1119,18 +1099,13 @@
                 console.warn("Could not parse saved_state for", p.username, e);
               }
 
-              // Weekly average: compute from wordle_daily_sessions for last 7 days if available
-              const weeklyStat = weeklyMap.get(String(p.uuid));
-              const playedThisWeek = Boolean(weeklyStat && Number(weeklyStat.gamesPlayed) > 0);
-              const weeklyAvg = playedThisWeek
-                ? (Number(weeklyStat.totalGuesses) / Number(weeklyStat.gamesPlayed))
-                : rawAvg;
+              // Weekly filter: check if player has played in the last 7 days
+              const playedThisWeek = p.lastPlayedVal >= (todayIndex - 6);
 
               return {
                 ...p,
                 gamesPlayed,
                 rawAvg,
-                weeklyAvg,
                 lastPlayedVal,
                 wonToday,
                 hintsUsedToday,
@@ -1160,15 +1135,10 @@
             .sort((a, b) => Number(b.gamesPlayed) - Number(a.gamesPlayed))
             .slice(0, 50);
         } else if (currentTab === "weekly") {
-          if (!weeklyStatsLoaded) {
-            listEl.classList.remove("tab-switching");
-            renderState("Weekly leaderboard is unavailable right now.");
-            return;
-          }
-          metaLabelEl.textContent = "Top 50 • Lowest average this week";
+          metaLabelEl.textContent = "Top 50 • Lowest average (played last 7 days)";
           rows = [...allPlayers]
             .filter((p) => p.playedThisWeek && p.gamesPlayed > 0)
-            .sort((a, b) => Number(a.weeklyAvg) - Number(b.weeklyAvg))
+            .sort((a, b) => Number(a.rawAvg) - Number(b.rawAvg))
             .slice(0, 50);
         }
 
