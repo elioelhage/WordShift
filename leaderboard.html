@@ -214,9 +214,17 @@
       gap: 0.4rem;
       margin-bottom: 1rem;
       border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: center;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
     }
 
     .tab-btn {
@@ -229,8 +237,9 @@
       cursor: pointer;
       border-bottom: 2px solid transparent;
       transition: all 0.2s ease;
-      white-space: normal;
+      white-space: nowrap;
       line-height: 1.15;
+      flex: 0 0 auto;
     }
 
     .tab-btn.active {
@@ -302,6 +311,13 @@
       padding-right: 0.15rem;
       scrollbar-width: none;
       -ms-overflow-style: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .list.tab-switching {
+      opacity: 0.34;
+      transform: translateY(4px);
+      pointer-events: none;
     }
 
     .list::-webkit-scrollbar {
@@ -643,26 +659,65 @@
       gap: 0.32rem;
       margin-left: 0.5rem;
       flex: 0 0 auto;
+      position: relative;
     }
 
     .badge {
-      width: 1.05rem;
-      height: 1.05rem;
+      width: 1.28rem;
+      height: 1.28rem;
       border-radius: 999px;
       display: inline-grid;
       place-items: center;
       border: 1px solid transparent;
-      cursor: default;
+      cursor: pointer;
+      position: relative;
+      transition: transform 140ms ease;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .badge:hover,
+    .badge:focus-visible,
+    .badge.open {
+      transform: scale(1.08);
     }
 
     .badge svg {
-      width: 0.76rem;
-      height: 0.76rem;
+      width: 0.9rem;
+      height: 0.9rem;
       stroke: currentColor;
       fill: none;
       stroke-width: 2.1;
       stroke-linecap: round;
       stroke-linejoin: round;
+    }
+
+    .badge[data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: color-mix(in srgb, var(--text) 92%, transparent);
+      color: color-mix(in srgb, var(--surface) 95%, transparent);
+      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      border-radius: 8px;
+      padding: 0.32rem 0.46rem;
+      white-space: nowrap;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms ease;
+      z-index: 50;
+    }
+
+    .badge:hover::after,
+    .badge:focus-visible::after,
+    .badge.open::after {
+      opacity: 1;
     }
 
     .badge.hint {
@@ -949,13 +1004,14 @@
           else if (rankNumber === 2) li.classList.add("rank-2");
           else if (rankNumber === 3) li.classList.add("rank-3");
 
-          // Build badges: solved today (check) and used hints today (hint)
+          // Badge rule: one icon only.
+          // - solved today with hints => hint badge
+          // - solved today without hints => verified check badge
           let badgesHtml = "";
-          if (player.lastPlayedVal === todayIndex && player.wonToday) {
-            badgesHtml += `<span class="badge played" title="Solved today">${playedIcon}</span>`;
-          }
-          if (player.lastPlayedVal === todayIndex && player.hintsUsedToday > 0) {
-            badgesHtml += `<span class="badge hint" title="Used hints today">${hintIcon}</span>`;
+          if (player.lastPlayedVal === todayIndex && player.wonToday && player.hintsUsedToday > 0) {
+            badgesHtml += `<button class="badge hint" type="button" data-tooltip="Solved today's word using hints" aria-label="Solved today's word using hints">${hintIcon}</button>`;
+          } else if (player.lastPlayedVal === todayIndex && player.wonToday) {
+            badgesHtml += `<button class="badge played" type="button" data-tooltip="Solved today's word" aria-label="Solved today's word">${playedIcon}</button>`;
           }
           const badges = `<span class="badges">${badgesHtml}</span>`;
 
@@ -1067,6 +1123,7 @@
       }
 
       function updateLeaderboardDisplay() {
+        listEl.classList.add("tab-switching");
         let rows = [];
 
         if (currentTab === "lifetime") {
@@ -1089,20 +1146,43 @@
         }
 
         renderRows(rows);
+        window.requestAnimationFrame(() => {
+          listEl.classList.remove("tab-switching");
+        });
       }
 
-      tabLifetimeBtn?.addEventListener("click", () => {
-        currentTab = "lifetime";
-        tabLifetimeBtn.classList.add("active");
-        tabWeeklyBtn.classList.remove("active");
+      function setActiveTab(nextTab) {
+        if (nextTab !== "weekly" && nextTab !== "lifetime") return;
+        currentTab = nextTab;
+        tabLifetimeBtn.classList.toggle("active", nextTab === "lifetime");
+        tabWeeklyBtn.classList.toggle("active", nextTab === "weekly");
+        const activeBtn = nextTab === "lifetime" ? tabLifetimeBtn : tabWeeklyBtn;
+        activeBtn?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
         updateLeaderboardDisplay();
+      }
+
+      listEl?.addEventListener("click", (e) => {
+        const badgeBtn = e.target.closest(".badge[data-tooltip]");
+        if (!badgeBtn) {
+          listEl.querySelectorAll(".badge.open").forEach((el) => el.classList.remove("open"));
+          return;
+        }
+        e.stopPropagation();
+        const isOpen = badgeBtn.classList.contains("open");
+        listEl.querySelectorAll(".badge.open").forEach((el) => el.classList.remove("open"));
+        if (!isOpen) badgeBtn.classList.add("open");
+      });
+
+      document.addEventListener("click", () => {
+        listEl.querySelectorAll(".badge.open").forEach((el) => el.classList.remove("open"));
+      });
+
+      tabLifetimeBtn?.addEventListener("click", () => {
+        setActiveTab("lifetime");
       });
 
       tabWeeklyBtn?.addEventListener("click", () => {
-        currentTab = "weekly";
-        tabWeeklyBtn.classList.add("active");
-        tabLifetimeBtn.classList.remove("active");
-        updateLeaderboardDisplay();
+        setActiveTab("weekly");
       });
     })();
   </script>

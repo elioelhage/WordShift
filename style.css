@@ -475,6 +475,23 @@ a.icon-button {
 
 .keyboard-wrap {
   padding-bottom: 0.15rem;
+  position: relative;
+}
+
+.keyboard-wrap.locked::after {
+  content: "Round complete - keyboard disabled";
+  display: block;
+  margin: 0.35rem auto 0;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 760;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
 }
 
 .keyboard {
@@ -514,6 +531,21 @@ a.icon-button {
 .key:active { transform: translateY(2px); background: var(--key-pressed); }
 .key:disabled { opacity: 0.5; cursor: not-allowed; }
 .key:hover:not(:disabled) { transform: translateY(-1px); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08), 0 7px 16px rgba(0, 0, 0, 0.12); }
+
+.keyboard.keyboard-disabled {
+  opacity: 0.58;
+  filter: grayscale(0.16);
+}
+
+.key.tap {
+  animation: keyTapPulse 160ms ease;
+}
+
+@keyframes keyTapPulse {
+  0% { transform: translateY(0) scale(1); }
+  55% { transform: translateY(1px) scale(0.96); background: var(--key-pressed); }
+  100% { transform: translateY(0) scale(1); }
+}
 
 /* Modal and Base Inputs */
 .modal {

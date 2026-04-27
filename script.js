@@ -67,6 +67,7 @@
 
   const boardEl = document.getElementById("board");
   const keyboardEl = document.getElementById("keyboard");
+  const keyboardWrapEl = keyboardEl?.closest(".keyboard-wrap") || null;
   const messageEl = document.getElementById("message");
   const metaLineEl = document.getElementById("meta-line");
   const themeToggle = document.getElementById("theme-toggle");
@@ -406,6 +407,7 @@
     updateBoard();
     updateKeyboardColorsFromBoard();
     updateHintBadge();
+    setKeyboardLocked(gameOver);
     bindEvents();
     initializeDailyNotifications();
     scheduleDayRolloverReset();
@@ -640,6 +642,7 @@
 
     gameOver = true;
     isSubmitting = true;
+    setKeyboardLocked(true);
     if (countdownTimer) {
       clearInterval(countdownTimer);
       countdownTimer = null;
@@ -709,6 +712,7 @@
       // Show the word without counting it as a played game
       const wordToShow = currentWord?.toUpperCase() || "Unknown";
       gameOver = true;
+      setKeyboardLocked(true);
       showMessage(`Word: ${wordToShow}`);
       showEndModal(false, "Gave up");
       
@@ -791,6 +795,26 @@
       });
       keyboardEl.appendChild(row);
     });
+  }
+
+  function animateKeyTap(key) {
+    const keyEl = document.getElementById(`key-${key}`);
+    if (!keyEl) return;
+    keyEl.classList.remove("tap");
+    void keyEl.offsetWidth;
+    keyEl.classList.add("tap");
+    window.setTimeout(() => keyEl.classList.remove("tap"), 170);
+  }
+
+  function setKeyboardLocked(locked) {
+    if (keyboardEl) {
+      keyboardEl.classList.toggle("keyboard-disabled", Boolean(locked));
+      keyboardEl.setAttribute("aria-disabled", String(Boolean(locked)));
+      keyboardEl.querySelectorAll(".key").forEach((btn) => {
+        btn.disabled = Boolean(locked);
+      });
+    }
+    keyboardWrapEl?.classList.toggle("locked", Boolean(locked));
   }
 
   function bindEvents() {
@@ -1553,6 +1577,8 @@
   function handleKey(key) {
     if (gameOver || isSubmitting) return;
 
+    animateKeyTap(key);
+
     if (key === "ENTER") return submitGuess();
     if (key === "⌫") {
       if (!currentGuess.length) return;
@@ -1640,6 +1666,7 @@
     window.setTimeout(() => {
       if (guess === solution) {
         gameOver = true;
+        setKeyboardLocked(true);
         updateUserStats(true, currentRow + 1, hintsUsed);
         saveState(true);
         showMessage("Solved.");
@@ -1649,6 +1676,7 @@
         currentGuess = "";
         if (currentRow >= maxRows) {
           gameOver = true;
+          setKeyboardLocked(true);
           updateUserStats(false, maxRows, hintsUsed);
           saveState(false);
           showMessage(`The word was ${solution}.`);
