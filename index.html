@@ -171,6 +171,21 @@
     </div>
   </div>
 
+  <!-- Player sheet (opened from Account button) -->
+  <div id="player-sheet" class="player-sheet" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title">
+    <div class="player-sheet-card">
+      <h2 id="player-sheet-title" class="player-sheet-title">Player details</h2>
+      <ul class="player-sheet-list">
+        <li><strong>Name:</strong> <span id="player-sheet-name">—</span></li>
+        <li><strong>Joined:</strong> <span id="player-sheet-joined">—</span></li>
+        <li><strong>Last played:</strong> <span id="player-sheet-last-play">—</span></li>
+        <li><strong>Raw avg guesses:</strong> <span id="player-sheet-avg">—</span></li>
+        <li><strong>Total games played:</strong> <span id="player-sheet-games">—</span></li>
+      </ul>
+      <button id="player-sheet-close" class="player-sheet-close" type="button">Close</button>
+    </div>
+  </div>
+
   <div id="walkthrough-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="walkthrough-title">
     <div class="modal__card walkthrough-card">
       <p class="modal__kicker">First-time guide</p>

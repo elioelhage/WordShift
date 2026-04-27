@@ -90,6 +90,13 @@
   const accountSummary = document.getElementById("account-summary");
   const accountActionBtn = document.getElementById("account-action-btn");
   const giveUpBtn = document.getElementById("give-up-btn");
+  const playerSheetEl = document.getElementById("player-sheet");
+  const playerSheetNameEl = document.getElementById("player-sheet-name");
+  const playerSheetJoinedEl = document.getElementById("player-sheet-joined");
+  const playerSheetLastPlayEl = document.getElementById("player-sheet-last-play");
+  const playerSheetAvgEl = document.getElementById("player-sheet-avg");
+  const playerSheetGamesEl = document.getElementById("player-sheet-games");
+  const playerSheetCloseEl = document.getElementById("player-sheet-close");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
   const leaderboardCard = document.querySelector(".leaderboard-card");
@@ -835,10 +842,8 @@
         openAuthModal("Sign in to save progress and join races.");
         return;
       }
-      const isHidden = accountMenuPanel.classList.contains("hidden");
-      accountMenuPanel.classList.toggle("hidden", !isHidden);
-      accountMenuButton.setAttribute("aria-expanded", String(isHidden));
-      refreshAccountMenuAction();
+      // When signed in, open the player's detail sheet (same info as leaderboard player sheet)
+      openPlayerSheetForCurrentUser();
     });
 
     accountActionBtn?.addEventListener("click", () => {
@@ -1206,16 +1211,69 @@
     usernameInput.value = "";
     passwordInput.value = "";
     usernameError.classList.add("hidden");
-    
     const freshUser = { uuid: crypto.randomUUID(), username: null };
     localStorage.setItem(userKey, JSON.stringify(freshUser));
     statsView.classList.add("hidden");
     usernameView.classList.remove("hidden");
     refreshAccountMenuAction();
 
+    // Ensure keyboard is unlocked immediately when logging out (avoid residual disabled state)
+    gameOver = false;
+    isSubmitting = false;
+    setKeyboardLocked(false);
+    hideEndModal();
+    if (playerSheetEl) playerSheetEl.classList.remove("open");
+
     showAppLoader("Refreshing...");
     safeHardRefresh(220);
   }
+
+  async function openPlayerSheetForCurrentUser() {
+    if (!playerSheetEl) return;
+    const userData = getUserData();
+    if (!userData?.uuid) return;
+    try {
+      if (!supabase) {
+        playerSheetNameEl.textContent = userData.username || "Unknown";
+        playerSheetJoinedEl.textContent = "Unknown";
+        playerSheetLastPlayEl.textContent = "Unknown";
+        playerSheetAvgEl.textContent = "—";
+        playerSheetGamesEl.textContent = "—";
+        playerSheetEl.classList.add("open");
+        return;
+      }
+
+      const { data: rec, error } = await supabase.from('leaderboards').select('username, created_at, saved_state, games_played, total_guesses').eq('uuid', userData.uuid).maybeSingle();
+      if (error) throw error;
+      const username = rec?.username || userData.username || "Unknown";
+      playerSheetNameEl.textContent = username;
+      playerSheetJoinedEl.textContent = rec?.created_at ? new Date(rec.created_at).toLocaleDateString() : "Unknown";
+
+      let lastPlayed = "Never";
+      if (rec?.saved_state) {
+        try {
+          const st = typeof rec.saved_state === 'string' ? JSON.parse(rec.saved_state) : rec.saved_state;
+          if (typeof st.solutionIndex === 'number') {
+            const launchDate = Date.UTC(2026, 3, 1);
+            const dt = new Date(launchDate + (Number(st.solutionIndex) * 86400000));
+            lastPlayed = dt.toLocaleDateString();
+          }
+        } catch (e) { /* ignore */ }
+      }
+      playerSheetLastPlayEl.textContent = lastPlayed;
+
+      const games = Number(rec?.games_played) || 0;
+      const avg = (games > 0 && rec?.total_guesses) ? ((Number(rec.total_guesses) / GUESS_SCALE) / games).toFixed(2) : "—";
+      playerSheetAvgEl.textContent = avg;
+      playerSheetGamesEl.textContent = String(games);
+      playerSheetEl.classList.add("open");
+    } catch (e) {
+      console.error('Failed to open player sheet', e);
+    }
+  }
+
+  playerSheetCloseEl?.addEventListener("click", () => playerSheetEl?.classList.remove("open"));
+  playerSheetEl?.addEventListener("click", (e) => { if (e.target === playerSheetEl) playerSheetEl.classList.remove("open"); });
 
   function refreshAccountMenuAction() {
     if (!accountActionBtn) return;

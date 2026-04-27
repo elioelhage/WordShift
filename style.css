@@ -338,6 +338,17 @@ a.icon-button {
   border-color: color-mix(in srgb, var(--border) 82%, transparent);
 }
 
+/* Mobile: keep account button icon-only to avoid overflowing the header */
+@media (max-width: 640px) {
+  .account-menu-label {
+    display: none !important;
+  }
+  .account-button {
+    padding: 0 0.4rem;
+    min-width: 2.75rem;
+  }
+}
+
 .account-menu-panel {
   position: absolute;
   top: calc(100% + 0.45rem);
@@ -534,19 +545,9 @@ a.icon-button {
 }
 
 .keyboard-wrap.locked::after {
-  content: "Round complete - keyboard disabled";
-  display: block;
-  margin: 0.35rem auto 0;
-  width: fit-content;
-  max-width: 100%;
-  padding: 0.28rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 760;
-  letter-spacing: 0.02em;
-  color: var(--muted);
-  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
-  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  /* intentionally hidden: remove the editorial message when keyboard is locked */
+  content: "";
+  display: none;
 }
 
 .keyboard {
