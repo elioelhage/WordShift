@@ -4,12 +4,13 @@
   let supabase = null;
 
   // Initialize Supabase with keys from backend
-  (async () => {
+  const supabaseReady = (async () => {
     try {
       const res = await fetch(`${API_URL}/api/keys`);
       const { supabaseUrl, supabaseKey } = await res.json();
       supabase = window.supabase?.createClient(supabaseUrl, supabaseKey);
       console.log('✅ Supabase initialized from backend keys');
+      return Boolean(supabase);
     } catch (err) {
       console.error('Failed to fetch keys from backend:', err);
       // Fallback: use hardcoded keys (for development)
@@ -19,8 +20,10 @@
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8"
         );
         console.log('⚠️ Using fallback hardcoded keys (backend unavailable)');
+        return Boolean(supabase);
       } catch (fallbackErr) {
         console.error('Failed to initialize Supabase:', fallbackErr);
+        return false;
       }
     }
   })();
@@ -64,7 +67,7 @@
 
   const userKey = "wordle-user-data-v2";
   const historyKeyPrefix = "wordle-race-history-";
-  const PLAYER_TABLE = "battle_players";
+  const PLAYER_TABLE = "leaderboards";
   const WORD_TABLE = "battle_words";
   const RACE_WORD_LENGTH = 4;
 
@@ -1443,7 +1446,8 @@
   window.addEventListener("orientationchange", syncViewportHeight, { passive: true });
   window.visualViewport?.addEventListener("resize", syncViewportHeight, { passive: true });
 
-  ensureAuthenticatedUser().then(async (ok) => {
+  supabaseReady.then(async () => {
+    const ok = await ensureAuthenticatedUser();
     if (ok) {
       const joined = await joinRoomFromUrl();
       if (!joined) {

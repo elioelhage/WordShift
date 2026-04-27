@@ -17,7 +17,7 @@
   // Keys are fetched from backend API (protected in Render environment variables)
   const API_URL = 'https://wordshift-api.onrender.com'; // Change to your Render URL
   let supabase = null;
-  
+
   // Promise that resolves when Supabase is ready
   const supabaseReady = (async () => {
     try {
@@ -85,9 +85,10 @@
   const leaderboardBtn = document.getElementById("leaderboard-button");
   const raceLobbyBtn = document.getElementById("race-lobby-button");
   const accountMenuButton = document.getElementById("account-menu-button");
+  const accountMenuLabel = document.getElementById("account-menu-label");
   const accountMenuPanel = document.getElementById("account-menu-panel");
+  const accountSummary = document.getElementById("account-summary");
   const accountActionBtn = document.getElementById("account-action-btn");
-  const passafloraThemeBtn = document.getElementById("passaflora-theme-btn");
   const giveUpBtn = document.getElementById("give-up-btn");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
@@ -684,51 +685,33 @@
     setTheme(initialTheme);
 
     themeToggle.addEventListener("click", () => {
-      const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+      const themeOrder = ["light", "dark", "passaflora"];
+      const currentTheme = document.body.dataset.theme || "light";
+      const currentIndex = Math.max(0, themeOrder.indexOf(currentTheme));
+      const nextTheme = themeOrder[(currentIndex + 1) % themeOrder.length];
       setTheme(nextTheme);
       localStorage.setItem(themeKey, nextTheme);
     });
 
-    passafloraThemeBtn?.addEventListener("click", () => {
-      setTheme("passaflora");
-      localStorage.setItem(themeKey, "passaflora");
-      accountMenuPanel?.classList.add("hidden");
-      accountMenuButton?.setAttribute("aria-expanded", "false");
-      showMessage("Passaflora theme on.");
-    });
-
     giveUpBtn?.addEventListener("click", () => {
-      if (gameOver) {
-        showMessage("Game already over.");
-        accountMenuPanel?.classList.add("hidden");
-        accountMenuButton?.setAttribute("aria-expanded", "false");
-        return;
-      }
-
-      if (!confirm("Give up? You will see the word, but the game won't count toward your score.")) {
-        return;
-      }
-
-      // Show the word without counting it as a played game
-      const wordToShow = currentWord?.toUpperCase() || "Unknown";
-      gameOver = true;
-      setKeyboardLocked(true);
-      showMessage(`Word: ${wordToShow}`);
-      showEndModal(false, "Gave up");
-      
-      // Close menu
-      accountMenuPanel?.classList.add("hidden");
-      accountMenuButton?.setAttribute("aria-expanded", "false");
+      giveUpRound("menu");
     });
   }
 
   function setTheme(theme) {
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
-    const isDark = theme === "dark";
-    themeToggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
-    themeIcon.innerHTML = isDark ? sunIcon() : moonIcon();
-    const themeColor = isDark ? "#121213" : (theme === "passaflora" ? "#eaf9ef" : "#ffffff");
+    if (theme === "dark") {
+      themeToggle.setAttribute("aria-label", "Switch theme (next: Passaflora)");
+      themeIcon.innerHTML = sunIcon();
+    } else if (theme === "passaflora") {
+      themeToggle.setAttribute("aria-label", "Switch theme (next: Light)");
+      themeIcon.innerHTML = flowerIcon();
+    } else {
+      themeToggle.setAttribute("aria-label", "Switch theme (next: Dark)");
+      themeIcon.innerHTML = moonIcon();
+    }
+    const themeColor = theme === "dark" ? "#121213" : (theme === "passaflora" ? "#eaf9ef" : "#ffffff");
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
   }
 
@@ -744,6 +727,18 @@
       <path d="M17.8 17.8l1.6 1.6"></path>
       <path d="M19.4 4.6l-1.6 1.6"></path>
       <path d="M6.2 17.8l-1.6 1.6"></path>
+    `;
+  }
+
+  function flowerIcon() {
+    return `
+      <circle cx="12" cy="12" r="2.2"></circle>
+      <circle cx="12" cy="6.4" r="2.4"></circle>
+      <circle cx="17.2" cy="9" r="2.4"></circle>
+      <circle cx="17.2" cy="15" r="2.4"></circle>
+      <circle cx="12" cy="17.6" r="2.4"></circle>
+      <circle cx="6.8" cy="15" r="2.4"></circle>
+      <circle cx="6.8" cy="9" r="2.4"></circle>
     `;
   }
 
@@ -833,6 +828,13 @@
 
     accountMenuButton?.addEventListener("click", (e) => {
       e.stopPropagation();
+      const userData = getUserData();
+      if (!userData?.username) {
+        accountMenuPanel?.classList.add("hidden");
+        accountMenuButton?.setAttribute("aria-expanded", "false");
+        openAuthModal("Sign in to save progress and join races.");
+        return;
+      }
       const isHidden = accountMenuPanel.classList.contains("hidden");
       accountMenuPanel.classList.toggle("hidden", !isHidden);
       accountMenuButton.setAttribute("aria-expanded", String(isHidden));
@@ -1219,6 +1221,40 @@
     if (!accountActionBtn) return;
     const userData = getUserData();
     accountActionBtn.textContent = userData?.username ? "Log out" : "Sign in / Sign up";
+    if (accountMenuLabel) accountMenuLabel.textContent = userData?.username ? "Account" : "Sign in";
+    accountMenuButton?.classList.toggle("signed-in", Boolean(userData?.username));
+    accountMenuButton?.classList.toggle("signed-out", !userData?.username);
+    if (accountSummary) {
+      if (userData?.username) {
+        accountSummary.textContent = `Signed in as ${userData.username}`;
+        accountSummary.classList.remove("hidden");
+      } else {
+        accountSummary.textContent = "";
+        accountSummary.classList.add("hidden");
+      }
+    }
+  }
+
+  function giveUpRound(source = "menu") {
+    if (gameOver || isSubmitting) {
+      showMessage("Game already over.");
+      accountMenuPanel?.classList.add("hidden");
+      accountMenuButton?.setAttribute("aria-expanded", "false");
+      return false;
+    }
+
+    // Giving up reveals the answer but does not submit stats.
+    gameOver = true;
+    currentGuess = "";
+    updateBoard();
+    setKeyboardLocked(true);
+    saveState(false);
+    showMessage(`Word: ${solution}`);
+    showEndModal(false, true);
+
+    accountMenuPanel?.classList.add("hidden");
+    accountMenuButton?.setAttribute("aria-expanded", "false");
+    return true;
   }
 
   function getGamesPlayedBonus(gamesPlayedValue) {
@@ -1461,8 +1497,21 @@
   function updateHintBadge() {
     const hintsLeft = maxHints - hintsUsed;
     hintBadge.textContent = Math.max(0, hintsLeft);
-    if (hintsLeft <= 0) hintBadge.classList.add("empty");
-    else hintBadge.classList.remove("empty");
+    const noHintsLeft = hintsLeft <= 0;
+    hintBadge.classList.toggle("empty", noHintsLeft);
+    hintButton?.classList.toggle("is-give-up", noHintsLeft);
+
+    const hintIconEl = hintButton?.querySelector("svg");
+    if (hintIconEl) {
+      hintIconEl.innerHTML = noHintsLeft
+        ? `<path d="M5 4v16"></path><path d="M5 5h11l-2.6 3 2.6 3H5"></path>`
+        : `<path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path>`;
+    }
+
+    if (hintButton) {
+      hintButton.setAttribute("aria-label", noHintsLeft ? "Give up and reveal word" : "Hint");
+      hintButton.setAttribute("title", noHintsLeft ? "Give up and reveal word" : "Hint");
+    }
   }
 
   function showHintPopup(title, body) {
@@ -1487,6 +1536,11 @@
 
   function showHint() {
     if (gameOver || isSubmitting) return;
+
+    if (hintsUsed >= maxHints) {
+      giveUpRound("hint");
+      return;
+    }
 
     if (hintsUsed === 0) {
       // Less-revealing first hint: only indicate whether the word has repeated letters
