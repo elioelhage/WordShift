@@ -214,6 +214,9 @@
       gap: 0.4rem;
       margin-bottom: 1rem;
       border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+      flex-wrap: wrap;
+      align-items: center;
+      overflow: hidden;
     }
 
     .tab-btn {
@@ -226,7 +229,8 @@
       cursor: pointer;
       border-bottom: 2px solid transparent;
       transition: all 0.2s ease;
-      white-space: nowrap;
+      white-space: normal;
+      line-height: 1.15;
     }
 
     .tab-btn.active {
@@ -805,6 +809,7 @@
         <ul class="player-sheet-list">
           <li><strong>Name:</strong> <span id="player-sheet-name">—</span></li>
           <li><strong>Joined:</strong> <span id="player-sheet-joined">—</span></li>
+          <li><strong>Last played:</strong> <span id="player-sheet-last-play">—</span></li>
           <li><strong>Raw avg guesses:</strong> <span id="player-sheet-avg">—</span></li>
           <li><strong>Total games played:</strong> <span id="player-sheet-games">—</span></li>
         </ul>
@@ -850,6 +855,7 @@
       const playerSheetEl = document.getElementById("player-sheet");
       const playerSheetNameEl = document.getElementById("player-sheet-name");
       const playerSheetJoinedEl = document.getElementById("player-sheet-joined");
+      const playerSheetLastPlayEl = document.getElementById("player-sheet-last-play");
       const playerSheetAvgEl = document.getElementById("player-sheet-avg");
       const playerSheetGamesEl = document.getElementById("player-sheet-games");
       const playerSheetCloseEl = document.getElementById("player-sheet-close");
@@ -886,10 +892,19 @@
         return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
       }
 
+      function formatLastPlayDate(dayIndex) {
+        if (typeof dayIndex !== 'number' || dayIndex < 0) return "Never";
+        try {
+          const dt = new Date(launchDate + (Number(dayIndex) * 86400000));
+          return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+        } catch (_) { return "Unknown"; }
+      }
+
       function openPlayerSheet(player) {
         if (!playerSheetEl) return;
         playerSheetNameEl.textContent = player.username || "Unknown";
         playerSheetJoinedEl.textContent = formatJoinDate(player.created_at);
+        playerSheetLastPlayEl.textContent = formatLastPlayDate(player.lastPlayedVal);
         playerSheetAvgEl.textContent = Number.isFinite(player.rawAvg) ? Number(player.rawAvg).toFixed(2) : "—";
         playerSheetGamesEl.textContent = String(Number(player.gamesPlayed) || 0);
         playerSheetEl.classList.add("open");
@@ -934,7 +949,15 @@
           else if (rankNumber === 2) li.classList.add("rank-2");
           else if (rankNumber === 3) li.classList.add("rank-3");
 
-          const badges = `<span class="badges"></span>`;
+          // Build badges: solved today (check) and used hints today (hint)
+          let badgesHtml = "";
+          if (player.lastPlayedVal === todayIndex && player.wonToday) {
+            badgesHtml += `<span class="badge played" title="Solved today">${playedIcon}</span>`;
+          }
+          if (player.lastPlayedVal === todayIndex && player.hintsUsedToday > 0) {
+            badgesHtml += `<span class="badge hint" title="Used hints today">${hintIcon}</span>`;
+          }
+          const badges = `<span class="badges">${badgesHtml}</span>`;
 
           const scoreLabel = currentTab === "lifetime" 
             ? String(Number(player.gamesPlayed) || 0)
@@ -999,20 +1022,24 @@
               const GUESS_SCALE = 10;
               const rawAvg = gamesPlayed > 0 ? (totalGuesses / GUESS_SCALE) / gamesPlayed : 0;
 
-              // Extract last played day from saved_state JSON
-              let lastPlayedVal = todayIndex;
+              // Extract last played day, win state and hints used from saved_state JSON
+              let lastPlayedVal = -1;
+              let wonToday = false;
+              let hintsUsedToday = 0;
               try {
                 if (p.saved_state) {
                   const state = typeof p.saved_state === 'string' ? JSON.parse(p.saved_state) : p.saved_state;
                   if (state && state.solutionIndex !== undefined) {
                     lastPlayedVal = Number(state.solutionIndex);
+                    wonToday = Boolean(state.won === true);
+                    hintsUsedToday = Number(state.hintsUsed || 0) || 0;
                   }
                 }
               } catch (e) {
                 console.warn("Could not parse saved_state for", p.username, e);
               }
 
-              const daysSinceLastPlayed = Math.max(0, todayIndex - lastPlayedVal);
+              const daysSinceLastPlayed = lastPlayedVal >= 0 ? Math.max(0, todayIndex - lastPlayedVal) : Infinity;
               const playedThisWeek = daysSinceLastPlayed < 7;
 
               return {
@@ -1021,6 +1048,8 @@
                 rawAvg,
                 weeklyAvg: rawAvg,
                 lastPlayedVal,
+                wonToday,
+                hintsUsedToday,
                 playedThisWeek,
                 rank: 0
               };

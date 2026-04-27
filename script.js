@@ -1614,11 +1614,16 @@
 
     const guess = currentGuess.toUpperCase();
     isSubmitting = true;
-    messageEl.textContent = "Loading...";
-    messageEl.classList.add("show");
+    if (messageEl) {
+      messageEl.innerHTML = `<span class="input-loader" aria-hidden="true"><span class="bar"></span></span>`;
+      messageEl.classList.add("show");
+    }
 
     const valid = await isValidWord(guess.toLowerCase());
-    messageEl.classList.remove("show");
+    if (messageEl) {
+      messageEl.classList.remove("show");
+      messageEl.innerHTML = "";
+    }
 
     if (!valid) {
       showMessage("That word is not accepted.");

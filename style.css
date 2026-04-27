@@ -447,6 +447,32 @@ a.icon-button {
   transform: translateY(0);
 }
 
+/* Inline input loader (used when submitting a guess) */
+.input-loader {
+  display: inline-block;
+  width: 7.2rem;
+  height: 0.54rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+  position: relative;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.input-loader .bar {
+  position: absolute;
+  left: -35%;
+  width: 35%;
+  height: 100%;
+  background: var(--correct);
+  border-radius: inherit;
+  animation: loaderSweep 1s ease-in-out infinite;
+}
+@keyframes loaderSweep {
+  0% { left: -35%; }
+  50% { left: 100%; }
+  100% { left: -35%; }
+}
+
 .keyboard-wrap {
   padding-bottom: 0.15rem;
 }
