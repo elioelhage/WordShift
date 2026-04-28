@@ -103,7 +103,7 @@
           <div id="account-menu-panel" class="account-menu-panel hidden" role="menu" aria-label="Account actions">
             <div id="account-summary" class="account-summary hidden" role="presentation"></div>
             <button id="account-action-btn" class="account-menu-item" type="button" role="menuitem">Sign in / Sign up</button>
-            <button id="give-up-btn" class="account-menu-item" type="button" role="menuitem">Give up & reveal word</button>
+            <button id="give-up-btn" class="account-menu-item" type="button" role="menuitem">Reveal word</button>
           </div>
         </div>
       </div>
@@ -140,12 +140,18 @@
       </button>
       
       <div id="username-view" class="hidden">
-        <h2 class="modal__title">Join the Leaderboard</h2>
-        <p class="modal__countdown">Create an account or login to sync your stats across devices.</p>
-        <input type="text" id="username-input" class="text-input" placeholder="Enter username..." maxlength="15" />
-        <input type="password" id="password-input" class="text-input" placeholder="Enter a password..." style="margin-top: 0.5rem;" />
-        <p id="username-error" class="error-message hidden"></p>
-        <button id="save-username-btn" class="primary-button" style="margin-top: 1rem;">Login / Register</button>
+        <div class="join-auth-shell">
+          <p class="join-auth-kicker">Sync your progress</p>
+          <h2 class="modal__title">Join the Leaderboard</h2>
+          <p class="modal__countdown">Create an account or log in to keep your stats, race access, and rankings across devices.</p>
+          <div class="join-auth-form">
+            <input type="text" id="username-input" class="text-input" placeholder="Choose username" maxlength="15" />
+            <input type="password" id="password-input" class="text-input" placeholder="Password (min 8 characters)" />
+            <p class="join-auth-note">Usernames are case-insensitive.</p>
+            <p id="username-error" class="error-message hidden"></p>
+            <button id="save-username-btn" class="primary-button">Login / Register</button>
+          </div>
+        </div>
       </div>
 
       <div id="stats-view" class="hidden">
@@ -193,7 +199,7 @@
       <p class="modal__countdown">Your game will not count on the leaderboard. Today will be treated as no result.</p>
       <div class="confirm-actions">
         <button id="give-up-confirm-cancel" class="secondary-button" type="button">Cancel</button>
-        <button id="give-up-confirm-yes" class="primary-button" type="button">Give up and reveal</button>
+        <button id="give-up-confirm-yes" class="primary-button" type="button">Reveal word</button>
       </div>
     </div>
   </div>

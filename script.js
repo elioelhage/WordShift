@@ -966,6 +966,7 @@
 
     saveUsernameBtn.addEventListener("click", async () => {
       const name = usernameInput.value.trim();
+      const normalizedName = name.toLowerCase();
       const rawPass = passwordInput.value.trim();
       const pass = await hashPassword(rawPass);
       usernameError.classList.add("hidden");
@@ -975,8 +976,8 @@
         usernameError.classList.remove("hidden");
         return;
       }
-      if (rawPass.length < 3) {
-        usernameError.textContent = "Password too short (min 3 characters)";
+      if (rawPass.length < 8) {
+        usernameError.textContent = "Password too short (min 8 characters)";
         usernameError.classList.remove("hidden");
         return;
       }
@@ -986,18 +987,27 @@
       saveUsernameBtn.disabled = true;
 
       try {
-        const { data: existingUser, error: fetchError } = await supabase
+        const { data: existingUsers, error: fetchError } = await supabase
           .from('leaderboards')
-          .select('uuid, password, saved_state')
-          .eq('username', name)
-          .maybeSingle();
+          .select('uuid, username, password, saved_state, created_at')
+          .ilike('username', name)
+          .limit(20);
 
         if (fetchError) throw fetchError;
+
+        const matchingUsers = (existingUsers || [])
+          .filter((u) => String(u.username || "").toLowerCase() === normalizedName)
+          .sort((a, b) => {
+            const left = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const right = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return left - right;
+          });
+        const existingUser = matchingUsers[0] || null;
 
         if (existingUser) {
           if (existingUser.password === pass) {
             userData.uuid = existingUser.uuid;
-            userData.username = name;
+            userData.username = existingUser.username || name;
             localStorage.setItem(userKey, JSON.stringify(userData));
 
    if (!raceLoginIntent && existingUser.saved_state && existingUser.saved_state.solutionIndex === solutionIndex) {

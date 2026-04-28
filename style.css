@@ -1061,6 +1061,41 @@ select.text-input {
   flex: 1;
 }
 
+#username-view {
+  justify-content: center;
+}
+
+.join-auth-shell {
+  width: min(100%, 26rem);
+  margin: 0 auto;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+
+.join-auth-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.join-auth-form {
+  display: grid;
+  gap: 0.62rem;
+  margin-top: 0.65rem;
+}
+
+.join-auth-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 #username-view .modal__title,
 #stats-view .modal__title {
   font-size: clamp(1.5rem, 3.4vw, 2rem);
@@ -1068,7 +1103,7 @@ select.text-input {
 }
 
 #username-view .modal__countdown {
-  margin: 0.45rem 0 0.8rem;
+  margin: 0.45rem 0 0.1rem;
   line-height: 1.45;
   max-width: 44ch;
 }
