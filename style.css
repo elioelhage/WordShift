@@ -338,25 +338,8 @@ a.icon-button {
   border-color: color-mix(in srgb, var(--border) 82%, transparent);
 }
 
-.account-loading-bar {
-  display: none;
-  width: 4.9rem;
-  height: 0.54rem;
-  flex: 0 0 auto;
-}
-
 .account-button.is-loading {
   cursor: progress;
-  padding: 0 0.82rem;
-}
-
-.account-button.is-loading svg,
-.account-button.is-loading .account-menu-label {
-  display: none;
-}
-
-.account-button.is-loading .account-loading-bar {
-  display: inline-block;
 }
 
 /* Mobile: keep account button icon-only to avoid overflowing the header */
