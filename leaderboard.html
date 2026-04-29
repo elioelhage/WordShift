@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="description" content="WordShift Leaderboard: Track average guesses, view consistency ratings, and see who dominates the top rankings." />
+  <meta name="description" content="WordShift Leaderboard: Track all-time average guesses and see who leads the rankings." />
   <meta name="theme-color" content="#121213" />
   <script>
     (function () {
@@ -605,45 +605,184 @@
     }
 
     .player-sheet-card {
-      width: min(94vw, 28rem);
-      border-radius: 16px;
+      position: relative;
+      width: min(94vw, 34rem);
+      border-radius: 24px;
       border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-      background: var(--surface);
+      background:
+        radial-gradient(120% 90% at 0% 0%, rgba(106, 170, 100, 0.18), transparent 55%),
+        radial-gradient(100% 80% at 100% 0%, rgba(96, 165, 250, 0.12), transparent 52%),
+        var(--surface);
       box-shadow: var(--shadow);
-      padding: 1rem;
+      padding: 1.05rem;
+      overflow: hidden;
+    }
+
+    .player-sheet-card::after {
+      content: "";
+      position: absolute;
+      inset: auto 1rem 0.85rem;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--border) 58%, transparent), transparent);
+      pointer-events: none;
+    }
+
+    .player-sheet-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-right: 2.9rem;
+    }
+
+    .player-sheet-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.82rem;
+      min-width: 0;
+    }
+
+    .player-sheet-avatar {
+      width: 4.15rem;
+      height: 4.15rem;
+      flex: 0 0 auto;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 92%, #fff 8%), color-mix(in srgb, #4f8e4b 92%, #111 8%));
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      box-shadow: 0 12px 24px rgba(106, 170, 100, 0.28);
+    }
+
+    .player-sheet-kicker {
+      margin: 0 0 0.16rem;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
     }
 
     .player-sheet-title {
-      margin: 0 0 0.7rem;
-      font-size: 1.05rem;
-      font-weight: 800;
-    }
-
-    .player-sheet-list {
       margin: 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 0.5rem;
-      color: var(--muted);
-      font-size: 0.92rem;
+      font-size: 1.18rem;
+      font-weight: 900;
+      letter-spacing: 0.01em;
     }
 
-    .player-sheet-list strong {
-      color: var(--text);
-      margin-right: 0.3rem;
+    .player-sheet-subtitle {
+      margin: 0.3rem 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
     }
 
     .player-sheet-close {
-      margin-top: 0.9rem;
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--surface-2);
+      position: absolute;
+      top: 0.8rem;
+      right: 0.8rem;
+      width: 2.35rem;
+      height: 2.35rem;
+      border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface-2) 82%, transparent);
       color: var(--text);
-      padding: 0.62rem 0.7rem;
-      font-weight: 700;
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+      font-weight: 800;
       cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .player-sheet-name {
+      margin: 1rem 0 0.5rem;
+      font-size: clamp(1.5rem, 5vw, 2.1rem);
+      font-weight: 950;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+
+    .player-sheet-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0;
+    }
+
+    .player-sheet-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.5rem 0.72rem;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+      background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .player-sheet-pill strong {
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .player-sheet-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.72rem;
+      margin-top: 1rem;
+    }
+
+    .player-sheet-stat {
+      border-radius: 18px;
+      border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+      background:
+        linear-gradient(160deg, color-mix(in srgb, var(--surface) 90%, #fff 10%), var(--surface));
+      padding: 0.94rem 0.92rem 0.88rem;
+      min-height: 6rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.45rem;
+    }
+
+    .player-sheet-stat--avg {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(106, 170, 100, 0.16), transparent 55%),
+        linear-gradient(160deg, color-mix(in srgb, var(--surface) 88%, #fff 12%), var(--surface));
+    }
+
+    .player-sheet-stat-label {
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .player-sheet-stat-value {
+      font-size: clamp(1.45rem, 4vw, 2rem);
+      line-height: 1;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .player-sheet-stat--avg .player-sheet-stat-value {
+      color: var(--accent);
+    }
+
+    .player-sheet-footer {
+      margin-top: 0.9rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.65rem;
+      flex-wrap: wrap;
     }
 
     .you {
@@ -836,12 +975,12 @@
       </div>
     </header>
     
-    <p class="leaderboard-info">Compare your performance with other players. Switch between most games played and leaderboard score (adjusted average).</p>
+    <p class="leaderboard-info">Compare your performance with other players. Switch between most games played and all-time average guesses.</p>
 
     <section class="shell" aria-label="Leaderboard list">
       <div class="tabs">
         <button id="tab-weekly" class="tab-btn active" type="button" data-tab="weekly">
-          All Time • Leaderboard Score
+          All Time • Avg Guesses
         </button>
         <button id="tab-lifetime" class="tab-btn" type="button" data-tab="lifetime">
           Lifetime • Most Games
@@ -849,7 +988,7 @@
       </div>
 
       <div class="meta">
-        <span id="meta-label">Top 50 • Leaderboard score (adjusted)</span>
+        <span id="meta-label">Top 50 • Avg guesses (min 2 games)</span>
         <span id="meta-count"></span>
       </div>
       <div id="lb-progress" class="lb-progress" aria-hidden="true">
@@ -860,17 +999,35 @@
 
     <div id="player-sheet" class="player-sheet" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title">
       <div class="player-sheet-card">
-        <h2 id="player-sheet-title" class="player-sheet-title">Player details</h2>
-        <ul class="player-sheet-list">
-          <li><strong>Name:</strong> <span id="player-sheet-name">—</span></li>
-          <li><strong>Joined:</strong> <span id="player-sheet-joined">—</span></li>
-          <li><strong>Last played:</strong> <span id="player-sheet-last-play">—</span></li>
-          <li><strong>Raw avg guesses:</strong> <span id="player-sheet-avg">—</span></li>
-          <li><strong>Adjusted avg:</strong> <span id="player-sheet-adjusted">—</span></li>
-          <li><strong>Score:</strong> <span id="player-sheet-score">—</span></li>
-          <li><strong>Total games played:</strong> <span id="player-sheet-games">—</span></li>
-        </ul>
-        <button id="player-sheet-close" class="player-sheet-close" type="button">Close</button>
+        <div class="player-sheet-header">
+          <div class="player-sheet-brand">
+            <div id="player-sheet-avatar" class="player-sheet-avatar" aria-hidden="true">?</div>
+            <div>
+              <p class="player-sheet-kicker">Leaderboard profile</p>
+              <h2 id="player-sheet-title" class="player-sheet-title">Player details</h2>
+              <p class="player-sheet-subtitle">All-time average guesses and play history.</p>
+            </div>
+          </div>
+          <button id="player-sheet-close" class="player-sheet-close" type="button" aria-label="Close profile">×</button>
+        </div>
+
+        <div class="player-sheet-name" id="player-sheet-name">—</div>
+
+        <div class="player-sheet-meta" aria-label="Profile metadata">
+          <span class="player-sheet-pill">Joined <strong id="player-sheet-joined">—</strong></span>
+          <span class="player-sheet-pill">Last played <strong id="player-sheet-last-play">—</strong></span>
+        </div>
+
+        <div class="player-sheet-stats" aria-label="Player statistics">
+          <div class="player-sheet-stat player-sheet-stat--avg">
+            <span class="player-sheet-stat-label">Avg guesses</span>
+            <span id="player-sheet-avg" class="player-sheet-stat-value">—</span>
+          </div>
+          <div class="player-sheet-stat">
+            <span class="player-sheet-stat-label">Games played</span>
+            <span id="player-sheet-games" class="player-sheet-stat-value">—</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -910,12 +1067,11 @@
       const lbProgressEl = document.getElementById("lb-progress");
       const metaLabelEl = document.getElementById("meta-label");
       const playerSheetEl = document.getElementById("player-sheet");
+      const playerSheetAvatarEl = document.getElementById("player-sheet-avatar");
       const playerSheetNameEl = document.getElementById("player-sheet-name");
       const playerSheetJoinedEl = document.getElementById("player-sheet-joined");
       const playerSheetLastPlayEl = document.getElementById("player-sheet-last-play");
       const playerSheetAvgEl = document.getElementById("player-sheet-avg");
-      const playerSheetAdjustedEl = document.getElementById("player-sheet-adjusted");
-      const playerSheetScoreEl = document.getElementById("player-sheet-score");
       const playerSheetGamesEl = document.getElementById("player-sheet-games");
       const playerSheetCloseEl = document.getElementById("player-sheet-close");
 
@@ -924,10 +1080,7 @@
 
       let currentTab = "weekly";
       let allPlayers = [];
-      // Scoring constants (new leaderboard formula)
-      const GLOBAL_M = 3.985; // global average across all players
-      const K_CONFIDENCE = 7; // confidence constant to downweight small N
-      const MIN_GAMES_FOR_PUBLIC = 3; // minimum games to appear on public leaderboard
+      const MIN_GAMES_FOR_PUBLIC = 2; // minimum games to appear on public average leaderboard
 
       const launchDate = Date.UTC(2026, 3, 1); // April 1, 2026
 
@@ -965,12 +1118,13 @@
 
       function openPlayerSheet(player) {
         if (!playerSheetEl) return;
-        playerSheetNameEl.textContent = player.username || "Unknown";
+        const name = player.username || "Unknown";
+        const initial = name.trim().charAt(0).toUpperCase() || "?";
+        if (playerSheetAvatarEl) playerSheetAvatarEl.textContent = initial;
+        playerSheetNameEl.textContent = name;
         playerSheetJoinedEl.textContent = formatJoinDate(player.created_at);
         playerSheetLastPlayEl.textContent = formatLastPlayDate(player.lastPlayedVal);
         playerSheetAvgEl.textContent = Number.isFinite(player.rawAvg) ? Number(player.rawAvg).toFixed(2) : "—";
-        playerSheetAdjustedEl.textContent = Number.isFinite(player.adjustedAvg) ? Number(player.adjustedAvg).toFixed(2) : "—";
-        playerSheetScoreEl.textContent = Number.isFinite(player.scoreRounded) ? String(player.scoreRounded) : "—";
         playerSheetGamesEl.textContent = String(Number(player.gamesPlayed) || 0);
         playerSheetEl.classList.add("open");
       }
@@ -1027,7 +1181,7 @@
 
           const scoreLabel = currentTab === "lifetime"
             ? String(Number(player.gamesPlayed) || 0)
-            : (Number.isFinite(player.scoreRounded) ? String(player.scoreRounded) : Number(player.rawAvg).toFixed(2));
+            : Number(player.rawAvg).toFixed(2);
 
           li.innerHTML = `
             <div class="left">
@@ -1080,8 +1234,6 @@
             return;
           }
 
-          // Lowest-average tab uses all-time average across all players with played games.
-
           allPlayers = (data || [])
             .filter((p) => p.username)
             .map((p) => {
@@ -1089,15 +1241,6 @@
               const totalGuesses = Number(p.total_guesses) || 0;
               const GUESS_SCALE = 10;
               const rawAvg = gamesPlayed > 0 ? (totalGuesses / GUESS_SCALE) / gamesPlayed : 0;
-
-              // Adjusted average blends player's raw avg with global M using confidence K
-              const N = gamesPlayed;
-              const A = rawAvg;
-              const K = K_CONFIDENCE;
-              const M = GLOBAL_M;
-              const adjustedAvg = N > 0 ? (N / (N + K)) * A + (K / (N + K)) * M : M;
-              const score = 1000 - 100 * adjustedAvg;
-              const scoreRounded = Number.isFinite(score) ? Math.round(score) : 0;
 
               // Extract last played day, win state and hints used from saved_state JSON
               let lastPlayedVal = -1;
@@ -1120,9 +1263,6 @@
                 ...p,
                 gamesPlayed,
                 rawAvg,
-                adjustedAvg,
-                score,
-                scoreRounded,
                 lastPlayedVal,
                 wonToday,
                 hintsUsedToday,
@@ -1151,10 +1291,10 @@
             .sort((a, b) => Number(b.gamesPlayed) - Number(a.gamesPlayed))
             .slice(0, 50);
         } else if (currentTab === "weekly") {
-          metaLabelEl.textContent = `Top 50 • Leaderboard score (min ${MIN_GAMES_FOR_PUBLIC} games)`;
+          metaLabelEl.textContent = `Top 50 • Avg guesses (min ${MIN_GAMES_FOR_PUBLIC} games)`;
           rows = [...allPlayers]
             .filter((p) => Number(p.gamesPlayed) >= MIN_GAMES_FOR_PUBLIC)
-            .sort((a, b) => Number(b.score) - Number(a.score))
+            .sort((a, b) => Number(a.rawAvg) - Number(b.rawAvg))
             .slice(0, 50);
         }
 

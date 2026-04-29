@@ -338,6 +338,27 @@ a.icon-button {
   border-color: color-mix(in srgb, var(--border) 82%, transparent);
 }
 
+.account-button.is-loading {
+  cursor: progress;
+  opacity: 0.94;
+  border-color: color-mix(in srgb, var(--correct) 48%, var(--border));
+  background: color-mix(in srgb, var(--correct) 10%, var(--surface));
+}
+
+.account-button.is-loading svg {
+  animation: accountSpin 0.85s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+.account-button.is-loading .account-menu-label {
+  opacity: 0.8;
+}
+
+@keyframes accountSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Mobile: keep account button icon-only to avoid overflowing the header */
 @media (max-width: 640px) {
   .account-menu-label {

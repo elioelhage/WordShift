@@ -125,6 +125,7 @@
   const walkthroughActions = walkthroughModal?.querySelector(".walkthrough-actions");
 
   const wordCache = {};
+  let accountMenuLoading = false;
 
   function getCurrentSolutionIndex() {
     const now = new Date();
@@ -858,12 +859,24 @@
         return;
       }
 
+      if (accountMenuLoading) return;
+
       // Signed-in users get a quick profile panel with account info and logout.
       const isHidden = accountMenuPanel?.classList.contains("hidden");
-      accountMenuPanel?.classList.toggle("hidden", !isHidden);
-      accountMenuButton?.setAttribute("aria-expanded", String(Boolean(isHidden)));
       if (isHidden) {
-        loadAccountSummaryForMenu();
+        (async () => {
+          setAccountMenuLoading(true);
+          try {
+            await loadAccountSummaryForMenu();
+            accountMenuPanel?.classList.remove("hidden");
+            accountMenuButton?.setAttribute("aria-expanded", "true");
+          } finally {
+            setAccountMenuLoading(false);
+          }
+        })();
+      } else {
+        accountMenuPanel?.classList.add("hidden");
+        accountMenuButton?.setAttribute("aria-expanded", "false");
       }
     });
 
@@ -1338,13 +1351,20 @@
     if (accountMenuLabel) accountMenuLabel.textContent = userData?.username ? userData.username : "Sign in";
     if (accountSummary) {
       if (userData?.username) {
-        accountSummary.innerHTML = `<div class="account-summary__line"><strong>${userData.username}</strong></div><div class="account-summary__line">Loading account stats...</div>`;
+        accountSummary.innerHTML = "";
         accountSummary.classList.remove("hidden");
       } else {
         accountSummary.innerHTML = "";
         accountSummary.classList.add("hidden");
       }
     }
+  }
+
+  function setAccountMenuLoading(isLoading) {
+    accountMenuLoading = Boolean(isLoading);
+    accountMenuButton?.classList.toggle("is-loading", accountMenuLoading);
+    accountMenuButton?.setAttribute("aria-busy", String(accountMenuLoading));
+    if (accountMenuButton) accountMenuButton.disabled = accountMenuLoading;
   }
 
   async function loadAccountSummaryForMenu() {
@@ -1357,11 +1377,9 @@
     }
 
     const username = userData.username;
-    accountSummary.classList.remove("hidden");
-    accountSummary.innerHTML = `<div class="account-summary__line"><strong>${username}</strong></div><div class="account-summary__line">Loading account stats...</div>`;
-
     if (!supabase) {
       accountSummary.innerHTML = `<div class="account-summary__line"><strong>${username}</strong></div><div class="account-summary__line">Stats unavailable right now.</div>`;
+      accountSummary.classList.remove("hidden");
       return;
     }
 
@@ -1386,9 +1404,11 @@
         <div class="account-summary__line">Games: ${games}</div>
         <div class="account-summary__line">Avg guesses: ${avg}</div>
       `;
+      accountSummary.classList.remove("hidden");
     } catch (err) {
       console.error('Failed to load account summary', err);
       accountSummary.innerHTML = `<div class="account-summary__line"><strong>${username}</strong></div><div class="account-summary__line">Could not load stats.</div>`;
+      accountSummary.classList.remove("hidden");
     }
   }
 
