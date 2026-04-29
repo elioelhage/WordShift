@@ -110,8 +110,6 @@
   const tabBtns = document.querySelectorAll(".tab-btn");
   const lbLoading = document.getElementById("lb-loading");
   const lbList = document.getElementById("lb-list");
-  const lbRulesToggle = document.getElementById("lb-rules-toggle");
-  const lbRulesPanel = document.getElementById("lb-rules-panel");
   const walkthroughModal = document.getElementById("walkthrough-modal");
   const walkthroughCard = walkthroughModal?.querySelector(".walkthrough-card");
   const walkthroughTitle = document.getElementById("walkthrough-title");
@@ -921,15 +919,6 @@
     closeLeaderboardBtn.addEventListener("click", () => {
       leaderboardModal.classList.add("hidden");
       usernameError.classList.add("hidden");
-      lbRulesPanel?.classList.add("hidden");
-      lbRulesToggle?.setAttribute("aria-expanded", "false");
-    });
-
-    lbRulesToggle?.addEventListener("click", () => {
-      if (!lbRulesPanel) return;
-      const isHidden = lbRulesPanel.classList.contains("hidden");
-      lbRulesPanel.classList.toggle("hidden", !isHidden);
-      lbRulesToggle.setAttribute("aria-expanded", String(isHidden));
     });
 
     walkthroughSkipBtn?.addEventListener("click", () => {
@@ -1345,10 +1334,9 @@
     if (!accountActionBtn) return;
     const userData = getUserData();
     accountActionBtn.textContent = userData?.username ? "Log out" : "Sign in / Sign up";
-    if (accountMenuLabel) accountMenuLabel.textContent = userData?.username ? "Account" : "Sign in";
+    if (accountMenuLabel) accountMenuLabel.textContent = userData?.username ? userData.username : "Sign in";
     accountMenuButton?.classList.toggle("signed-in", Boolean(userData?.username));
     accountMenuButton?.classList.toggle("signed-out", !userData?.username);
-    if (accountMenuLabel) accountMenuLabel.textContent = userData?.username ? userData.username : "Sign in";
     if (accountSummary) {
       if (userData?.username) {
         accountSummary.innerHTML = "";

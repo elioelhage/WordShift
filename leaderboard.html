@@ -618,6 +618,11 @@
       overflow: hidden;
     }
 
+    .player-sheet.open .player-sheet-card {
+      animation: playerSheetReveal 200ms ease-out;
+      transform-origin: center;
+    }
+
     .player-sheet-card::after {
       content: "";
       position: absolute;
@@ -943,6 +948,11 @@
     @keyframes lbBarSlide {
       0% { transform: translateX(-110%); }
       100% { transform: translateX(220%); }
+    }
+
+    @keyframes playerSheetReveal {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     @media (max-width: 620px) {

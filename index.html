@@ -99,6 +99,7 @@
               <circle cx="12" cy="8" r="4"></circle>
             </svg>
             <span id="account-menu-label" class="account-menu-label">Sign in</span>
+            <span class="account-loading-bar input-loader" aria-hidden="true"><span class="bar"></span></span>
           </button>
           <div id="account-menu-panel" class="account-menu-panel hidden" role="menu" aria-label="Account actions">
             <div id="account-summary" class="account-summary hidden" role="presentation"></div>
@@ -158,17 +159,7 @@
         <div class="lb-header">
           <h2 class="modal__title">Leaderboards</h2>
         </div>
-        <p class="lb-subtitle">Rankings are based on average guesses, with a small consistency boost for active streaks.</p>
-        <button id="lb-rules-toggle" class="lb-rules-toggle" type="button" aria-expanded="false" aria-controls="lb-rules-panel">Leaderboard rules</button>
-        <div id="lb-rules-panel" class="lb-rules-panel hidden">
-          <p><strong>How ranking works</strong></p>
-          <ul>
-            <li><strong>Main score:</strong> your average guesses per game. Lower is better.</li>
-            <li><strong>Unrated (???):</strong> only appears when you start. Once your first-game average goes above 3.00, you become rated and appear on the leaderboard immediately.</li>
-            <li><strong>Consistency bonus:</strong> reach 3, 7, 21, or 50 total games to unlock small score bonuses. The more you play, the better your score gets. <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 1em; height: 1em; vertical-align: middle;"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg> = played</li>
-            <li><strong>Inactivity Decay:</strong> The top 3 players who don't play for 3+ days will receive a +0.025 penalty each day to keep competition active.</li>
-          </ul>
-        </div>
+        <p class="lb-subtitle">Rankings are based on average guesses.</p>
         <div class="tab-content">
           <div id="lb-loading" class="lb-loading">Loading...</div>
           <ul id="lb-list" class="lb-list hidden"></ul>
