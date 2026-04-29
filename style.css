@@ -339,24 +339,60 @@ a.icon-button {
 }
 
 .account-button.is-loading {
+  position: relative;
+  isolation: isolate;
   cursor: progress;
   opacity: 0.94;
-  border-color: color-mix(in srgb, var(--correct) 48%, var(--border));
+  border-color: color-mix(in srgb, var(--correct) 52%, var(--border));
   background: color-mix(in srgb, var(--correct) 10%, var(--surface));
 }
 
-.account-button.is-loading svg {
-  animation: accountSpin 0.85s linear infinite;
-  transform-origin: 50% 50%;
+.account-button.is-loading::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    rgba(106, 170, 100, 0.06),
+    rgba(106, 170, 100, 0.95),
+    rgba(150, 225, 144, 0.18),
+    rgba(106, 170, 100, 0.95),
+    rgba(106, 170, 100, 0.06)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: accountRingSpin 0.95s linear infinite;
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px rgba(106, 170, 100, 0.28));
+}
+
+.account-button.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(106, 170, 100, 0.22) 0%, rgba(106, 170, 100, 0.08) 38%, transparent 72%);
+  opacity: 0.7;
+  animation: accountGlowPulse 1.4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .account-button.is-loading .account-menu-label {
   opacity: 0.8;
 }
 
-@keyframes accountSpin {
+@keyframes accountRingSpin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes accountGlowPulse {
+  0%, 100% { transform: scale(0.98); opacity: 0.45; }
+  50% { transform: scale(1.03); opacity: 0.9; }
 }
 
 /* Mobile: keep account button icon-only to avoid overflowing the header */
@@ -457,6 +493,16 @@ a.icon-button {
 .hint-button.is-give-up {
   border-color: color-mix(in srgb, #d9534f 66%, var(--border));
   background: color-mix(in srgb, #d9534f 16%, var(--surface));
+}
+
+.hint-button.is-give-up.game-over {
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.hint-button.is-give-up.game-over .hint-badge.empty {
+  background: var(--muted);
 }
 
 .hint-button.is-give-up svg {

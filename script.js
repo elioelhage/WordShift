@@ -1676,11 +1676,12 @@
     hintBadge.textContent = Math.max(0, hintsLeft);
     const noHintsLeft = hintsLeft <= 0;
     hintBadge.classList.toggle("empty", noHintsLeft);
-    hintButton?.classList.toggle("is-give-up", noHintsLeft);
+    hintButton?.classList.toggle("is-give-up", noHintsLeft && !gameOver);
 
     if (hintButton) {
-      hintButton.setAttribute("aria-label", noHintsLeft ? "No hints left" : "Hint");
-      hintButton.setAttribute("title", noHintsLeft ? "No hints left" : "Hint");
+      const label = noHintsLeft && !gameOver ? "No hints left" : "Hint";
+      hintButton.setAttribute("aria-label", label);
+      hintButton.setAttribute("title", label);
     }
   }
 
@@ -1893,6 +1894,7 @@
       if (guess === solution) {
         gameOver = true;
         setKeyboardLocked(true);
+        updateHintBadge();
         updateUserStats(true, currentRow + 1, hintsUsed);
         saveState(true);
         showMessage("Solved.");
@@ -1903,6 +1905,7 @@
         if (currentRow >= maxRows) {
           gameOver = true;
           setKeyboardLocked(true);
+          updateHintBadge();
           updateUserStats(false, maxRows, hintsUsed);
           saveState(false);
           showMessage(`The word was ${solution}.`);
