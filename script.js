@@ -420,6 +420,7 @@
     updateKeyboardColorsFromBoard();
     updateHintBadge();
     bindEvents();
+    refreshAccountMenuAction();
     initializeDailyNotifications();
     scheduleDayRolloverReset();
     if (raceLoginIntent) {
