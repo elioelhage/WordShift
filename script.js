@@ -17,7 +17,7 @@
   // Keys are fetched from backend API (protected in Render environment variables)
   const API_URL = 'https://wordshift-api.onrender.com'; // Change to your Render URL
   let supabase = null;
-
+  
   // Promise that resolves when Supabase is ready
   const supabaseReady = (async () => {
     try {
@@ -67,7 +67,6 @@
 
   const boardEl = document.getElementById("board");
   const keyboardEl = document.getElementById("keyboard");
-  const keyboardWrapEl = keyboardEl?.closest(".keyboard-wrap") || null;
   const messageEl = document.getElementById("message");
   const metaLineEl = document.getElementById("meta-line");
   const themeToggle = document.getElementById("theme-toggle");
@@ -85,21 +84,10 @@
   const leaderboardBtn = document.getElementById("leaderboard-button");
   const raceLobbyBtn = document.getElementById("race-lobby-button");
   const accountMenuButton = document.getElementById("account-menu-button");
-  const accountMenuLabel = document.getElementById("account-menu-label");
   const accountMenuPanel = document.getElementById("account-menu-panel");
-  const accountSummary = document.getElementById("account-summary");
   const accountActionBtn = document.getElementById("account-action-btn");
+  const passafloraThemeBtn = document.getElementById("passaflora-theme-btn");
   const giveUpBtn = document.getElementById("give-up-btn");
-  const playerSheetEl = document.getElementById("player-sheet");
-  const playerSheetNameEl = document.getElementById("player-sheet-name");
-  const playerSheetJoinedEl = document.getElementById("player-sheet-joined");
-  const playerSheetLastPlayEl = document.getElementById("player-sheet-last-play");
-  const playerSheetAvgEl = document.getElementById("player-sheet-avg");
-  const playerSheetGamesEl = document.getElementById("player-sheet-games");
-  const playerSheetCloseEl = document.getElementById("player-sheet-close");
-  const giveUpConfirmModal = document.getElementById("give-up-confirm-modal");
-  const giveUpConfirmYesBtn = document.getElementById("give-up-confirm-yes");
-  const giveUpConfirmCancelBtn = document.getElementById("give-up-confirm-cancel");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
   const leaderboardCard = document.querySelector(".leaderboard-card");
@@ -110,6 +98,8 @@
   const tabBtns = document.querySelectorAll(".tab-btn");
   const lbLoading = document.getElementById("lb-loading");
   const lbList = document.getElementById("lb-list");
+  const lbRulesToggle = document.getElementById("lb-rules-toggle");
+  const lbRulesPanel = document.getElementById("lb-rules-panel");
   const walkthroughModal = document.getElementById("walkthrough-modal");
   const walkthroughCard = walkthroughModal?.querySelector(".walkthrough-card");
   const walkthroughTitle = document.getElementById("walkthrough-title");
@@ -123,7 +113,6 @@
   const walkthroughActions = walkthroughModal?.querySelector(".walkthrough-actions");
 
   const wordCache = {};
-  let accountMenuLoading = false;
 
   function getCurrentSolutionIndex() {
     const now = new Date();
@@ -183,7 +172,6 @@
   let afternoonReminderInterval = null;
   let dayRolloverTimeout = null;
   let hasTriggeredDayReset = false;
-  let pendingGiveUpSource = "menu";
   let loaderFailsafeTimer = null;
   let walkthroughLengthTimer = null;
   let walkthroughLengthFrame = 0;
@@ -406,8 +394,7 @@
       hintsUsed = savedState.hintsUsed || 0;
       hasSubmittedToLeaderboard = savedState.hasSubmittedToLeaderboard || false;
     } else {
-      // New day or fresh game - reset submission flag and keyboard lock
-      gameOver = false;
+      // New day or fresh game - reset submission flag
       hasSubmittedToLeaderboard = false;
     }
 
@@ -419,7 +406,6 @@
     updateBoard();
     updateKeyboardColorsFromBoard();
     updateHintBadge();
-    setKeyboardLocked(gameOver);
     bindEvents();
     initializeDailyNotifications();
     scheduleDayRolloverReset();
@@ -654,7 +640,6 @@
 
     gameOver = true;
     isSubmitting = true;
-    setKeyboardLocked(true);
     if (countdownTimer) {
       clearInterval(countdownTimer);
       countdownTimer = null;
@@ -692,38 +677,54 @@
   function setupTheme() {
     const savedTheme = localStorage.getItem(themeKey);
     const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initialTheme = savedTheme === "passaflora" ? "light" : (savedTheme || (prefersDark ? "dark" : "light"));
+    const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
     setTheme(initialTheme);
-    if (savedTheme === "passaflora") localStorage.setItem(themeKey, "light");
 
     themeToggle.addEventListener("click", () => {
-      const themeOrder = ["light", "dark"];
-      const currentTheme = document.body.dataset.theme || "light";
-      const currentIndex = Math.max(0, themeOrder.indexOf(currentTheme));
-      const nextTheme = themeOrder[(currentIndex + 1) % themeOrder.length];
+      const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
       setTheme(nextTheme);
       localStorage.setItem(themeKey, nextTheme);
     });
 
-    giveUpBtn?.addEventListener("click", () => {
+    passafloraThemeBtn?.addEventListener("click", () => {
+      setTheme("passaflora");
+      localStorage.setItem(themeKey, "passaflora");
       accountMenuPanel?.classList.add("hidden");
       accountMenuButton?.setAttribute("aria-expanded", "false");
-      openGiveUpConfirm("menu");
+      showMessage("Passaflora theme on.");
+    });
+
+    giveUpBtn?.addEventListener("click", () => {
+      if (gameOver) {
+        showMessage("Game already over.");
+        accountMenuPanel?.classList.add("hidden");
+        accountMenuButton?.setAttribute("aria-expanded", "false");
+        return;
+      }
+
+      if (!confirm("Give up? You will see the word, but the game won't count toward your score.")) {
+        return;
+      }
+
+      // Show the word without counting it as a played game
+      const wordToShow = currentWord?.toUpperCase() || "Unknown";
+      gameOver = true;
+      showMessage(`Word: ${wordToShow}`);
+      showEndModal(false, "Gave up");
+      
+      // Close menu
+      accountMenuPanel?.classList.add("hidden");
+      accountMenuButton?.setAttribute("aria-expanded", "false");
     });
   }
 
   function setTheme(theme) {
-    if (theme === "passaflora") theme = "light";
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
-    if (theme === "dark") {
-      themeToggle.setAttribute("aria-label", "Switch theme (next: Light)");
-      themeIcon.innerHTML = sunIcon();
-    } else {
-      themeToggle.setAttribute("aria-label", "Switch theme (next: Dark)");
-      themeIcon.innerHTML = moonIcon();
-    }
-    const themeColor = theme === "dark" ? "#121213" : "#ffffff";
+    const isDark = theme === "dark";
+    themeToggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+    themeIcon.innerHTML = isDark ? sunIcon() : moonIcon();
+    const themeColor = isDark ? "#121213" : (theme === "passaflora" ? "#eaf9ef" : "#ffffff");
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
   }
 
@@ -740,27 +741,6 @@
       <path d="M19.4 4.6l-1.6 1.6"></path>
       <path d="M6.2 17.8l-1.6 1.6"></path>
     `;
-  }
-
-  function flowerIcon() {
-    return `
-      <circle cx="12" cy="12" r="2.2"></circle>
-      <circle cx="12" cy="6.4" r="2.4"></circle>
-      <circle cx="17.2" cy="9" r="2.4"></circle>
-      <circle cx="17.2" cy="15" r="2.4"></circle>
-      <circle cx="12" cy="17.6" r="2.4"></circle>
-      <circle cx="6.8" cy="15" r="2.4"></circle>
-      <circle cx="6.8" cy="9" r="2.4"></circle>
-    `;
-  }
-
-  function openGiveUpConfirm(source = "menu") {
-    pendingGiveUpSource = source;
-    giveUpConfirmModal?.classList.remove("hidden");
-  }
-
-  function closeGiveUpConfirm() {
-    giveUpConfirmModal?.classList.add("hidden");
   }
 
   function buildBoard() {
@@ -813,26 +793,6 @@
     });
   }
 
-  function animateKeyTap(key) {
-    const keyEl = document.getElementById(`key-${key}`);
-    if (!keyEl) return;
-    keyEl.classList.remove("tap");
-    void keyEl.offsetWidth;
-    keyEl.classList.add("tap");
-    window.setTimeout(() => keyEl.classList.remove("tap"), 170);
-  }
-
-  function setKeyboardLocked(locked) {
-    if (keyboardEl) {
-      keyboardEl.classList.toggle("keyboard-disabled", Boolean(locked));
-      keyboardEl.setAttribute("aria-disabled", String(Boolean(locked)));
-      keyboardEl.querySelectorAll(".key").forEach((btn) => {
-        btn.disabled = Boolean(locked);
-      });
-    }
-    keyboardWrapEl?.classList.toggle("locked", Boolean(locked));
-  }
-
   function bindEvents() {
     closeModal.addEventListener("click", hideEndModal);
 
@@ -849,33 +809,10 @@
 
     accountMenuButton?.addEventListener("click", (e) => {
       e.stopPropagation();
-      const userData = getUserData();
-      if (!userData?.username) {
-        accountMenuPanel?.classList.add("hidden");
-        accountMenuButton?.setAttribute("aria-expanded", "false");
-        openAuthModal("Sign in to save progress and join races.");
-        return;
-      }
-
-      if (accountMenuLoading) return;
-
-      // Signed-in users get a quick profile panel with account info and logout.
-      const isHidden = accountMenuPanel?.classList.contains("hidden");
-      if (isHidden) {
-        (async () => {
-          setAccountMenuLoading(true);
-          try {
-            await loadAccountSummaryForMenu();
-            accountMenuPanel?.classList.remove("hidden");
-            accountMenuButton?.setAttribute("aria-expanded", "true");
-          } finally {
-            setAccountMenuLoading(false);
-          }
-        })();
-      } else {
-        accountMenuPanel?.classList.add("hidden");
-        accountMenuButton?.setAttribute("aria-expanded", "false");
-      }
+      const isHidden = accountMenuPanel.classList.contains("hidden");
+      accountMenuPanel.classList.toggle("hidden", !isHidden);
+      accountMenuButton.setAttribute("aria-expanded", String(isHidden));
+      refreshAccountMenuAction();
     });
 
     accountActionBtn?.addEventListener("click", () => {
@@ -919,6 +856,15 @@
     closeLeaderboardBtn.addEventListener("click", () => {
       leaderboardModal.classList.add("hidden");
       usernameError.classList.add("hidden");
+      lbRulesPanel?.classList.add("hidden");
+      lbRulesToggle?.setAttribute("aria-expanded", "false");
+    });
+
+    lbRulesToggle?.addEventListener("click", () => {
+      if (!lbRulesPanel) return;
+      const isHidden = lbRulesPanel.classList.contains("hidden");
+      lbRulesPanel.classList.toggle("hidden", !isHidden);
+      lbRulesToggle.setAttribute("aria-expanded", String(isHidden));
     });
 
     walkthroughSkipBtn?.addEventListener("click", () => {
@@ -956,19 +902,8 @@
       if (e.target === walkthroughModal) closeWalkthrough(true);
     });
 
-    giveUpConfirmYesBtn?.addEventListener("click", () => {
-      closeGiveUpConfirm();
-      giveUpRound(pendingGiveUpSource);
-    });
-
-    giveUpConfirmCancelBtn?.addEventListener("click", closeGiveUpConfirm);
-    giveUpConfirmModal?.addEventListener("click", (e) => {
-      if (e.target === giveUpConfirmModal) closeGiveUpConfirm();
-    });
-
     saveUsernameBtn.addEventListener("click", async () => {
       const name = usernameInput.value.trim();
-      const normalizedName = name.toLowerCase();
       const rawPass = passwordInput.value.trim();
       const pass = await hashPassword(rawPass);
       usernameError.classList.add("hidden");
@@ -978,8 +913,8 @@
         usernameError.classList.remove("hidden");
         return;
       }
-      if (rawPass.length < 8) {
-        usernameError.textContent = "Password too short (min 8 characters)";
+      if (rawPass.length < 3) {
+        usernameError.textContent = "Password too short (min 3 characters)";
         usernameError.classList.remove("hidden");
         return;
       }
@@ -989,27 +924,18 @@
       saveUsernameBtn.disabled = true;
 
       try {
-        const { data: existingUsers, error: fetchError } = await supabase
+        const { data: existingUser, error: fetchError } = await supabase
           .from('leaderboards')
-          .select('uuid, username, password, saved_state, created_at')
-          .ilike('username', name)
-          .limit(20);
+          .select('uuid, password, saved_state')
+          .eq('username', name)
+          .maybeSingle();
 
         if (fetchError) throw fetchError;
-
-        const matchingUsers = (existingUsers || [])
-          .filter((u) => String(u.username || "").toLowerCase() === normalizedName)
-          .sort((a, b) => {
-            const left = a?.created_at ? new Date(a.created_at).getTime() : 0;
-            const right = b?.created_at ? new Date(b.created_at).getTime() : 0;
-            return left - right;
-          });
-        const existingUser = matchingUsers[0] || null;
 
         if (existingUser) {
           if (existingUser.password === pass) {
             userData.uuid = existingUser.uuid;
-            userData.username = existingUser.username || name;
+            userData.username = name;
             localStorage.setItem(userKey, JSON.stringify(userData));
 
    if (!raceLoginIntent && existingUser.saved_state && existingUser.saved_state.solutionIndex === solutionIndex) {
@@ -1254,172 +1180,21 @@
     usernameInput.value = "";
     passwordInput.value = "";
     usernameError.classList.add("hidden");
+    
     const freshUser = { uuid: crypto.randomUUID(), username: null };
     localStorage.setItem(userKey, JSON.stringify(freshUser));
-    localStorage.removeItem(storageKey);
     statsView.classList.add("hidden");
     usernameView.classList.remove("hidden");
     refreshAccountMenuAction();
-
-    // Ensure keyboard is unlocked immediately when logging out (avoid residual disabled state)
-    gameOver = false;
-    isSubmitting = false;
-    setKeyboardLocked(false);
-    hideEndModal();
-    if (playerSheetEl) playerSheetEl.classList.remove("open");
-    document.body.classList.remove("player-sheet-open");
 
     showAppLoader("Refreshing...");
     safeHardRefresh(220);
   }
 
-  async function openPlayerSheetForCurrentUser() {
-    if (!playerSheetEl) return;
-    const userData = getUserData();
-    if (!userData?.uuid) return;
-    try {
-      const openSheet = () => {
-        playerSheetEl.classList.add("open");
-        document.body.classList.add("player-sheet-open");
-      };
-
-      if (!supabase) {
-        playerSheetNameEl.textContent = userData.username || "Unknown";
-        playerSheetJoinedEl.textContent = "Unknown";
-        playerSheetLastPlayEl.textContent = "Unknown";
-        playerSheetAvgEl.textContent = "—";
-        playerSheetGamesEl.textContent = "—";
-        openSheet();
-        return;
-      }
-
-      const { data: rec, error } = await supabase.from('leaderboards').select('username, created_at, saved_state, games_played, total_guesses').eq('uuid', userData.uuid).maybeSingle();
-      if (error) throw error;
-      const username = rec?.username || userData.username || "Unknown";
-      playerSheetNameEl.textContent = username;
-      playerSheetJoinedEl.textContent = rec?.created_at ? new Date(rec.created_at).toLocaleDateString() : "Unknown";
-
-      let lastPlayed = "Never";
-      if (rec?.saved_state) {
-        try {
-          const st = typeof rec.saved_state === 'string' ? JSON.parse(rec.saved_state) : rec.saved_state;
-          if (typeof st.solutionIndex === 'number') {
-            const launchDate = Date.UTC(2026, 3, 1);
-            const dt = new Date(launchDate + (Number(st.solutionIndex) * 86400000));
-            lastPlayed = dt.toLocaleDateString();
-          }
-        } catch (e) { /* ignore */ }
-      }
-      playerSheetLastPlayEl.textContent = lastPlayed;
-
-      const games = Number(rec?.games_played) || 0;
-      const avg = (games > 0 && rec?.total_guesses) ? ((Number(rec.total_guesses) / GUESS_SCALE) / games).toFixed(2) : "—";
-      playerSheetAvgEl.textContent = avg;
-      playerSheetGamesEl.textContent = String(games);
-      openSheet();
-    } catch (e) {
-      console.error('Failed to open player sheet', e);
-    }
-  }
-
-  function closePlayerSheet() {
-    playerSheetEl?.classList.remove("open");
-    document.body.classList.remove("player-sheet-open");
-  }
-
-  playerSheetCloseEl?.addEventListener("click", closePlayerSheet);
-  playerSheetEl?.addEventListener("click", (e) => { if (e.target === playerSheetEl) closePlayerSheet(); });
-
   function refreshAccountMenuAction() {
     if (!accountActionBtn) return;
     const userData = getUserData();
     accountActionBtn.textContent = userData?.username ? "Log out" : "Sign in / Sign up";
-    if (accountMenuLabel) accountMenuLabel.textContent = userData?.username ? userData.username : "Sign in";
-    accountMenuButton?.classList.toggle("signed-in", Boolean(userData?.username));
-    accountMenuButton?.classList.toggle("signed-out", !userData?.username);
-    if (accountSummary) {
-      if (userData?.username) {
-        accountSummary.innerHTML = "";
-        accountSummary.classList.remove("hidden");
-      } else {
-        accountSummary.innerHTML = "";
-        accountSummary.classList.add("hidden");
-      }
-    }
-  }
-
-  function setAccountMenuLoading(isLoading) {
-    accountMenuLoading = Boolean(isLoading);
-    accountMenuButton?.classList.toggle("is-loading", accountMenuLoading);
-    accountMenuButton?.setAttribute("aria-busy", String(accountMenuLoading));
-    if (accountMenuButton) accountMenuButton.disabled = accountMenuLoading;
-  }
-
-  async function loadAccountSummaryForMenu() {
-    if (!accountSummary) return;
-    const userData = getUserData();
-    if (!userData?.username) {
-      accountSummary.innerHTML = "";
-      accountSummary.classList.add("hidden");
-      return;
-    }
-
-    const username = userData.username;
-    if (!supabase) {
-      accountSummary.innerHTML = `<div class="account-summary__line"><strong>${username}</strong></div><div class="account-summary__line">Stats unavailable right now.</div>`;
-      accountSummary.classList.remove("hidden");
-      return;
-    }
-
-    try {
-      const { data: rec, error } = await supabase
-        .from('leaderboards')
-        .select('created_at, games_played, total_guesses')
-        .eq('uuid', userData.uuid)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      const games = Number(rec?.games_played) || 0;
-      const avg = (games > 0 && rec?.total_guesses)
-        ? ((Number(rec.total_guesses) / GUESS_SCALE) / games).toFixed(2)
-        : "-";
-      const joined = rec?.created_at ? new Date(rec.created_at).toLocaleDateString() : "Unknown";
-
-      accountSummary.innerHTML = `
-        <div class="account-summary__line"><strong>${username}</strong></div>
-        <div class="account-summary__line">Joined: ${joined}</div>
-        <div class="account-summary__line">Games: ${games}</div>
-        <div class="account-summary__line">Avg guesses: ${avg}</div>
-      `;
-      accountSummary.classList.remove("hidden");
-    } catch (err) {
-      console.error('Failed to load account summary', err);
-      accountSummary.innerHTML = `<div class="account-summary__line"><strong>${username}</strong></div><div class="account-summary__line">Could not load stats.</div>`;
-      accountSummary.classList.remove("hidden");
-    }
-  }
-
-  function giveUpRound(source = "menu") {
-    if (gameOver || isSubmitting) {
-      showMessage("Game already over.");
-      accountMenuPanel?.classList.add("hidden");
-      accountMenuButton?.setAttribute("aria-expanded", "false");
-      return false;
-    }
-
-    // Giving up reveals the answer but does not submit stats.
-    gameOver = true;
-    currentGuess = "";
-    updateBoard();
-    setKeyboardLocked(true);
-    saveState(false);
-    showMessage(`Word: ${solution}`);
-    showEndModal(false, true);
-
-    accountMenuPanel?.classList.add("hidden");
-    accountMenuButton?.setAttribute("aria-expanded", "false");
-    return true;
   }
 
   function getGamesPlayedBonus(gamesPlayedValue) {
@@ -1662,15 +1437,8 @@
   function updateHintBadge() {
     const hintsLeft = maxHints - hintsUsed;
     hintBadge.textContent = Math.max(0, hintsLeft);
-    const noHintsLeft = hintsLeft <= 0;
-    hintBadge.classList.toggle("empty", noHintsLeft);
-    hintButton?.classList.toggle("is-give-up", noHintsLeft && !gameOver);
-
-    if (hintButton) {
-      const label = noHintsLeft && !gameOver ? "No hints left" : "Hint";
-      hintButton.setAttribute("aria-label", label);
-      hintButton.setAttribute("title", label);
-    }
+    if (hintsLeft <= 0) hintBadge.classList.add("empty");
+    else hintBadge.classList.remove("empty");
   }
 
   function showHintPopup(title, body) {
@@ -1696,11 +1464,6 @@
   function showHint() {
     if (gameOver || isSubmitting) return;
 
-    if (hintsUsed >= maxHints) {
-      showMessage("No hints left. Use Give up in Account.");
-      return;
-    }
-
     if (hintsUsed === 0) {
       // Less-revealing first hint: only indicate whether the word has repeated letters
       const hasRepeat = (() => {
@@ -1712,9 +1475,7 @@
         return false;
       })();
 
-      const body = hasRepeat
-        ? `This word <span style="color:#6aaa64; font-weight:800;">contains</span> repeated letters.`
-        : `This word <span style="color:#d9534f; font-weight:800;">doesn't contain</span> repeated letters.`;
+      const body = hasRepeat ? "This word contains repeated letters." : "This word contains no repeated letters.";
       showHintPopup("Letter Pattern", body);
       hintsUsed++;
       updateHintBadge();
@@ -1792,8 +1553,6 @@
   function handleKey(key) {
     if (gameOver || isSubmitting) return;
 
-    animateKeyTap(key);
-
     if (key === "ENTER") return submitGuess();
     if (key === "⌫") {
       if (!currentGuess.length) return;
@@ -1855,16 +1614,11 @@
 
     const guess = currentGuess.toUpperCase();
     isSubmitting = true;
-    if (messageEl) {
-      messageEl.innerHTML = `<span class="input-loader" aria-hidden="true"><span class="bar"></span></span>`;
-      messageEl.classList.add("show");
-    }
+    messageEl.textContent = "Loading...";
+    messageEl.classList.add("show");
 
     const valid = await isValidWord(guess.toLowerCase());
-    if (messageEl) {
-      messageEl.classList.remove("show");
-      messageEl.innerHTML = "";
-    }
+    messageEl.classList.remove("show");
 
     if (!valid) {
       showMessage("That word is not accepted.");
@@ -1881,8 +1635,6 @@
     window.setTimeout(() => {
       if (guess === solution) {
         gameOver = true;
-        setKeyboardLocked(true);
-        updateHintBadge();
         updateUserStats(true, currentRow + 1, hintsUsed);
         saveState(true);
         showMessage("Solved.");
@@ -1892,8 +1644,6 @@
         currentGuess = "";
         if (currentRow >= maxRows) {
           gameOver = true;
-          setKeyboardLocked(true);
-          updateHintBadge();
           updateUserStats(false, maxRows, hintsUsed);
           saveState(false);
           showMessage(`The word was ${solution}.`);
@@ -1987,6 +1737,9 @@
 
   async function isValidWord(word) {
     if (word.length !== wordLength) return false;
+    // Always accept the actual daily solution, even if external dictionary APIs
+    // do not recognize it (coverage gaps, outages, or proper nouns).
+    if (solution && word === solution.toLowerCase()) return true;
     if (DAILY_WORDS.some(w => w.word.toLowerCase() === word)) return true;
     if (!/^[a-z]+$/.test(word)) return false;
     if (wordCache[word] !== undefined) return wordCache[word];
