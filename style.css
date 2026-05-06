@@ -548,6 +548,14 @@ a.icon-button {
   opacity: 1;
   transform: translateY(0);
 }
+/* Container to align message text and the inline loader on the same row */
+.message-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 1.4rem; /* match .message min-height */
+}
 
 /* Inline input loader (used when submitting a guess) */
 #word-loading {
