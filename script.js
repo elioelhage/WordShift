@@ -1208,7 +1208,20 @@
   function refreshAccountMenuAction() {
     if (!accountActionBtn) return;
     const userData = getUserData();
-    accountActionBtn.textContent = userData?.username ? "Log out" : "Sign in / Sign up";
+    const isSignedIn = Boolean(userData?.username);
+    
+    // Update button styling based on login state
+    accountMenuButton?.classList.toggle("signed-in", isSignedIn);
+    accountMenuButton?.classList.toggle("signed-out", !isSignedIn);
+    
+    // Update label to show username or "Sign in"
+    const accountMenuLabel = document.getElementById("account-menu-label");
+    if (accountMenuLabel) {
+      accountMenuLabel.textContent = isSignedIn ? userData.username : "Sign in";
+    }
+    
+    // Update action button text
+    accountActionBtn.textContent = isSignedIn ? "Log out" : "Sign in / Sign up";
   }
 
   function getGamesPlayedBonus(gamesPlayedValue) {
