@@ -549,12 +549,17 @@ a.icon-button {
   transform: translateY(0);
 }
 
-.message.loading {
-  animation: pulseText 1.35s ease-in-out infinite;
-  color: var(--muted);
+/* Inline input loader (used when submitting a guess) */
+#word-loading {
+  display: flex;
+  justify-content: center;
+  min-height: 0.74rem;
 }
 
-/* Inline input loader (used when submitting a guess) */
+#word-loading.hidden {
+  display: none;
+}
+
 .input-loader {
   display: inline-block;
   width: 7.2rem;

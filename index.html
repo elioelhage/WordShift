@@ -24,7 +24,6 @@
   <title>WordShift</title>
   <link rel="icon" href="icon.png" />
   <!-- Fallback inline SVG favicon kept for environments that prefer vector icons -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='55' fill='white' font-family='Arial, sans-serif' font-weight='800'>W</text></svg>" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -117,6 +116,9 @@
         <div id="board" class="board" aria-live="polite"></div>
       </section>
       <p id="message" class="message" aria-live="polite"></p>
+      <div id="word-loading" class="input-loader hidden" aria-label="Validating word">
+        <div class="bar"></div>
+      </div>
       <section class="keyboard-wrap" aria-label="On-screen keyboard">
         <div id="keyboard" class="keyboard"></div>
       </section>

@@ -81,6 +81,7 @@
   const boardEl = document.getElementById("board");
   const keyboardEl = document.getElementById("keyboard");
   const messageEl = document.getElementById("message");
+  const wordLoadingEl = document.getElementById("word-loading");
   const metaLineEl = document.getElementById("meta-line");
   const themeToggle = document.getElementById("theme-toggle");
   const themeIcon = document.getElementById("theme-icon");
@@ -1641,11 +1642,11 @@
 
     const guess = currentGuess.toUpperCase();
     isSubmitting = true;
-    messageEl.textContent = "Loading...";
-    messageEl.classList.add("show", "loading");
+    messageEl.classList.remove("show");
+    wordLoadingEl.classList.remove("hidden");
 
     const valid = await isValidWord(guess.toLowerCase());
-    messageEl.classList.remove("show", "loading");
+    wordLoadingEl.classList.add("hidden");
 
     if (!valid) {
       showMessage("That word is not accepted.");
@@ -1755,7 +1756,7 @@
 
   function showMessage(text) {
     messageEl.textContent = text;
-    messageEl.classList.remove("loading");
+    wordLoadingEl.classList.add("hidden");
     messageEl.classList.add("show");
     clearTimeout(messageTimer);
     messageTimer = window.setTimeout(() => {
