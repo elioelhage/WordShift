@@ -1503,7 +1503,9 @@
         return false;
       })();
 
-      const body = hasRepeat ? "This word contains repeated letters." : "This word contains no repeated letters.";
+      const body = hasRepeat
+        ? `This word <span class="hint-contains">contains</span> repeated letters.`
+        : `This word <span class="hint-notcontains">doesn't contain</span> repeated letters.`;
       showHintPopup("Letter Pattern", body);
       hintsUsed++;
       updateHintBadge();
