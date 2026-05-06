@@ -1642,10 +1642,10 @@
     const guess = currentGuess.toUpperCase();
     isSubmitting = true;
     messageEl.textContent = "Loading...";
-    messageEl.classList.add("show");
+    messageEl.classList.add("show", "loading");
 
     const valid = await isValidWord(guess.toLowerCase());
-    messageEl.classList.remove("show");
+    messageEl.classList.remove("show", "loading");
 
     if (!valid) {
       showMessage("That word is not accepted.");
@@ -1665,7 +1665,7 @@
         updateUserStats(true, currentRow + 1, hintsUsed);
         saveState(true);
         showMessage("Solved.");
-  showEndModal(true, true);
+        showEndModal(true, true);
       } else {
         currentRow += 1;
         currentGuess = "";
@@ -1755,6 +1755,7 @@
 
   function showMessage(text) {
     messageEl.textContent = text;
+    messageEl.classList.remove("loading");
     messageEl.classList.add("show");
     clearTimeout(messageTimer);
     messageTimer = window.setTimeout(() => {

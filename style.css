@@ -549,6 +549,11 @@ a.icon-button {
   transform: translateY(0);
 }
 
+.message.loading {
+  animation: pulseText 1.35s ease-in-out infinite;
+  color: var(--muted);
+}
+
 /* Inline input loader (used when submitting a guess) */
 .input-loader {
   display: inline-block;
