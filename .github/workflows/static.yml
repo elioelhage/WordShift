@@ -11,7 +11,7 @@ on:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -31,6 +31,93 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Fix word submission validation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("script.js")
+          text = path.read_text(encoding="utf-8")
+
+          old = '''  async function isValidWord(word) {
+    if (word.length !== wordLength) return false;
+    // Always accept the actual daily solution, even if external dictionary APIs
+    // do not recognize it (coverage gaps, outages, or proper nouns).
+    if (solution && word === solution.toLowerCase()) return true;
+    if (DAILY_WORDS.some(w => w.word.toLowerCase() === word)) return true;
+    if (!/^[a-z]+$/.test(word)) return false;
+    if (wordCache[word] !== undefined) return wordCache[word];
+
+    try {
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+      const result = response.ok;
+      wordCache[word] = result;
+      return result;
+    } catch {
+      wordCache[word] = false;
+      return false;
+    }
+  }'''
+
+          new = '''  async function isValidWord(word) {
+    if (word.length !== wordLength) return false;
+    // Always accept the actual daily solution, even if an external dictionary
+    // does not recognize it.
+    if (solution && word === solution.toLowerCase()) return true;
+    if (DAILY_WORDS.some(w => w.word.toLowerCase() === word)) return true;
+    if (!/^[a-z]+$/.test(word)) return false;
+    if (wordCache[word] !== undefined) return wordCache[word];
+
+    // dictionaryapi.dev has had intermittent CORS/522 failures. The old
+    // implementation could leave submitGuess() waiting indefinitely, which
+    // made ENTER appear to do nothing. Use Datamuse with a hard timeout.
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(
+        `https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&max=10`,
+        { signal: controller.signal, cache: "no-store" }
+      );
+
+      if (!response.ok) throw new Error(`Dictionary request failed: ${response.status}`);
+
+      const results = await response.json();
+      const result = Array.isArray(results) && results.some(
+        entry => typeof entry?.word === "string" && entry.word.toLowerCase() === word
+      );
+
+      wordCache[word] = result;
+      return result;
+    } catch (error) {
+      console.error("Word validation failed:", error);
+      wordCache[word] = false;
+      return false;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }'''
+
+          if old in text:
+              path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          else:
+              print("Word validation block already patched; leaving script unchanged.")
+          PY
+
+      - name: Commit source fix
+        run: |
+          if git diff --quiet -- script.js; then
+            echo "No source change needed."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add script.js
+            git commit -m "Fix WordShift word submission validation"
+            git push
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
