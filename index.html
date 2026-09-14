@@ -14,16 +14,12 @@
         var theme = saved || (prefersDark ? "dark" : "light");
         document.documentElement.setAttribute("data-theme", theme);
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) {
-          var color = theme === "dark" ? "#121213" : "#ffffff";
-          meta.setAttribute("content", color);
-        }
+        if (meta) meta.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
       } catch (_) {}
     })();
   </script>
   <title>WordShift</title>
-  <link rel="icon" href="icon.png" />
-  <!-- Fallback inline SVG favicon kept for environments that prefer vector icons -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236aaa64' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M3 9h18'/%3E%3Cpath d='M9 21V9'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -31,14 +27,10 @@
   <div id="app-loader" class="app-loader" role="status" aria-live="polite" aria-label="Loading WordShift">
     <div class="loader-card">
       <div class="loader-grid" aria-hidden="true">
-        <span class="loader-tile">W</span>
-        <span class="loader-tile">O</span>
-        <span class="loader-tile">R</span>
-        <span class="loader-tile">D</span>
-        <span class="loader-tile">L</span>
-        <span class="loader-tile">E</span>
+        <span class="loader-tile">W</span><span class="loader-tile">O</span><span class="loader-tile">R</span>
+        <span class="loader-tile">D</span><span class="loader-tile">L</span><span class="loader-tile">E</span>
       </div>
-  <p class="loader-text">Loading WordShift…</p>
+      <p class="loader-text">Loading WordShift…</p>
     </div>
   </div>
 
@@ -48,234 +40,216 @@
         <p class="eyebrow">Daily Word</p>
         <div class="title-wrap">
           <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <path d="M3 9h18"></path>
-            <path d="M9 21V9"></path>
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path>
           </svg>
           <h1>WordShift</h1>
         </div>
         <p class="author-credit">Made by Elio El Hage</p>
       </div>
-
       <div class="topbar__right">
         <a id="race-lobby-button" class="icon-button" href="race.html" aria-label="Open race lobby" title="Race lobby">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
-            <line x1="13" y1="19" x2="19" y2="13"></line>
-            <line x1="16" y1="16" x2="21" y2="21"></line>
-            <line x1="19" y1="21" x2="21" y2="19"></line>
-            <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline>
-            <line x1="5" y1="14" x2="9" y2="18"></line>
-            <line x1="7" y1="17" x2="4" y2="20"></line>
-            <line x1="3" y1="19" x2="5" y2="21"></line>
+            <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline><line x1="13" y1="19" x2="19" y2="13"></line><line x1="16" y1="16" x2="21" y2="21"></line><line x1="19" y1="21" x2="21" y2="19"></line><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline><line x1="5" y1="14" x2="9" y2="18"></line><line x1="7" y1="17" x2="4" y2="20"></line><line x1="3" y1="19" x2="5" y2="21"></line>
           </svg>
-        </a>        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards" title="Leaderboards">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-            <path d="M4 22h16"></path>
-            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
-            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
-            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
-          </svg>
+        </a>
+        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards" title="Leaderboards">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
         </button>
-
-        <button id="hint-button" class="icon-button hint-button" type="button" aria-label="Hint">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18h6"></path>
-            <path d="M10 22h4"></path>
-            <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path>
-          </svg>
-          <span id="hint-badge" class="hint-badge">2</span>
-        </button>
-
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode">
-          <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
-        </button>
-
+        <button id="hint-button" class="icon-button hint-button" type="button" aria-label="Hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path></svg><span id="hint-badge" class="hint-badge">2</span></button>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode"><svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
         <div class="account-menu-wrap">
-          <button id="account-menu-button" class="icon-button account-button signed-out" type="button" aria-label="Account" title="Account" aria-expanded="false" aria-controls="account-menu-panel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 21a8 8 0 1 0-16 0"></path>
-              <circle cx="12" cy="8" r="4"></circle>
-            </svg>
-            <span id="account-menu-label" class="account-menu-label">Sign in</span>
-          </button>
-          <div id="account-menu-panel" class="account-menu-panel hidden" role="menu" aria-label="Account actions">
-            <div id="account-summary" class="account-summary hidden" role="presentation"></div>
-            <button id="account-action-btn" class="account-menu-item" type="button" role="menuitem">Sign in / Sign up</button>
-            <button id="give-up-btn" class="account-menu-item" type="button" role="menuitem">Reveal word</button>
-          </div>
+          <button id="account-menu-button" class="icon-button account-button signed-out" type="button" aria-label="Account" title="Account" aria-expanded="false" aria-controls="account-menu-panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 1 0-16 0"></path><circle cx="12" cy="8" r="4"></circle></svg><span id="account-menu-label" class="account-menu-label">Sign in</span></button>
+          <div id="account-menu-panel" class="account-menu-panel hidden" role="menu" aria-label="Account actions"><div id="account-summary" class="account-summary hidden" role="presentation"></div><button id="account-action-btn" class="account-menu-item" type="button" role="menuitem">Sign in / Sign up</button><button id="give-up-btn" class="account-menu-item" type="button" role="menuitem">Reveal word</button></div>
         </div>
       </div>
     </header>
 
     <main class="game" id="game">
       <p id="meta-line" class="meta-line"></p>
-      <section class="board-wrap" aria-label="Word board">
-        <div id="board" class="board" aria-live="polite"></div>
-      </section>
-      <div class="message-wrap">
-        <p id="message" class="message" aria-live="polite"></p>
-        <div id="word-loading" class="input-loader hidden" aria-label="Validating word">
-          <div class="bar"></div>
-        </div>
-      </div>
-      <section class="keyboard-wrap" aria-label="On-screen keyboard">
-        <div id="keyboard" class="keyboard"></div>
-      </section>
+      <section class="board-wrap" aria-label="Word board"><div id="board" class="board" aria-live="polite"></div></section>
+      <div class="message-wrap"><p id="message" class="message" aria-live="polite"></p><div id="word-loading" class="input-loader hidden" aria-label="Validating word"><div class="bar"></div></div></div>
+      <section class="keyboard-wrap" aria-label="On-screen keyboard"><div id="keyboard" class="keyboard"></div></section>
     </main>
   </div>
 
-  <div id="end-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="end-title">
-    <div class="modal__card">
-      <p id="end-kicker" class="modal__kicker">Round complete</p>
-      <h2 id="end-title" class="modal__title">Nice work.</h2>
-      <p id="countdown" class="modal__countdown"></p>
-      <button id="close-modal" class="primary-button" type="button">Continue</button>
-    </div>
-  </div>
+  <div id="end-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="end-title"><div class="modal__card"><p id="end-kicker" class="modal__kicker">Round complete</p><h2 id="end-title" class="modal__title">Nice work.</h2><p id="countdown" class="modal__countdown"></p><button id="close-modal" class="primary-button" type="button">Continue</button></div></div>
 
-  <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal__card leaderboard-card">
-      <button id="close-leaderboard" class="close-top-right" aria-label="Close leaderboard" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-        </svg>
-      </button>
-      
-      <div id="username-view" class="hidden">
-        <div class="join-auth-shell">
-          <p class="join-auth-kicker">Sync your progress</p>
-          <h2 class="modal__title">Join the Leaderboard</h2>
-          <p class="modal__countdown">Create an account or log in to keep your stats, race access, and rankings across devices.</p>
-          <div class="join-auth-form">
-            <input type="text" id="username-input" class="text-input" placeholder="Choose username" maxlength="15" />
-            <input type="password" id="password-input" class="text-input" placeholder="Password (min 8 characters)" />
-            <p class="join-auth-note">Usernames are case-insensitive.</p>
-            <p id="username-error" class="error-message hidden"></p>
-            <button id="save-username-btn" class="primary-button">Login / Register</button>
-          </div>
-        </div>
-      </div>
+  <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal__card leaderboard-card"><button id="close-leaderboard" class="close-top-right" aria-label="Close leaderboard" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg></button><div id="username-view" class="hidden"><div class="join-auth-shell"><p class="join-auth-kicker">Sync your progress</p><h2 class="modal__title">Join the Leaderboard</h2><p class="modal__countdown">Create an account or log in to keep your stats, race access, and rankings across devices.</p><div class="join-auth-form"><input type="text" id="username-input" class="text-input" placeholder="Choose username" maxlength="15" /><input type="password" id="password-input" class="text-input" placeholder="Password (min 8 characters)" /><p class="join-auth-note">Usernames are case-insensitive.</p><p id="username-error" class="error-message hidden"></p><button id="save-username-btn" class="primary-button">Login / Register</button></div></div></div><div id="stats-view" class="hidden"><div class="lb-header"><h2 class="modal__title">Leaderboards</h2></div><p class="lb-subtitle">Rankings are based on average guesses.</p><div class="tab-content"><div id="lb-loading" class="lb-loading">Loading...</div><ul id="lb-list" class="lb-list hidden"></ul></div></div></div></div>
 
-      <div id="stats-view" class="hidden">
-        <div class="lb-header">
-          <h2 class="modal__title">Leaderboards</h2>
-        </div>
-        <p class="lb-subtitle">Rankings are based on average guesses.</p>
-        <div class="tab-content">
-          <div id="lb-loading" class="lb-loading">Loading...</div>
-          <ul id="lb-list" class="lb-list hidden"></ul>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div id="player-sheet" class="player-sheet" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title"><div class="player-sheet-card"><h2 id="player-sheet-title" class="player-sheet-title">Player details</h2><ul class="player-sheet-list"><li><strong>Name:</strong> <span id="player-sheet-name">—</span></li><li><strong>Joined:</strong> <span id="player-sheet-joined">—</span></li><li><strong>Last played:</strong> <span id="player-sheet-last-play">—</span></li><li><strong>Raw avg guesses:</strong> <span id="player-sheet-avg">—</span></li><li><strong>Total games played:</strong> <span id="player-sheet-games">—</span></li></ul><button id="player-sheet-close" class="player-sheet-close" type="button">Close</button></div></div>
 
-  <!-- Player sheet (opened from Account button) -->
-  <div id="player-sheet" class="player-sheet" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title">
-    <div class="player-sheet-card">
-      <h2 id="player-sheet-title" class="player-sheet-title">Player details</h2>
-      <ul class="player-sheet-list">
-        <li><strong>Name:</strong> <span id="player-sheet-name">—</span></li>
-        <li><strong>Joined:</strong> <span id="player-sheet-joined">—</span></li>
-        <li><strong>Last played:</strong> <span id="player-sheet-last-play">—</span></li>
-        <li><strong>Raw avg guesses:</strong> <span id="player-sheet-avg">—</span></li>
-        <li><strong>Total games played:</strong> <span id="player-sheet-games">—</span></li>
-      </ul>
-      <button id="player-sheet-close" class="player-sheet-close" type="button">Close</button>
-    </div>
-  </div>
+  <div id="give-up-confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="give-up-confirm-title"><div class="modal__card"><p class="modal__kicker">Are you sure?</p><h2 id="give-up-confirm-title" class="modal__title">Giving up reveals the word.</h2><p class="modal__countdown">Your game will end immediately. The result will not count on the leaderboard.</p><div class="confirm-actions"><button id="give-up-confirm-cancel" class="secondary-button" type="button">Cancel</button><button id="give-up-confirm-yes" class="primary-button" type="button">Reveal word</button></div></div></div>
 
-  <div id="give-up-confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="give-up-confirm-title">
-    <div class="modal__card">
-      <p class="modal__kicker">Are you sure?</p>
-      <h2 id="give-up-confirm-title" class="modal__title">Giving up reveals the word.</h2>
-      <p class="modal__countdown">Your game will not count on the leaderboard. Today will be treated as no result.</p>
-      <div class="confirm-actions">
-        <button id="give-up-confirm-cancel" class="secondary-button" type="button">Cancel</button>
-        <button id="give-up-confirm-yes" class="primary-button" type="button">Reveal word</button>
-      </div>
-    </div>
-  </div>
+  <div id="walkthrough-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="walkthrough-title"><div class="modal__card walkthrough-card"><p class="modal__kicker">First-time guide</p><h2 id="walkthrough-title" class="modal__title">Welcome to WordShift</h2><p id="walkthrough-text" class="modal__countdown"></p><div id="walkthrough-demo" class="walkthrough-demo" aria-hidden="true"><div class="walkthrough-row"><span class="walkthrough-tile w-demo-letter">W</span><span class="walkthrough-tile w-demo-letter">O</span><span class="walkthrough-tile w-demo-letter">R</span><span class="walkthrough-tile w-demo-letter">D</span><span class="walkthrough-tile w-demo-letter">S</span></div><div class="walkthrough-legend"><span class="walkthrough-badge correct">Green = right spot</span><span class="walkthrough-badge present">Yellow = right letter, wrong spot</span></div></div><div class="walkthrough-progress"><span id="walkthrough-step-indicator">1 / 5</span></div><div class="walkthrough-actions"><button id="walkthrough-skip" class="primary-button walkthrough-skip" type="button">Skip</button><button id="walkthrough-prev" class="primary-button walkthrough-prev" type="button">Back</button><button id="walkthrough-next" class="primary-button" type="button">Next</button><button id="walkthrough-account" class="primary-button walkthrough-account hidden" type="button">Play with account</button></div></div></div>
 
-  <div id="walkthrough-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="walkthrough-title">
-    <div class="modal__card walkthrough-card">
-      <p class="modal__kicker">First-time guide</p>
-  <h2 id="walkthrough-title" class="modal__title">Welcome to WordShift</h2>
-      <p id="walkthrough-text" class="modal__countdown"></p>
-
-      <div id="walkthrough-demo" class="walkthrough-demo" aria-hidden="true">
-        <div class="walkthrough-row">
-          <span class="walkthrough-tile w-demo-letter">W</span>
-          <span class="walkthrough-tile w-demo-letter">O</span>
-          <span class="walkthrough-tile w-demo-letter">R</span>
-          <span class="walkthrough-tile w-demo-letter">D</span>
-          <span class="walkthrough-tile w-demo-letter">S</span>
-        </div>
-        <div class="walkthrough-legend">
-          <span class="walkthrough-badge correct">Green = right spot</span>
-          <span class="walkthrough-badge present">Yellow = right letter, wrong spot</span>
-        </div>
-      </div>
-
-      <div class="walkthrough-progress">
-        <span id="walkthrough-step-indicator">1 / 5</span>
-      </div>
-
-      <div class="walkthrough-actions">
-        <button id="walkthrough-skip" class="primary-button walkthrough-skip" type="button">Skip</button>
-        <button id="walkthrough-prev" class="primary-button walkthrough-prev" type="button">Back</button>
-        <button id="walkthrough-next" class="primary-button" type="button">Next</button>
-        <button id="walkthrough-account" class="primary-button walkthrough-account hidden" type="button">Play with account</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Word submission fix: dictionaryapi.dev can intermittently hang or fail CORS/522.
-       Keep the existing game code intact, but make its dictionary request reliable. -->
   <script>
     (function () {
       const nativeFetch = window.fetch.bind(window);
       const dictionaryPrefix = "https://api.dictionaryapi.dev/api/v2/entries/en/";
-
       window.fetch = async function (input, init) {
         const url = typeof input === "string" ? input : input?.url;
-        if (!url || !url.startsWith(dictionaryPrefix)) {
-          return nativeFetch(input, init);
-        }
-
+        if (!url || !url.startsWith(dictionaryPrefix)) return nativeFetch(input, init);
         const word = decodeURIComponent(url.slice(dictionaryPrefix.length)).toLowerCase();
         const controller = new AbortController();
         const timeoutId = window.setTimeout(() => controller.abort(), 5000);
-
         try {
-          const response = await nativeFetch(
-            `https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&max=10`,
-            { ...(init || {}), signal: controller.signal, cache: "no-store" }
-          );
-
-          if (!response.ok) {
-            return new Response("", { status: 503 });
-          }
-
+          const response = await nativeFetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&max=10`, { ...(init || {}), signal: controller.signal, cache: "no-store" });
+          if (!response.ok) return new Response("", { status: 503 });
           const results = await response.json();
-          const valid = Array.isArray(results) && results.some(
-            entry => typeof entry?.word === "string" && entry.word.toLowerCase() === word
-          );
-
+          const valid = Array.isArray(results) && results.some(entry => typeof entry?.word === "string" && entry.word.toLowerCase() === word);
           return new Response("", { status: valid ? 200 : 404 });
         } catch (error) {
           console.error("Word validation service failed:", error);
           return new Response("", { status: 503 });
-        } finally {
-          clearTimeout(timeoutId);
-        }
+        } finally { clearTimeout(timeoutId); }
       };
     })();
   </script>
 
   <script src="script.js"></script>
+
+  <script>
+    (() => {
+      const revealModal = document.getElementById("give-up-confirm-modal");
+      const revealCancel = document.getElementById("give-up-confirm-cancel");
+      const revealYes = document.getElementById("give-up-confirm-yes");
+      const giveUpButton = document.getElementById("give-up-btn");
+      const endModal = document.getElementById("end-modal");
+      const endTitle = document.getElementById("end-title");
+      const endKicker = document.getElementById("end-kicker");
+      const countdown = document.getElementById("countdown");
+      const message = document.getElementById("message");
+      const keyboard = document.getElementById("keyboard");
+      const board = document.getElementById("board");
+      const modalClose = document.getElementById("close-modal");
+      const originalConfirm = window.confirm;
+      let revealComplete = false;
+
+      function openRevealModal() {
+        if (revealComplete) return;
+        revealYes.disabled = false;
+        revealYes.textContent = "Reveal word";
+        document.getElementById("give-up-confirm-title").textContent = "Giving up reveals the word.";
+        revealModal.querySelector(".modal__countdown").textContent = "Your game will end immediately. The result will not count on the leaderboard.";
+        revealModal.classList.remove("hidden");
+        revealYes.focus();
+      }
+
+      window.confirm = (text) => {
+        if (typeof text === "string" && text.startsWith("Give up?")) {
+          openRevealModal();
+          return false;
+        }
+        return originalConfirm(text);
+      };
+
+      const getSolutionIndex = () => {
+        const now = new Date();
+        return Math.max(0, Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 3, 1)) / 86400000));
+      };
+
+      const hexToBytes = (hex) => {
+        const out = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) out[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+        return out;
+      };
+
+      const base64ToBytes = (base64) => {
+        const binary = atob(base64);
+        const out = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
+        return out;
+      };
+
+      async function decryptWord(payloadBase64) {
+        const keyResponse = await fetch("https://wordshift-api.onrender.com/api/keys");
+        if (!keyResponse.ok) throw new Error("Could not load WordShift keys.");
+        const keys = await keyResponse.json();
+        if (!keys.supabaseUrl || !keys.supabaseKey) throw new Error("WordShift database configuration is unavailable.");
+        const response = await fetch(`${keys.supabaseUrl}/rest/v1/words?day_index=eq.${getSolutionIndex()}&select=word_encrypted,word_length`, {
+          headers: { apikey: keys.supabaseKey, Authorization: `Bearer ${keys.supabaseKey}` },
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error(`Could not load today's word (${response.status}).`);
+        const rows = await response.json();
+        if (!Array.isArray(rows) || !rows[0]?.word_encrypted) throw new Error("Today's word was not found.");
+        const payload = base64ToBytes(rows[0].word_encrypted);
+        const cryptoKey = await crypto.subtle.importKey("raw", hexToBytes("0f55cbb6cc1ba7a09803f99276dcec8f9a4e4bb8e833a0a9c90c176e711db892"), { name: "AES-GCM" }, false, ["decrypt"]);
+        const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: payload.slice(0, 12) }, cryptoKey, payload.slice(12));
+        return new TextDecoder().decode(plain).trim().toUpperCase();
+      }
+
+      function saveRevealedState() {
+        const solutionIndex = getSolutionIndex();
+        const key = `wordle-mobile-${solutionIndex}`;
+        let state = {};
+        try { state = JSON.parse(localStorage.getItem(key) || "{}"); } catch (_) {}
+        state.solutionIndex = solutionIndex;
+        state.gameOver = true;
+        state.won = false;
+        localStorage.setItem(key, JSON.stringify(state));
+      }
+
+      function lockGame() {
+        revealComplete = true;
+        document.body.classList.add("wordshift-revealed");
+        if (keyboard) {
+          keyboard.style.pointerEvents = "none";
+          keyboard.setAttribute("aria-disabled", "true");
+          keyboard.querySelectorAll("button").forEach(button => { button.disabled = true; });
+        }
+        if (board) board.setAttribute("aria-disabled", "true");
+      }
+
+      function showRevealedWord(word) {
+        lockGame();
+        saveRevealedState();
+        if (message) { message.textContent = `Word: ${word}`; message.classList.add("show"); }
+        if (endKicker) endKicker.textContent = "Game ended";
+        if (endTitle) endTitle.innerHTML = `The word was <span class="modal-word-highlight">${word}</span>`;
+        if (countdown) countdown.textContent = "You revealed today's word. This game will not count toward the leaderboard.";
+        endModal?.classList.remove("hidden");
+      }
+
+      async function completeReveal() {
+        if (revealComplete) return;
+        revealYes.disabled = true;
+        revealYes.textContent = "Revealing…";
+        try {
+          const word = await decryptWord();
+          revealModal.classList.add("hidden");
+          showRevealedWord(word);
+        } catch (error) {
+          console.error("Reveal word failed:", error);
+          revealYes.disabled = false;
+          revealYes.textContent = "Reveal word";
+          revealModal.querySelector(".modal__countdown").textContent = "The word could not be loaded. Your game is still active.";
+        }
+      }
+
+      giveUpButton?.addEventListener("click", () => {
+        setTimeout(() => {
+          if (revealModal.classList.contains("hidden")) openRevealModal();
+        }, 0);
+      });
+      revealCancel?.addEventListener("click", () => revealModal.classList.add("hidden"));
+      revealYes?.addEventListener("click", completeReveal);
+      revealModal?.addEventListener("click", (event) => { if (event.target === revealModal) revealModal.classList.add("hidden"); });
+
+      document.addEventListener("keydown", (event) => {
+        if (!revealComplete) return;
+        if (event.target === modalClose) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+
+      document.addEventListener("click", (event) => {
+        if (!revealComplete) return;
+        if (event.target.closest("#close-modal")) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+    })();
+  </script>
 </body>
 </html>
