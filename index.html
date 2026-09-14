@@ -47,7 +47,7 @@
         <p class="author-credit">Made by Elio El Hage</p>
       </div>
       <div class="topbar__right">
-        <a id="race-lobby-button" class="icon-button" href="race.html" aria-label="Open race lobby" title="Race lobby">
+        <a id="race-lobby-button" class="icon-button" href="/race" aria-label="Open race lobby" title="Race lobby">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline><line x1="13" y1="19" x2="19" y2="13"></line><line x1="16" y1="16" x2="21" y2="21"></line><line x1="19" y1="21" x2="21" y2="19"></line><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline><line x1="5" y1="14" x2="9" y2="18"></line><line x1="7" y1="17" x2="4" y2="20"></line><line x1="3" y1="19" x2="5" y2="21"></line>
           </svg>
@@ -71,6 +71,10 @@
       <section class="keyboard-wrap" aria-label="On-screen keyboard"><div id="keyboard" class="keyboard"></div></section>
     </main>
   </div>
+  <footer class="site-footer" aria-label="Copyright">
+    <span>© 2026 Elio El Hage. All rights reserved.</span>
+    <span>WordShift</span>
+  </footer>
 
   <div id="end-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="end-title"><div class="modal__card"><p id="end-kicker" class="modal__kicker">Round complete</p><h2 id="end-title" class="modal__title">Nice work.</h2><p id="countdown" class="modal__countdown"></p><button id="close-modal" class="primary-button" type="button">Continue</button></div></div>
 
@@ -235,20 +239,6 @@
       revealCancel?.addEventListener("click", () => revealModal.classList.add("hidden"));
       revealYes?.addEventListener("click", completeReveal);
       revealModal?.addEventListener("click", (event) => { if (event.target === revealModal) revealModal.classList.add("hidden"); });
-
-      document.addEventListener("keydown", (event) => {
-        if (!revealComplete) return;
-        if (event.target === modalClose) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }, true);
-
-      document.addEventListener("click", (event) => {
-        if (!revealComplete) return;
-        if (event.target.closest("#close-modal")) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }, true);
     })();
   </script>
 </body>

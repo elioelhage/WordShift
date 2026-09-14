@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="description" content="WordShift Leaderboard: Track all-time average guesses and see who leads the rankings." />
+  <meta name="theme-color" content="#121213" />
+  <script>
+    (function () {
+      try {
+        var key = "wordle-mobile-theme";
+        var saved = localStorage.getItem(key);
+        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var theme = saved || (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
+      } catch (_) {}
+    })();
+  </script>
+  <title>WordShift • Leaderboard</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236aaa64' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M3 9h18'/%3E%3Cpath d='M9 21V9'/%3E%3C/svg%3E" /><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='55' fill='white' font-family='Arial, sans-serif' font-weight='800'>W</text></svg>" />
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #eef2f8;
+      --text: #101726;
+      --muted: #64748b;
+      --border: #dbe3f0;
+      --accent: #6aaa64;
+      --shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #121213;
+      --surface: #1a1a1b;
+      --surface-2: #232325;
+      --text: #f5f5f5;
+      --muted: #a0a4af;
+      --border: #34363a;
+      --accent: #6aaa64;
+      --shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      background: var(--bg);
+      background:
+        radial-gradient(48rem 25rem at -10% -20%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%),
+        radial-gradient(48rem 25rem at 110% -20%, color-mix(in srgb, #60a5fa 18%, transparent), transparent 62%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.4;
+      padding: 0.95rem;
+    }
+
+    .page {
+      width: min(980px, 100%);
+      margin: 0 auto;
+    }
+
+    .top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.8rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .top-copy {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.58rem;
+      min-width: 0;
+    }
+
+    .title-icon {
+      width: 1.45rem;
+      height: 1.45rem;
+      color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .eyebrow {
+      margin: 0;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0.12rem 0 0;
+      font-size: clamp(1.2rem, 4vw, 1.85rem);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .leaderboard-info {
+      margin: 0 0 1.2rem;
+      max-width: 100%;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .rules-toggle {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.38rem 0.72rem;
+      font-size: 0.8rem;
+      font-weight: 760;
+      cursor: pointer;
+      margin-bottom: 0.55rem;
+    }
+
+    .rules-panel {
+      border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+      background: color-mix(in srgb, var(--surface-2) 68%, transparent);
+      border-radius: 12px;
+      padding: 0.65rem 0.8rem;
+      margin: 0 0 1.1rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    .rules-panel p {
+      margin: 0 0 0.34rem;
+      color: var(--text);
+    }
+
+    .rules-panel ul {
+      margin: 0;
+      padding-left: 1rem;
+    }
+
+    .rules-panel svg {
+      display: inline;
+      width: 1em;
+      height: 1em;
+      stroke: currentColor;
+      vertical-align: -0.125em;
+      margin-right: 0.3em;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex: 0 0 auto;
+      align-self: flex-start;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.52rem 0.88rem;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .shell {
+      border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
+
+    :root:not([data-theme="dark"]) .shell {
+      background:
+        radial-gradient(145% 120% at 0% 0%, rgba(106, 170, 100, 0.22), transparent 52%),
+        radial-gradient(120% 95% at 100% 0%, rgba(96, 165, 250, 0.16), transparent 58%),
+        var(--surface);
+    }
+
+    :root[data-theme="dark"] .shell {
+      background: var(--surface);
+      border-color: color-mix(in srgb, var(--border) 78%, transparent);
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.6rem;
+      align-items: center;
+      margin-bottom: 0.85rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+      flex-wrap: nowrap;
+      align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      padding: 0.6rem 0.8rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      line-height: 1.15;
+      flex: 0 0 auto;
+    }
+
+    .tab-btn.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: color-mix(in srgb, var(--text) 70%, transparent);
+    }
+
+    .lb-progress {
+      height: 0.52rem;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+      background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+      overflow: hidden;
+      margin-bottom: 0.82rem;
+      position: relative;
+      opacity: 0;
+      transform: translateY(-3px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .lb-progress.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .lb-progress__bar {
+      height: 100%;
+      width: 44%;
+      border-radius: inherit;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--accent) 86%, #fff 14%) 0,
+          color-mix(in srgb, var(--accent) 86%, #fff 14%) 16px,
+          color-mix(in srgb, #4f8e4b 88%, #fff 12%) 16px,
+          color-mix(in srgb, #4f8e4b 88%, #fff 12%) 28px
+        );
+      animation: lbBarSlide 1.1s ease-in-out infinite;
+      position: relative;
+    }
+
+    .lb-progress__bar::after {
+  content: "WSHIFT";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 0.55rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      mix-blend-mode: overlay;
+    }
+
+    .list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.62rem;
+      max-height: min(74vh, 750px);
+      overflow-y: auto;
+      padding-right: 0.15rem;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .list.tab-switching {
+      opacity: 0.34;
+      transform: translateY(4px);
+      pointer-events: none;
+    }
+
+    .list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.7rem;
+      border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+      border-radius: 15px;
+      background: var(--surface);
+      padding: 0.78rem 0.92rem;
+      transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease;
+      animation: rise 220ms ease both;
+    }
+
+    :root:not([data-theme="dark"]) .item {
+      background: linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, #fff 12%), var(--surface));
+    }
+
+    :root[data-theme="dark"] .item {
+      background: linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, #000 12%), var(--surface));
+    }
+
+    .item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.14);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    }
+
+    :root[data-theme="dark"] .item:hover {
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .item.rank-1 {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(255, 246, 190, 0.75), transparent 58%),
+        linear-gradient(140deg, #ffe37b 0%, #ffc93d 52%, #efb221 100%);
+      border: 1px solid #eebd3b;
+      color: #1f1a07;
+      box-shadow: 0 14px 28px rgba(255, 195, 45, 0.34);
+      padding: 0 1.28rem;
+      min-height: 69px;
+      height: 69px;
+    }
+
+    .item.rank-2 {
+      background:
+        radial-gradient(130% 105% at 0% 0%, rgba(255, 255, 255, 0.9), transparent 56%),
+        linear-gradient(145deg, #ffffff 0%, #e7edf6 45%, #bcc9da 100%);
+      border: 1px solid #8fa0b7;
+      color: #101726;
+      box-shadow: 0 14px 30px rgba(111, 130, 156, 0.38);
+      padding: 0 1.34rem;
+      min-height: 69px;
+      height: 69px;
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-2 {
+      background:
+        radial-gradient(135% 110% at 0% 0%, rgba(255, 255, 255, 0.95), transparent 55%),
+        linear-gradient(145deg, #ffffff 0%, #edf3fb 38%, #c9d4e4 72%, #b4c1d5 100%);
+      border-color: #8194ae;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -1px 0 rgba(124, 142, 166, 0.28),
+        0 10px 20px rgba(118, 138, 164, 0.24);
+      outline: 1px solid rgba(120, 141, 169, 0.36);
+      outline-offset: -1px;
+    }
+
+    :root[data-theme="dark"] .item.rank-2 {
+      background:
+        radial-gradient(130% 105% at 0% 0%, rgba(248, 250, 252, 0.24), transparent 56%),
+        linear-gradient(145deg, #d9e2ef 0%, #9faec3 48%, #7789a3 100%);
+      border-color: #b6c2d5;
+      color: #0f172a;
+      box-shadow: 0 14px 30px rgba(146, 163, 186, 0.3);
+    }
+
+    .item.rank-3 {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(255, 241, 227, 0.6), transparent 58%),
+        linear-gradient(140deg, #ebb886 0%, #c78448 52%, #aa642d 100%);
+      border: 1px solid #9f5d2a;
+      color: #24160c;
+      box-shadow: 0 12px 24px rgba(170, 99, 44, 0.3);
+      padding: 0 1.22rem;
+      min-height: 69px;
+      height: 69px;
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-1 {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(255, 246, 190, 0.75), transparent 58%),
+        linear-gradient(140deg, #ffe37b 0%, #ffc93d 52%, #efb221 100%) !important;
+      border-color: #eebd3b;
+      color: #1f1a07;
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-3 {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(255, 241, 227, 0.6), transparent 58%),
+        linear-gradient(140deg, #ebb886 0%, #c78448 52%, #aa642d 100%) !important;
+      border-color: #9f5d2a;
+      color: #24160c;
+    }
+
+    :root[data-theme="dark"] .item.rank-1 {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(255, 246, 190, 0.35), transparent 58%),
+        linear-gradient(140deg, #d8a720 0%, #b98716 52%, #92680f 100%) !important;
+      border-color: #c19322;
+      color: #fff6d6;
+    }
+
+    :root[data-theme="dark"] .item.rank-3 {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(255, 214, 181, 0.28), transparent 58%),
+        linear-gradient(140deg, #8c5a2b 0%, #6f4521 52%, #543215 100%) !important;
+      border-color: #9e6834;
+      color: #ffe5cc;
+    }
+
+    .item.rank-1 .rank,
+    .item.rank-1 .score {
+      font-size: 1.24rem;
+    }
+
+    .item.rank-2 .rank,
+    .item.rank-2 .score {
+      font-size: 1.18rem;
+    }
+
+    .item.rank-3 .rank,
+    .item.rank-3 .score {
+      font-size: 1.07rem;
+    }
+
+    .item.rank-1 .name {
+      font-size: 1.04rem;
+      font-weight: 760;
+    }
+
+    .item.rank-2 .name {
+      font-size: 1.04rem;
+      font-weight: 760;
+    }
+
+    .item.rank-3 .name {
+      font-size: 0.99rem;
+      font-weight: 760;
+    }
+
+    .item.rank-2 .medal {
+      width: 1.18rem;
+      height: 1.18rem;
+    }
+
+    .item.rank-3 .medal {
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+
+    .left {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.46rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .rank {
+      min-width: 2.2rem;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      font-weight: 900;
+      color: color-mix(in srgb, var(--muted) 88%, transparent);
+      flex: 0 0 auto;
+    }
+
+    .item.rank-1 .rank,
+    .item.rank-2 .rank,
+    .item.rank-3 .rank {
+      color: rgba(20, 20, 20, 0.65);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-1 .rank,
+    :root:not([data-theme="dark"]) .item.rank-2 .rank,
+    :root:not([data-theme="dark"]) .item.rank-3 .rank {
+      font-size: 0.96rem;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      padding: 0.14rem 0.46rem;
+      border-radius: 999px;
+      line-height: 1;
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-1 .rank {
+      color: #5b4300;
+      background: rgba(255, 225, 120, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(226, 173, 33, 0.6), 0 3px 10px rgba(239, 178, 33, 0.35);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-2 .rank {
+      color: #1f2c3f;
+      background: rgba(228, 236, 247, 0.96);
+      box-shadow: inset 0 0 0 1px rgba(137, 156, 180, 0.62), 0 3px 10px rgba(120, 141, 169, 0.3);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-3 .rank {
+      color: #4b2a12;
+      background: rgba(228, 184, 138, 0.92);
+      box-shadow: inset 0 0 0 1px rgba(148, 89, 41, 0.55), 0 3px 10px rgba(170, 99, 44, 0.28);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .medal {
+      width: 1.05rem;
+      height: 1.05rem;
+      flex: 0 0 auto;
+    }
+
+    .name {
+      min-width: 0;
+      font-weight: 760;
+    }
+
+    .name-main {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      -webkit-appearance: none;
+      appearance: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: inherit;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .name-main:hover {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .item.rank-1 .name,
+    .item.rank-1 .name-main,
+    .item.rank-1 .score,
+    .item.rank-3 .name,
+    .item.rank-3 .name-main,
+    .item.rank-3 .score {
+      color: inherit !important;
+      opacity: 1;
+    }
+
+    .name-main:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    .player-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.55);
+      padding: 1rem;
+    }
+
+    .player-sheet.open {
+      display: flex;
+    }
+
+    .player-sheet-card {
+      position: relative;
+      width: min(94vw, 34rem);
+      border-radius: 24px;
+      border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+      background:
+        radial-gradient(120% 90% at 0% 0%, rgba(106, 170, 100, 0.18), transparent 55%),
+        radial-gradient(100% 80% at 100% 0%, rgba(96, 165, 250, 0.12), transparent 52%),
+        var(--surface);
+      box-shadow: var(--shadow);
+      padding: 1.05rem;
+      overflow: hidden;
+    }
+
+    .player-sheet.open .player-sheet-card {
+      animation: playerSheetReveal 200ms ease-out;
+      transform-origin: center;
+    }
+
+    .player-sheet-card::after {
+      content: "";
+      position: absolute;
+      inset: auto 1rem 0.85rem;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--border) 58%, transparent), transparent);
+      pointer-events: none;
+    }
+
+    .player-sheet-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-right: 2.9rem;
+    }
+
+    .player-sheet-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.82rem;
+      min-width: 0;
+    }
+
+    .player-sheet-avatar {
+      width: 4.15rem;
+      height: 4.15rem;
+      flex: 0 0 auto;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 92%, #fff 8%), color-mix(in srgb, #4f8e4b 92%, #111 8%));
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      box-shadow: 0 12px 24px rgba(106, 170, 100, 0.28);
+    }
+
+    .player-sheet-kicker {
+      margin: 0 0 0.16rem;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .player-sheet-title {
+      margin: 0;
+      font-size: 1.18rem;
+      font-weight: 900;
+      letter-spacing: 0.01em;
+    }
+
+    .player-sheet-subtitle {
+      margin: 0.3rem 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .player-sheet-close {
+      position: absolute;
+      top: 0.8rem;
+      right: 0.8rem;
+      width: 2.35rem;
+      height: 2.35rem;
+      border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .player-sheet-name {
+      margin: 1rem 0 0.5rem;
+      font-size: clamp(1.5rem, 5vw, 2.1rem);
+      font-weight: 950;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+
+    .player-sheet-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0;
+    }
+
+    .player-sheet-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.5rem 0.72rem;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+      background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .player-sheet-pill strong {
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .player-sheet-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.72rem;
+      margin-top: 1rem;
+    }
+
+    .player-sheet-stat {
+      border-radius: 18px;
+      border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+      background:
+        linear-gradient(160deg, color-mix(in srgb, var(--surface) 90%, #fff 10%), var(--surface));
+      padding: 0.94rem 0.92rem 0.88rem;
+      min-height: 6rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.45rem;
+    }
+
+    .player-sheet-stat--avg {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(106, 170, 100, 0.16), transparent 55%),
+        linear-gradient(160deg, color-mix(in srgb, var(--surface) 88%, #fff 12%), var(--surface));
+    }
+
+    .player-sheet-stat-label {
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .player-sheet-stat-value {
+      font-size: clamp(1.45rem, 4vw, 2rem);
+      line-height: 1;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .player-sheet-stat--avg .player-sheet-stat-value {
+      color: var(--accent);
+    }
+
+    .player-sheet-footer {
+      margin-top: 0.9rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    .you {
+      margin-left: 0.35rem;
+      opacity: 0.66;
+      font-size: 0.82em;
+      font-weight: 560;
+    }
+
+    .badges {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.32rem;
+      margin-left: 0.5rem;
+      flex: 0 0 auto;
+      position: relative;
+    }
+
+    .badge {
+      width: 1.28rem;
+      height: 1.28rem;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid transparent;
+      cursor: pointer;
+      position: relative;
+      transition: transform 140ms ease;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .badge:hover,
+    .badge:focus-visible,
+    .badge.open {
+      transform: scale(1.08);
+    }
+
+    .badge svg {
+      width: 0.9rem;
+      height: 0.9rem;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .badge[data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: color-mix(in srgb, var(--text) 92%, transparent);
+      color: color-mix(in srgb, var(--surface) 95%, transparent);
+      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      border-radius: 8px;
+      padding: 0.32rem 0.46rem;
+      white-space: nowrap;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms ease;
+      z-index: 50;
+    }
+
+    .badge:hover::after,
+    .badge:focus-visible::after,
+    .badge.open::after {
+      opacity: 1;
+    }
+
+    .badge.hint {
+      color: #6b4f07;
+      background: #f6dc72;
+      border-color: #e7c94e;
+    }
+
+    .badge.played {
+      color: #0b4a2e;
+      background: #9be7c0;
+      border-color: #6fd39f;
+    }
+
+    :root[data-theme="dark"] .badge.hint {
+      color: #fbe08c;
+      background: #6f5d24;
+      border-color: #917935;
+    }
+
+    :root[data-theme="dark"] .badge.played {
+      color: #a2f3cb;
+      background: #1f5a3e;
+      border-color: #2f7a56;
+    }
+
+    .score {
+      font-variant-numeric: tabular-nums;
+      font-weight: 860;
+      font-size: 1.02rem;
+      margin-left: 0.6rem;
+    }
+
+    .item.rank-1 .score,
+    .item.rank-2 .score,
+    .item.rank-3 .score {
+      color: inherit;
+    }
+
+    .item.unrated {
+      border-style: dashed;
+    }
+
+    .score.unrated {
+      letter-spacing: 0.06em;
+      opacity: 0.82;
+    }
+
+    .state {
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+      padding: 1.9rem 1rem;
+      border: 1px dashed var(--border);
+      border: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
+      border-radius: 14px;
+      background: var(--surface-2);
+      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+    }
+
+    @supports not (color: color-mix(in srgb, white 50%, black)) {
+      body {
+        background: var(--bg);
+      }
+
+      .shell,
+      .lb-progress,
+      .item,
+      .state {
+        background: var(--surface);
+        border-color: var(--border);
+      }
+
+      .lb-progress__bar {
+        background: linear-gradient(90deg, #6aaa64, #5b9956);
+      }
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes lbBarSlide {
+      0% { transform: translateX(-110%); }
+      100% { transform: translateX(220%); }
+    }
+
+    @keyframes playerSheetReveal {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @media (max-width: 620px) {
+      .btn { padding: 0.48rem 0.72rem; }
+      .score { font-size: 0.95rem; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <div class="top-copy">
+        <p class="eyebrow">WordShift</p>
+        <div class="title-wrap">
+          <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+            <path d="M4 22h16"></path>
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+          </svg>
+          <h1>Leaderboard</h1>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <a class="btn" href="/">Back</a>
+      </div>
+    </header>
+    
+    <p class="leaderboard-info">Compare your performance with other players. Switch between most games played and all-time average guesses.</p>
+
+    <section class="shell" aria-label="Leaderboard list">
+      <div class="tabs">
+        <button id="tab-weekly" class="tab-btn active" type="button" data-tab="weekly">
+          All Time • Avg Guesses
+        </button>
+        <button id="tab-lifetime" class="tab-btn" type="button" data-tab="lifetime">
+          Lifetime • Most Games
+        </button>
+      </div>
+
+      <div class="meta">
+        <span id="meta-label">Top 50 • Avg guesses (min 2 games)</span>
+        <span id="meta-count"></span>
+      </div>
+      <div id="lb-progress" class="lb-progress" aria-hidden="true">
+        <div class="lb-progress__bar"></div>
+      </div>
+      <ul id="lb-list" class="list" aria-live="polite"></ul>
+    </section>
+
+    <div id="player-sheet" class="player-sheet" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title">
+      <div class="player-sheet-card">
+        <div class="player-sheet-header">
+          <div class="player-sheet-brand">
+            <div id="player-sheet-avatar" class="player-sheet-avatar" aria-hidden="true">?</div>
+            <div>
+              <p class="player-sheet-kicker">Leaderboard profile</p>
+              <h2 id="player-sheet-title" class="player-sheet-title">Player details</h2>
+              <p class="player-sheet-subtitle">All-time average guesses and play history.</p>
+            </div>
+          </div>
+          <button id="player-sheet-close" class="player-sheet-close" type="button" aria-label="Close profile">×</button>
+        </div>
+
+        <div class="player-sheet-name" id="player-sheet-name">—</div>
+
+        <div class="player-sheet-meta" aria-label="Profile metadata">
+          <span class="player-sheet-pill">Joined <strong id="player-sheet-joined">—</strong></span>
+          <span class="player-sheet-pill">Last played <strong id="player-sheet-last-play">—</strong></span>
+        </div>
+
+        <div class="player-sheet-stats" aria-label="Player statistics">
+          <div class="player-sheet-stat player-sheet-stat--avg">
+            <span class="player-sheet-stat-label">Avg guesses</span>
+            <span id="player-sheet-avg" class="player-sheet-stat-value">—</span>
+          </div>
+          <div class="player-sheet-stat">
+            <span class="player-sheet-stat-label">Games played</span>
+            <span id="player-sheet-games" class="player-sheet-stat-value">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      // Fetch Supabase credentials from backend API (keys protected in Render)
+      const API_URL = "https://wordshift-api.onrender.com"; // Change to your Render URL
+      let supabase = null;
+
+      // Initialize Supabase with keys from backend
+      (async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/keys`);
+          const { supabaseUrl, supabaseKey } = await res.json();
+          supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+          console.log('✅ Supabase initialized from backend keys');
+          // Once initialized, load the leaderboard
+          setTimeout(() => loadAndRenderLeaderboard(), 100);
+        } catch (err) {
+          console.error('Failed to fetch keys from backend:', err);
+          // Fallback: use hardcoded keys (for development)
+          try {
+            supabase = window.supabase.createClient(
+              "https://hcehsxnudbwjydvenlfz.supabase.co",
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8"
+            );
+            console.log('⚠️ Using fallback hardcoded keys (backend unavailable)');
+            setTimeout(() => loadAndRenderLeaderboard(), 100);
+          } catch (fallbackErr) {
+            console.error('Failed to initialize Supabase:', fallbackErr);
+          }
+        }
+      })();
+      const listEl = document.getElementById("lb-list");
+      const metaCountEl = document.getElementById("meta-count");
+      const lbProgressEl = document.getElementById("lb-progress");
+      const metaLabelEl = document.getElementById("meta-label");
+      const playerSheetEl = document.getElementById("player-sheet");
+      const playerSheetAvatarEl = document.getElementById("player-sheet-avatar");
+      const playerSheetNameEl = document.getElementById("player-sheet-name");
+      const playerSheetJoinedEl = document.getElementById("player-sheet-joined");
+      const playerSheetLastPlayEl = document.getElementById("player-sheet-last-play");
+      const playerSheetAvgEl = document.getElementById("player-sheet-avg");
+      const playerSheetGamesEl = document.getElementById("player-sheet-games");
+      const playerSheetCloseEl = document.getElementById("player-sheet-close");
+
+      const tabLifetimeBtn = document.getElementById("tab-lifetime");
+      const tabWeeklyBtn = document.getElementById("tab-weekly");
+
+      let currentTab = "weekly";
+      let allPlayers = [];
+      const MIN_GAMES_FOR_PUBLIC = 2; // minimum games to appear on public average leaderboard
+
+      const launchDate = Date.UTC(2026, 3, 1); // April 1, 2026
+
+      function getCurrentSolutionIndex() {
+        const now = new Date();
+        const localDateAsUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        return Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
+      }
+
+      const todayIndex = getCurrentSolutionIndex();
+
+      const currentUser = (() => {
+        try {
+          const raw = localStorage.getItem("wordle-user-data-v2");
+          return raw ? JSON.parse(raw)?.username || null : null;
+        } catch {
+          return null;
+        }
+      })();
+
+      function formatJoinDate(createdAt) {
+        if (!createdAt) return "Unknown";
+        const dt = new Date(createdAt);
+        if (Number.isNaN(dt.getTime())) return "Unknown";
+        return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+      }
+
+      function formatLastPlayDate(dayIndex) {
+        if (typeof dayIndex !== 'number' || dayIndex < 0) return "Never";
+        try {
+          const dt = new Date(launchDate + (Number(dayIndex) * 86400000));
+          return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+        } catch (_) { return "Unknown"; }
+      }
+
+      function openPlayerSheet(player) {
+        if (!playerSheetEl) return;
+        const name = player.username || "Unknown";
+        const initial = name.trim().charAt(0).toUpperCase() || "?";
+        if (playerSheetAvatarEl) playerSheetAvatarEl.textContent = initial;
+        playerSheetNameEl.textContent = name;
+        playerSheetJoinedEl.textContent = formatJoinDate(player.created_at);
+        playerSheetLastPlayEl.textContent = formatLastPlayDate(player.lastPlayedVal);
+        playerSheetAvgEl.textContent = Number.isFinite(player.rawAvg) ? Number(player.rawAvg).toFixed(2) : "—";
+        playerSheetGamesEl.textContent = String(Number(player.gamesPlayed) || 0);
+        playerSheetEl.classList.add("open");
+      }
+
+      function closePlayerSheet() {
+        playerSheetEl?.classList.remove("open");
+      }
+
+      playerSheetCloseEl?.addEventListener("click", closePlayerSheet);
+      playerSheetEl?.addEventListener("click", (e) => {
+        if (e.target === playerSheetEl) closePlayerSheet();
+      });
+
+      const hintIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path></svg>`;
+      const playedIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>`;
+
+      function renderState(text) {
+        listEl.innerHTML = `<li class="state">${text}</li>`;
+        metaCountEl.textContent = "";
+      }
+
+      function setLoading(active) {
+        if (!lbProgressEl) return;
+        lbProgressEl.classList.toggle("visible", Boolean(active));
+      }
+
+      function renderRows(rows) {
+        if (!rows.length) {
+          renderState("No leaderboard data yet.");
+          return;
+        }
+
+        listEl.innerHTML = "";
+        metaCountEl.textContent = `${rows.length} players`;
+
+        rows.forEach((player, idx) => {
+          const li = document.createElement("li");
+          li.className = "item";
+          const rankNumber = idx + 1;
+          if (rankNumber === 1) li.classList.add("rank-1");
+          else if (rankNumber === 2) li.classList.add("rank-2");
+          else if (rankNumber === 3) li.classList.add("rank-3");
+
+          // Badge rule: one icon only.
+          // - solved today with hints => hint badge
+          // - solved today without hints => verified check badge
+          let badgesHtml = "";
+          if (player.lastPlayedVal === todayIndex && player.wonToday && player.hintsUsedToday > 0) {
+            badgesHtml += `<button class="badge hint" type="button" data-tooltip="Solved today's word using hints" aria-label="Solved today's word using hints">${hintIcon}</button>`;
+          } else if (player.lastPlayedVal === todayIndex && player.wonToday) {
+            badgesHtml += `<button class="badge played" type="button" data-tooltip="Solved today's word" aria-label="Solved today's word">${playedIcon}</button>`;
+          }
+          const badges = `<span class="badges">${badgesHtml}</span>`;
+
+          const scoreLabel = currentTab === "lifetime"
+            ? String(Number(player.gamesPlayed) || 0)
+            : Number(player.rawAvg).toFixed(2);
+
+          li.innerHTML = `
+            <div class="left">
+              <span class="rank">#${rankNumber}</span>
+              <span class="name">
+                <button class="name-main" type="button">
+                  ${player.username}
+                  ${currentUser && player.username === currentUser ? `<span class="you">(Me)</span>` : ""}
+                </button>
+              </span>
+              ${badges}
+            </div>
+            <div class="score">${scoreLabel}</div>
+          `;
+
+          const nameMainBtn = li.querySelector(".name-main");
+          if (nameMainBtn) {
+            nameMainBtn.addEventListener("click", () => openPlayerSheet(player));
+          }
+
+          listEl.appendChild(li);
+        });
+      }
+
+      async function loadAndRenderLeaderboard() {
+        setLoading(true);
+        renderState("Loading leaderboard...");
+
+        try {
+          console.log("Starting leaderboard load...");
+          console.log("Today index:", todayIndex);
+
+          // Call Supabase directly (data is only there)
+          let { data, error } = await supabase
+            .from("leaderboards")
+            .select("uuid, username, games_played, total_guesses, created_at, saved_state")
+            .order("games_played", { ascending: false });
+
+          if (error) {
+            console.error("Supabase query error:", error);
+            throw new Error(`Query failed: ${error.message}`);
+          }
+
+          console.log("Raw data received:", data);
+          console.log("Data length:", data ? data.length : 0);
+
+          if (!data || data.length === 0) {
+            renderState("No players found in database.");
+            setLoading(false);
+            return;
+          }
+
+          allPlayers = (data || [])
+            .filter((p) => p.username)
+            .map((p) => {
+              const gamesPlayed = Number(p.games_played) || 0;
+              const totalGuesses = Number(p.total_guesses) || 0;
+              const GUESS_SCALE = 10;
+              const rawAvg = gamesPlayed > 0 ? (totalGuesses / GUESS_SCALE) / gamesPlayed : 0;
+
+              // Extract last played day, win state and hints used from saved_state JSON
+              let lastPlayedVal = -1;
+              let wonToday = false;
+              let hintsUsedToday = 0;
+              try {
+                if (p.saved_state) {
+                  const state = typeof p.saved_state === 'string' ? JSON.parse(p.saved_state) : p.saved_state;
+                  if (state && state.solutionIndex !== undefined) {
+                    lastPlayedVal = Number(state.solutionIndex);
+                    wonToday = Boolean(state.won === true);
+                    hintsUsedToday = Number(state.hintsUsed || 0) || 0;
+                  }
+                }
+              } catch (e) {
+                console.warn("Could not parse saved_state for", p.username, e);
+              }
+
+              return {
+                ...p,
+                gamesPlayed,
+                rawAvg,
+                lastPlayedVal,
+                wonToday,
+                hintsUsedToday,
+                rank: 0
+              };
+            });
+
+          console.log("Processed players:", allPlayers.length);
+          updateLeaderboardDisplay();
+        } catch (err) {
+          console.error("Leaderboard load failed:", err);
+          console.error("Error details:", err.message || err);
+          renderState(`Error: ${err.message || "Failed to load leaderboard"}`);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function updateLeaderboardDisplay() {
+        listEl.classList.add("tab-switching");
+        let rows = [];
+
+        if (currentTab === "lifetime") {
+          metaLabelEl.textContent = "Top 50 • Most games played";
+          rows = [...allPlayers]
+            .sort((a, b) => Number(b.gamesPlayed) - Number(a.gamesPlayed))
+            .slice(0, 50);
+        } else if (currentTab === "weekly") {
+          metaLabelEl.textContent = `Top 50 • Avg guesses (min ${MIN_GAMES_FOR_PUBLIC} games)`;
+          rows = [...allPlayers]
+            .filter((p) => Number(p.gamesPlayed) >= MIN_GAMES_FOR_PUBLIC)
+            .sort((a, b) => Number(a.rawAvg) - Number(b.rawAvg))
+            .slice(0, 50);
+        }
+
+        // Add current user if not in top 50
+        if (currentUser && !rows.some((p) => p.username === currentUser)) {
+          const meData = allPlayers.find((p) => p.username === currentUser);
+          if (meData && (currentTab === "lifetime" || Number(meData.gamesPlayed) > 0)) rows.push(meData);
+        }
+
+        renderRows(rows);
+        window.requestAnimationFrame(() => {
+          listEl.classList.remove("tab-switching");
+        });
+      }
+
+      function setActiveTab(nextTab) {
+        if (nextTab !== "weekly" && nextTab !== "lifetime") return;
+        currentTab = nextTab;
+        tabLifetimeBtn.classList.toggle("active", nextTab === "lifetime");
+        tabWeeklyBtn.classList.toggle("active", nextTab === "weekly");
+        const activeBtn = nextTab === "lifetime" ? tabLifetimeBtn : tabWeeklyBtn;
+        activeBtn?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+        updateLeaderboardDisplay();
+      }
+
+      listEl?.addEventListener("click", (e) => {
+        const badgeBtn = e.target.closest(".badge[data-tooltip]");
+        if (!badgeBtn) {
+          listEl.querySelectorAll(".badge.open").forEach((el) => el.classList.remove("open"));
+          return;
+        }
+        e.stopPropagation();
+        const isOpen = badgeBtn.classList.contains("open");
+        listEl.querySelectorAll(".badge.open").forEach((el) => el.classList.remove("open"));
+        if (!isOpen) badgeBtn.classList.add("open");
+      });
+
+      document.addEventListener("click", () => {
+        listEl.querySelectorAll(".badge.open").forEach((el) => el.classList.remove("open"));
+      });
+
+      tabLifetimeBtn?.addEventListener("click", () => {
+        setActiveTab("lifetime");
+      });
+
+      tabWeeklyBtn?.addEventListener("click", () => {
+        setActiveTab("weekly");
+      });
+    })();
+  </script>
+</body>
+</html>
