@@ -9,31 +9,23 @@ permissions:
 
 jobs:
   patch:
-    if: github.event.head_commit.message != 'Fix reveal word fetch and game-over state'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Patch reveal flow
-        shell: python
         run: |
+          python3 - <<'PY'
           from pathlib import Path
-          import re
-
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
-
           marker = '<script src="script.js"></script>'
           start = text.find(marker)
-          if start == -1:
-              raise SystemExit('script.js marker not found')
-
           block_start = text.find('<script>', start + len(marker))
           block_end = text.find('</script>', block_start)
-          if block_start == -1 or block_end == -1:
+          if start == -1 or block_start == -1 or block_end == -1:
               raise SystemExit('reveal script block not found')
-
           replacement = r'''<script>
     (() => {
       const revealModal = document.getElementById("give-up-confirm-modal");
@@ -87,15 +79,8 @@ jobs:
         if (!keysResponse.ok) throw new Error("Could not load WordShift configuration");
         const keys = await keysResponse.json();
         if (!keys.supabaseUrl || !keys.supabaseKey) throw new Error("Missing Supabase configuration");
-
         const url = `${keys.supabaseUrl}/rest/v1/words?select=word_encrypted,word_length,category&day_index=eq.${dayIndex}&limit=1`;
-        const response = await fetch(url, {
-          headers: {
-            apikey: keys.supabaseKey,
-            Authorization: `Bearer ${keys.supabaseKey}`
-          },
-          cache: "no-store"
-        });
+        const response = await fetch(url, { headers: { apikey: keys.supabaseKey, Authorization: `Bearer ${keys.supabaseKey}` }, cache: "no-store" });
         if (!response.ok) throw new Error(`Word request failed (${response.status})`);
         const rows = await response.json();
         if (!Array.isArray(rows) || !rows[0]?.word_encrypted) throw new Error("Today's word was not found");
@@ -107,17 +92,8 @@ jobs:
       function lockCurrentGame(word) {
         revealComplete = true;
         window.__wordshiftRevealed = true;
-        if (keyboard) {
-          keyboard.style.pointerEvents = "none";
-          keyboard.style.opacity = "0.5";
-          keyboard.setAttribute("aria-disabled", "true");
-        }
-        if (hintButton) {
-          hintButton.disabled = true;
-          hintButton.style.pointerEvents = "none";
-          hintButton.style.opacity = "0.5";
-        }
-
+        if (keyboard) { keyboard.style.pointerEvents = "none"; keyboard.style.opacity = "0.5"; keyboard.setAttribute("aria-disabled", "true"); }
+        if (hintButton) { hintButton.disabled = true; hintButton.style.pointerEvents = "none"; hintButton.style.opacity = "0.5"; }
         const solutionIndex = getSolutionIndex();
         const storageKey = `wordle-mobile-${solutionIndex}`;
         let state = {};
@@ -128,7 +104,6 @@ jobs:
         state.won = false;
         state.hasSubmittedToLeaderboard = false;
         localStorage.setItem(storageKey, JSON.stringify(state));
-
         revealModal.classList.add("hidden");
         if (accountMenuPanel) accountMenuPanel.classList.add("hidden");
         endKicker.textContent = "Game over";
@@ -137,14 +112,12 @@ jobs:
         message.classList.add("show");
         endModal.classList.remove("hidden");
         countdown.textContent = "You revealed today's word. No leaderboard result was submitted.";
-
-        const blockInput = (event) => {
+        document.addEventListener("keydown", (event) => {
           if (!window.__wordshiftRevealed) return;
           if (event.target?.matches?.("input, textarea, select")) return;
           event.preventDefault();
           event.stopImmediatePropagation();
-        };
-        document.addEventListener("keydown", blockInput, true);
+        }, true);
       }
 
       function openRevealModal() {
@@ -157,43 +130,27 @@ jobs:
         revealYes.focus();
       }
 
-      giveUpButton?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (!revealComplete) openRevealModal();
-      }, true);
-
-      revealCancel?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        revealModal.classList.add("hidden");
-      }, true);
-
+      giveUpButton?.addEventListener("click", (event) => { event.preventDefault(); event.stopImmediatePropagation(); if (!revealComplete) openRevealModal(); }, true);
+      revealCancel?.addEventListener("click", (event) => { event.preventDefault(); event.stopImmediatePropagation(); revealModal.classList.add("hidden"); }, true);
       revealYes?.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopImmediatePropagation();
         if (revealComplete) return;
         revealYes.disabled = true;
         revealYes.textContent = "Loading word…";
-        try {
-          const word = await fetchRevealWord();
-          lockCurrentGame(word);
-        } catch (error) {
+        try { lockCurrentGame(await fetchRevealWord()); }
+        catch (error) {
           console.error("Reveal word failed:", error);
           revealYes.disabled = false;
           revealYes.textContent = "Try again";
           revealModal.querySelector(".modal__countdown").textContent = "The word could not be loaded. Please try again.";
         }
       }, true);
-
-      revealModal?.addEventListener("click", (event) => {
-        if (event.target === revealModal && !revealComplete) revealModal.classList.add("hidden");
-      });
+      revealModal?.addEventListener("click", (event) => { if (event.target === revealModal && !revealComplete) revealModal.classList.add("hidden"); });
     })();
   </script>'''
-
-          new_text = text[:block_start] + replacement + text[block_end + len('</script>'):]
-          path.write_text(new_text, encoding='utf-8')
+          path.write_text(text[:block_start] + replacement + text[block_end + len('</script>'):], encoding='utf-8')
+          PY
 
       - name: Commit patched index
         run: |
@@ -202,12 +159,4 @@ jobs:
           git add index.html
           git diff --cached --quiet && exit 0
           git commit -m "Fix reveal word fetch and game-over state"
-          git push
-
-      - name: Remove patch workflow
-        if: success()
-        run: |
-          rm -f .github/workflows/fix-reveal.yml
-          git add .github/workflows/fix-reveal.yml
-          git commit -m "Remove temporary reveal patch workflow"
           git push
