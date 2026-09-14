@@ -1,109 +1,97 @@
-# WordShift 🎮
+# WordShift
 
-A word-guessing game inspired by Wordle, built with vanilla JavaScript and powered by Supabase.
+WordShift is a daily word game built around changing word lengths, fast feedback, optional hints, competitive statistics, and 1v1 race mode.
 
-## 🎯 How to Play
+**Play:** https://wordshift.dev
 
-1. **Guess the 5-letter word** in 6 tries
-2. **Color feedback** tells you if letters are:
-   - 🟩 **Green** - Correct letter in correct position
-   - 🟨 **Yellow** - Correct letter in wrong position
-   - ⬜ **Gray** - Letter not in the word
-3. **Win** by guessing the word before you run out of tries
-4. **Compete** on the leaderboard with other players
+## Features
 
-## 🏆 Features
+- **Daily puzzle** — a new encrypted daily solution with a word length that can change from day to day.
+- **Adaptive board** — the number of rows and hints adjusts to the current puzzle.
+- **Word validation** — guesses are checked before they are submitted.
+- **Hints** — limited daily hints provide help without giving away the entire answer.
+- **Accounts** — save progress and statistics across sessions.
+- **Leaderboard** — compare average guesses and overall play history.
+- **Race mode** — create or join a private 1v1 room and race another player.
+- **Themes** — light and dark presentation options, with additional theme support in the client.
+- **Reveal word** — players can voluntarily end a daily game and see the solution; revealed games do not produce leaderboard results.
 
-- **Daily word puzzle** - A new word every day
-- **Leaderboard system** - Compare your stats with other players
-  - **This Week**: Who has the lowest average guesses this week?
-  - **Lifetime**: Who has played the most games?
-- **Game stats** - Track your win streak, best games, and more
-- **Hints system** - Get help when you're stuck (limited per day)
-- **Theme support** - Light and dark mode
+## How to Play
 
-## 🚀 Getting Started
+1. Open https://wordshift.dev.
+2. Read the word-length indicator for the day.
+3. Enter a word and press **Enter**.
+4. Use the feedback to refine your next guess:
+   - **Green** — the letter is correct and in the correct position.
+   - **Yellow** — the letter is in the word but in another position.
+   - **Gray** — the letter is not part of the solution.
+5. Continue until you solve the word or run out of attempts.
 
-### Play Online
-1. Visit the game at `https://yourdomain.com` (once deployed)
-2. Create an account with a username and password
-3. Start playing!
+The daily puzzle can also be played as a guest. An account is only required for account-based features such as persistent competitive statistics and leaderboard placement.
 
-### Run Locally
-1. Clone this repository
-2. Open `index.html` in your web browser
-3. That's it! No installation needed
+## Race Mode
 
-## 📁 Project Structure
+Race mode is a separate 1v1 experience.
 
-```
+- Open **https://wordshift.dev/race**.
+- Create a room or enter an existing room code.
+- Share the room code with your opponent.
+- Both players ready up before the race begins.
+- Race results are handled separately from the daily puzzle leaderboard.
+
+## Project Structure
+
+```text
 WordShift/
-├── index.html              # Main game page
-├── leaderboard.html        # Leaderboard page
-├── script.js               # Main game logic
-├── race.js                 # Race/challenge mode
-├── style.css               # Styling
-├── race.css                # Race mode styling
-├── backend/                # Server-side code (deploy to Render)
-│   ├── config.js           # ⚠️ Contains API keys (never commit)
-│   ├── api.js              # Backend API template
-│   └── README.md           # Backend setup guide
-└── README.md               # This file
+├── index.html          # Daily game
+├── race.html            # Race lobby/game
+├── leaderboard.html    # Leaderboard page
+├── script.js            # Daily game logic
+├── race.js              # Race mode logic
+├── style.css            # Main styling
+├── race.css             # Race styling
+├── words.js             # Local/fallback word data
+└── backend/             # Backend service used by the frontend
 ```
 
-## 💾 Save Your Progress
+The extensionless public routes are:
 
-- Your game saves automatically to your browser
-- Your account stats are stored in our database
-- You can play on different devices with the same account
+- `https://wordshift.dev/`
+- `https://wordshift.dev/race`
+- `https://wordshift.dev/leaderboard`
 
-## 🔧 Technologies Used
+## Technology
 
-- **Frontend**: HTML, CSS, JavaScript
-- **Backend**: Node.js + Express (optional, for secure deployments)
-- **Database**: Supabase (PostgreSQL)
-- **Hosting**: GitHub Pages (frontend) + Render (backend, optional)
+- Vanilla HTML, CSS, and JavaScript
+- Supabase for persistent game/account data
+- Render for the backend API used to provide protected configuration
+- GitHub Pages for frontend hosting
 
-## 📊 Leaderboard
+## Local Development
 
-### This Week's Lowest Average
-See who has the best average guesses for games played this week. Resets every Sunday.
+The frontend is a static site. Open `index.html` through a local static server rather than relying on `file://` when testing browser APIs and external requests.
 
-### Lifetime Most Games
-See who's played the most games of all time.
+The backend lives in `backend/` and is deployed separately. Frontend configuration is retrieved from the backend at runtime.
 
-## 🐛 Reporting Issues
+## Data & Security
 
-Found a bug? Here's how to help:
-1. Try clearing your browser cache
-2. Try a different browser
-3. Check the browser console (F12) for error messages
-4. Contact the developer with details
+Daily solutions are stored encrypted and decrypted by the client when a puzzle is loaded. Account and leaderboard functionality uses Supabase through the configured application API.
 
-## ✨ Tips for Better Scores
+Do not commit private backend credentials, service-role keys, or other secrets to the repository.
 
-- Start with common letters like E, A, R, O, T
-- Use yellow letters in different positions
-- Think about common word patterns
-- Remember: uppercase and lowercase don't matter
+## Reporting a Bug
 
-## 📝 Terms & Privacy
+If something is broken, include:
 
-- Your username and game stats are public on the leaderboard
-- Your password is encrypted and never stored in plain text
-- We don't sell or share your data
-- We collect minimal analytics to improve the game
+- the page where it happened;
+- the steps that reproduce it;
+- your browser/device;
+- the expected behavior;
+- the actual behavior; and
+- any relevant console error.
 
-## 🎓 Learn More
+## Ownership
 
-- **Wordle** (the original): https://www.nytimes.com/games/wordle/
-- **Supabase** (our database): https://supabase.com
-- **JavaScript**: https://developer.mozilla.org/en-US/docs/Web/JavaScript
+WordShift is an original project by **Elio El Hage**. The website, game implementation, visual design, and original project content are owned by the developer except where third-party software or services are used.
 
-## 📄 License
-
-This project is for educational and personal use.
-
----
-
-**Enjoying WordShift?** Share your scores with friends! 🎉
+© 2026 Elio El Hage. All rights reserved.
