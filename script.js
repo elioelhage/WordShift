@@ -2,7 +2,6 @@
   const core = document.createElement('script');
   core.src = './script-core.js';
   core.onload = () => {
-    // Keep navigation usable even after the daily game ends.
     const leaderboardButton = document.getElementById('leaderboard-button');
     if (leaderboardButton) {
       leaderboardButton.addEventListener('click', (event) => {
@@ -12,12 +11,11 @@
       }, true);
     }
 
-    // Desktop-only ownership footer. Mobile layout is intentionally untouched.
     const footer = document.querySelector('.site-footer') || (() => {
       const el = document.createElement('footer');
       el.className = 'site-footer';
       el.setAttribute('aria-label', 'Copyright');
-      el.innerHTML = '<span>© 2026 Elio El Hage. All rights reserved.</span><span>WordShift</span>';
+      el.innerHTML = '<span>© 2026 Elio El Hage. All rights reserved.</span><span class="site-footer__links"><a href="/terms/">Terms of Use</a><span aria-hidden="true">·</span><a href="/privacy/">Privacy Policy</a></span>';
       document.body.appendChild(el);
       return el;
     })();
@@ -30,8 +28,8 @@
           display:flex;
           align-items:center;
           justify-content:center;
-          gap:.45rem;
-          min-height:1.6rem;
+          gap:1.4rem;
+          min-height:1.7rem;
           margin:.15rem auto 0;
           padding:.1rem .75rem .35rem;
           color:var(--muted);
@@ -41,8 +39,10 @@
           opacity:.72;
           text-align:center;
         }
-        .site-footer span + span::before { content:'·'; margin-right:.45rem; }
-        .app-shell { min-height:calc(100dvh - 1.6rem); }
+        .site-footer__links { display:inline-flex; align-items:center; gap:.45rem; }
+        .site-footer a { color:inherit; text-decoration:none; }
+        .site-footer a:hover { text-decoration:underline; opacity:1; }
+        .app-shell { min-height:calc(100dvh - 1.7rem); }
       }
     `;
     document.head.appendChild(style);
