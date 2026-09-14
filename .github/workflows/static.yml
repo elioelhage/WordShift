@@ -1,4 +1,4 @@
-# Simple workflow for deploying static content to GitHub Pages
+# Deploy static content to GitHub Pages
 name: Deploy static content to Pages
 
 on:
@@ -24,32 +24,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Patch reveal to use loaded solution
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          script = Path("script.js")
-          text = script.read_text(encoding="utf-8")
-          marker = '    maxRows = wordLength <= 5 ? 6 : wordLength + 1;'
-          if 'window.__wordshiftSolution = solution;' not in text:
-              if marker not in text:
-                  raise SystemExit("solution initialization marker not found")
-              text = text.replace(marker, '    window.__wordshiftSolution = solution;\n\n' + marker, 1)
-              script.write_text(text, encoding="utf-8")
-
-          index = Path("index.html")
-          html = index.read_text(encoding="utf-8")
-          start = html.find('      async function decryptWord(payloadBase64) {')
-          end = html.find('      function saveRevealedState()', start)
-          if start == -1 or end == -1:
-              raise SystemExit("reveal decrypt function not found")
-          replacement = '''      async function decryptWord() {\n        const deadline = Date.now() + 5000;\n        while (!window.__wordshiftSolution && Date.now() < deadline) {\n          await new Promise(resolve => setTimeout(resolve, 50));\n        }\n        if (!window.__wordshiftSolution) throw new Error("Today's word is not loaded yet.");\n        return String(window.__wordshiftSolution).trim().toUpperCase();\n      }\n\n'''
-          html = html[:start] + replacement + html[end:]
-          index.write_text(html, encoding="utf-8")
-          PY
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
