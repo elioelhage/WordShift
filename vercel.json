@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/race/?$", "dest": "/race.html" },
+    { "src": "/leaderboard/?$", "dest": "/leaderboard.html" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
