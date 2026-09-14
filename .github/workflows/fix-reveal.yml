@@ -1,0 +1,213 @@
+name: Patch reveal flow
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message != 'Fix reveal word fetch and game-over state'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch reveal flow
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          marker = '<script src="script.js"></script>'
+          start = text.find(marker)
+          if start == -1:
+              raise SystemExit('script.js marker not found')
+
+          block_start = text.find('<script>', start + len(marker))
+          block_end = text.find('</script>', block_start)
+          if block_start == -1 or block_end == -1:
+              raise SystemExit('reveal script block not found')
+
+          replacement = r'''<script>
+    (() => {
+      const revealModal = document.getElementById("give-up-confirm-modal");
+      const revealCancel = document.getElementById("give-up-confirm-cancel");
+      const revealYes = document.getElementById("give-up-confirm-yes");
+      const giveUpButton = document.getElementById("give-up-btn");
+      const endModal = document.getElementById("end-modal");
+      const endTitle = document.getElementById("end-title");
+      const endKicker = document.getElementById("end-kicker");
+      const countdown = document.getElementById("countdown");
+      const message = document.getElementById("message");
+      const keyboard = document.getElementById("keyboard");
+      const hintButton = document.getElementById("hint-button");
+      const accountMenuPanel = document.getElementById("account-menu-panel");
+      const WORDSHIFT_AES_KEY_HEX = "0f55cbb6cc1ba7a09803f99276dcec8f9a4e4bb8e833a0a9c90c176e711db892";
+      const LAUNCH_DATE = Date.UTC(2026, 3, 1);
+      let revealComplete = false;
+
+      function getSolutionIndex() {
+        const now = new Date();
+        const localDateAsUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        return Math.max(0, Math.floor((localDateAsUTC - LAUNCH_DATE) / 86400000));
+      }
+
+      function hexToBytes(hex) {
+        const out = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) out[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+        return out;
+      }
+
+      function base64ToBytes(base64) {
+        const binary = atob(base64);
+        const out = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
+        return out;
+      }
+
+      async function decryptWord(payloadBase64) {
+        const payload = base64ToBytes(payloadBase64);
+        if (payload.length < 13) throw new Error("Invalid encrypted word payload");
+        const iv = payload.slice(0, 12);
+        const ciphertext = payload.slice(12);
+        const key = await crypto.subtle.importKey("raw", hexToBytes(WORDSHIFT_AES_KEY_HEX), { name: "AES-GCM" }, false, ["decrypt"]);
+        const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+        return new TextDecoder().decode(plain).trim().toUpperCase();
+      }
+
+      async function fetchRevealWord() {
+        const dayIndex = getSolutionIndex();
+        const keysResponse = await fetch("https://wordshift-api.onrender.com/api/keys", { cache: "no-store" });
+        if (!keysResponse.ok) throw new Error("Could not load WordShift configuration");
+        const keys = await keysResponse.json();
+        if (!keys.supabaseUrl || !keys.supabaseKey) throw new Error("Missing Supabase configuration");
+
+        const url = `${keys.supabaseUrl}/rest/v1/words?select=word_encrypted,word_length,category&day_index=eq.${dayIndex}&limit=1`;
+        const response = await fetch(url, {
+          headers: {
+            apikey: keys.supabaseKey,
+            Authorization: `Bearer ${keys.supabaseKey}`
+          },
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error(`Word request failed (${response.status})`);
+        const rows = await response.json();
+        if (!Array.isArray(rows) || !rows[0]?.word_encrypted) throw new Error("Today's word was not found");
+        const word = await decryptWord(rows[0].word_encrypted);
+        if (!word || (rows[0].word_length && word.length !== Number(rows[0].word_length))) throw new Error("Today's word could not be decrypted");
+        return word;
+      }
+
+      function lockCurrentGame(word) {
+        revealComplete = true;
+        window.__wordshiftRevealed = true;
+        if (keyboard) {
+          keyboard.style.pointerEvents = "none";
+          keyboard.style.opacity = "0.5";
+          keyboard.setAttribute("aria-disabled", "true");
+        }
+        if (hintButton) {
+          hintButton.disabled = true;
+          hintButton.style.pointerEvents = "none";
+          hintButton.style.opacity = "0.5";
+        }
+
+        const solutionIndex = getSolutionIndex();
+        const storageKey = `wordle-mobile-${solutionIndex}`;
+        let state = {};
+        try { state = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch (_) {}
+        state.solutionIndex = solutionIndex;
+        state.currentGuess = "";
+        state.gameOver = true;
+        state.won = false;
+        state.hasSubmittedToLeaderboard = false;
+        localStorage.setItem(storageKey, JSON.stringify(state));
+
+        revealModal.classList.add("hidden");
+        if (accountMenuPanel) accountMenuPanel.classList.add("hidden");
+        endKicker.textContent = "Game over";
+        endTitle.innerHTML = `The word was <span class="modal-word-highlight">${word}</span>`;
+        message.textContent = `The word was ${word}.`;
+        message.classList.add("show");
+        endModal.classList.remove("hidden");
+        countdown.textContent = "You revealed today's word. No leaderboard result was submitted.";
+
+        const blockInput = (event) => {
+          if (!window.__wordshiftRevealed) return;
+          if (event.target?.matches?.("input, textarea, select")) return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        };
+        document.addEventListener("keydown", blockInput, true);
+      }
+
+      function openRevealModal() {
+        if (revealComplete) return;
+        revealYes.disabled = false;
+        revealYes.textContent = "Reveal word";
+        document.getElementById("give-up-confirm-title").textContent = "Giving up reveals the word.";
+        revealModal.querySelector(".modal__countdown").textContent = "Your game will end immediately. The result will not count on the leaderboard.";
+        revealModal.classList.remove("hidden");
+        revealYes.focus();
+      }
+
+      giveUpButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (!revealComplete) openRevealModal();
+      }, true);
+
+      revealCancel?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        revealModal.classList.add("hidden");
+      }, true);
+
+      revealYes?.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (revealComplete) return;
+        revealYes.disabled = true;
+        revealYes.textContent = "Loading word…";
+        try {
+          const word = await fetchRevealWord();
+          lockCurrentGame(word);
+        } catch (error) {
+          console.error("Reveal word failed:", error);
+          revealYes.disabled = false;
+          revealYes.textContent = "Try again";
+          revealModal.querySelector(".modal__countdown").textContent = "The word could not be loaded. Please try again.";
+        }
+      }, true);
+
+      revealModal?.addEventListener("click", (event) => {
+        if (event.target === revealModal && !revealComplete) revealModal.classList.add("hidden");
+      });
+    })();
+  </script>'''
+
+          new_text = text[:block_start] + replacement + text[block_end + len('</script>'):]
+          path.write_text(new_text, encoding='utf-8')
+
+      - name: Commit patched index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix reveal word fetch and game-over state"
+          git push
+
+      - name: Remove patch workflow
+        if: success()
+        run: |
+          rm -f .github/workflows/fix-reveal.yml
+          git add .github/workflows/fix-reveal.yml
+          git commit -m "Remove temporary reveal patch workflow"
+          git push
