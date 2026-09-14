@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#121213" />
+  <title>WordShift — 404</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236aaa64' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M3 9h18'/%3E%3Cpath d='M9 21V9'/%3E%3C/svg%3E" />
+  <style>
+    :root { color-scheme: dark; --bg:#121213; --surface:#1a1a1b; --text:#f5f5f5; --muted:#a1a1aa; --green:#6aaa64; --border:#3a3a3c; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; }
+    body { min-height:100vh; display:grid; place-items:center; overflow:hidden; background:radial-gradient(circle at 50% 30%, rgba(106,170,100,.16), transparent 42%), var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .wrap { width:min(720px,92vw); text-align:center; padding:2rem; position:relative; }
+    .icon { width:96px; height:96px; margin:0 auto 1.4rem; color:var(--green); animation:float 3s ease-in-out infinite; }
+    .icon rect { fill:color-mix(in srgb,var(--green) 12%, transparent); }
+    .digits { font-size:clamp(5rem,18vw,9rem); line-height:.85; font-weight:900; letter-spacing:-.08em; margin:0; }
+    .title { margin:1.2rem 0 .5rem; font-size:clamp(1.4rem,4vw,2rem); }
+    .copy { margin:0 auto 1.5rem; max-width:520px; color:var(--muted); line-height:1.6; }
+    .button { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.8rem 1.1rem; border-radius:999px; border:1px solid color-mix(in srgb,var(--green) 60%, var(--border)); background:color-mix(in srgb,var(--green) 12%, var(--surface)); color:var(--text); text-decoration:none; font-weight:800; transition:transform .18s ease,box-shadow .18s ease,background .18s ease; }
+    .button:hover { transform:translateY(-2px); box-shadow:0 14px 30px rgba(0,0,0,.25); background:color-mix(in srgb,var(--green) 20%, var(--surface)); }
+    .tiles { position:absolute; inset:-8rem -4rem auto; height:22rem; pointer-events:none; z-index:-1; }
+    .tile { position:absolute; width:56px; height:56px; border:1px solid var(--border); border-radius:12px; background:var(--surface); display:grid; place-items:center; font-weight:900; color:var(--muted); opacity:.55; animation:drift var(--d) ease-in-out infinite alternate; }
+    .tile:nth-child(1){left:8%;top:20%;--d:3.4s}.tile:nth-child(2){left:80%;top:12%;--d:4.2s}.tile:nth-child(3){left:16%;top:72%;--d:3.8s}.tile:nth-child(4){left:74%;top:66%;--d:4.6s}
+    @keyframes float { 0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-8px) rotate(2deg)} }
+    @keyframes drift { from{transform:translate3d(0,0,0) rotate(-6deg)} to{transform:translate3d(0,-18px,0) rotate(6deg)} }
+    @media (max-width:640px){ .icon{width:76px;height:76px}.wrap{padding:1.2rem}.tiles{display:none} }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="tiles" aria-hidden="true"><div class="tile">W</div><div class="tile">?</div><div class="tile">S</div><div class="tile">H</div></div>
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg>
+    <p class="digits">404</p>
+    <h1 class="title">This word went missing.</h1>
+    <p class="copy">The page you're looking for doesn't exist, or it moved somewhere else.</p>
+    <a class="button" href="/">Return to WordShift</a>
+  </main>
+</body>
+</html>
