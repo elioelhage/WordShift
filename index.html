@@ -233,6 +233,49 @@
     </div>
   </div>
 
+  <!-- Word submission fix: dictionaryapi.dev can intermittently hang or fail CORS/522.
+       Keep the existing game code intact, but make its dictionary request reliable. -->
+  <script>
+    (function () {
+      const nativeFetch = window.fetch.bind(window);
+      const dictionaryPrefix = "https://api.dictionaryapi.dev/api/v2/entries/en/";
+
+      window.fetch = async function (input, init) {
+        const url = typeof input === "string" ? input : input?.url;
+        if (!url || !url.startsWith(dictionaryPrefix)) {
+          return nativeFetch(input, init);
+        }
+
+        const word = decodeURIComponent(url.slice(dictionaryPrefix.length)).toLowerCase();
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+
+        try {
+          const response = await nativeFetch(
+            `https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&max=10`,
+            { ...(init || {}), signal: controller.signal, cache: "no-store" }
+          );
+
+          if (!response.ok) {
+            return new Response("", { status: 503 });
+          }
+
+          const results = await response.json();
+          const valid = Array.isArray(results) && results.some(
+            entry => typeof entry?.word === "string" && entry.word.toLowerCase() === word
+          );
+
+          return new Response("", { status: valid ? 200 : 404 });
+        } catch (error) {
+          console.error("Word validation service failed:", error);
+          return new Response("", { status: 503 });
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      };
+    })();
+  </script>
+
   <script src="script.js"></script>
 </body>
 </html>
