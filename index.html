@@ -73,7 +73,7 @@
   </div>
   <footer class="site-footer" aria-label="Copyright">
     <span>© 2026 Elio El Hage. All rights reserved.</span>
-    <span>WordShift</span>
+    <span class="site-footer__links"><a href="/terms/">Terms of Use</a><span aria-hidden="true">·</span><a href="/privacy/">Privacy Policy</a></span>
   </footer>
 
   <div id="end-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="end-title"><div class="modal__card"><p id="end-kicker" class="modal__kicker">Round complete</p><h2 id="end-title" class="modal__title">Nice work.</h2><p id="countdown" class="modal__countdown"></p><button id="close-modal" class="primary-button" type="button">Continue</button></div></div>
@@ -140,105 +140,47 @@
       }
 
       window.confirm = (text) => {
-        if (typeof text === "string" && text.startsWith("Give up?")) {
+        if (String(text || "").toLowerCase().includes("give up")) {
           openRevealModal();
           return false;
         }
         return originalConfirm(text);
       };
 
-      const getSolutionIndex = () => {
-        const now = new Date();
-        return Math.max(0, Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 3, 1)) / 86400000));
-      };
+      giveUpButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openRevealModal();
+      }, true);
 
-      const hexToBytes = (hex) => {
-        const out = new Uint8Array(hex.length / 2);
-        for (let i = 0; i < hex.length; i += 2) out[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-        return out;
-      };
+      revealCancel?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        revealModal.classList.add("hidden");
+      }, true);
 
-      const base64ToBytes = (base64) => {
-        const binary = atob(base64);
-        const out = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
-        return out;
-      };
-
-      async function decryptWord(payloadBase64) {
-        const keyResponse = await fetch("https://wordshift-api.onrender.com/api/keys");
-        if (!keyResponse.ok) throw new Error("Could not load WordShift keys.");
-        const keys = await keyResponse.json();
-        if (!keys.supabaseUrl || !keys.supabaseKey) throw new Error("WordShift database configuration is unavailable.");
-        const response = await fetch(`${keys.supabaseUrl}/rest/v1/words?day_index=eq.${getSolutionIndex()}&select=word_encrypted,word_length`, {
-          headers: { apikey: keys.supabaseKey, Authorization: `Bearer ${keys.supabaseKey}` },
-          cache: "no-store"
-        });
-        if (!response.ok) throw new Error(`Could not load today's word (${response.status}).`);
-        const rows = await response.json();
-        if (!Array.isArray(rows) || !rows[0]?.word_encrypted) throw new Error("Today's word was not found.");
-        const payload = base64ToBytes(rows[0].word_encrypted);
-        const cryptoKey = await crypto.subtle.importKey("raw", hexToBytes("0f55cbb6cc1ba7a09803f99276dcec8f9a4e4bb8e833a0a9c90c176e711db892"), { name: "AES-GCM" }, false, ["decrypt"]);
-        const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: payload.slice(0, 12) }, cryptoKey, payload.slice(12));
-        return new TextDecoder().decode(plain).trim().toUpperCase();
-      }
-
-      function saveRevealedState() {
-        const solutionIndex = getSolutionIndex();
-        const key = `wordle-mobile-${solutionIndex}`;
-        let state = {};
-        try { state = JSON.parse(localStorage.getItem(key) || "{}"); } catch (_) {}
-        state.solutionIndex = solutionIndex;
-        state.gameOver = true;
-        state.won = false;
-        localStorage.setItem(key, JSON.stringify(state));
-      }
-
-      function lockGame() {
-        revealComplete = true;
-        document.body.classList.add("wordshift-revealed");
-        if (keyboard) {
-          keyboard.style.pointerEvents = "none";
-          keyboard.setAttribute("aria-disabled", "true");
-          keyboard.querySelectorAll("button").forEach(button => { button.disabled = true; });
-        }
-        if (board) board.setAttribute("aria-disabled", "true");
-      }
-
-      function showRevealedWord(word) {
-        lockGame();
-        saveRevealedState();
-        if (message) { message.textContent = `Word: ${word}`; message.classList.add("show"); }
-        if (endKicker) endKicker.textContent = "Game ended";
-        if (endTitle) endTitle.innerHTML = `The word was <span class="modal-word-highlight">${word}</span>`;
-        if (countdown) countdown.textContent = "You revealed today's word. This game will not count toward the leaderboard.";
-        endModal?.classList.remove("hidden");
-      }
-
-      async function completeReveal() {
+      revealYes?.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
         if (revealComplete) return;
-        revealYes.disabled = true;
-        revealYes.textContent = "Revealing…";
-        try {
-          const word = await decryptWord();
-          revealModal.classList.add("hidden");
-          showRevealedWord(word);
-        } catch (error) {
-          console.error("Reveal word failed:", error);
-          revealYes.disabled = false;
-          revealYes.textContent = "Reveal word";
-          revealModal.querySelector(".modal__countdown").textContent = "The word could not be loaded. Your game is still active.";
+        const word = String(window.__wordshiftSolution || "").trim().toUpperCase();
+        if (!word) {
+          revealYes.textContent = "Try again";
+          return;
         }
-      }
+        revealComplete = true;
+        window.__wordshiftRevealed = true;
+        revealModal.classList.add("hidden");
+        if (keyboard) { keyboard.style.pointerEvents = "none"; keyboard.style.opacity = "0.45"; }
+        if (board) board.setAttribute("aria-disabled", "true");
+        endKicker.textContent = "Game over";
+        endTitle.textContent = `The word was ${word}`;
+        countdown.textContent = "You revealed today's word. No leaderboard result was submitted.";
+        endModal.classList.remove("hidden");
+      }, true);
 
-      giveUpButton?.addEventListener("click", () => {
-        setTimeout(() => {
-          if (revealModal.classList.contains("hidden")) openRevealModal();
-        }, 0);
-      });
-      revealCancel?.addEventListener("click", () => revealModal.classList.add("hidden"));
-      revealYes?.addEventListener("click", completeReveal);
-      revealModal?.addEventListener("click", (event) => { if (event.target === revealModal) revealModal.classList.add("hidden"); });
+      modalClose?.addEventListener("click", () => endModal.classList.add("hidden"));
+      revealModal?.addEventListener("click", (event) => { if (event.target === revealModal && !revealComplete) revealModal.classList.add("hidden"); });
     })();
   </script>
 </body>
