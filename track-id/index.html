@@ -7,8 +7,8 @@
   <meta name="description" content="Track ID — choose an artist and identify songs from short audio clips.">
   <title>Track ID — WordShift</title>
   <link rel="canonical" href="https://wordshift.dev/track-id/">
-  <link rel="stylesheet" href="/dragon-tunes/dragon-tunes.css">
-  <script defer src="/dragon-tunes/dragon-tunes.js"></script>
+  <link rel="stylesheet" href="/track-id/track-id.css">
+  <script defer src="/track-id/track-id.js"></script>
 </head>
 <body>
   <header class="site-head">
@@ -23,28 +23,35 @@
       <p class="intro-copy">Pick an artist. Hear a short clip. Name the song.</p>
     </section>
 
+<section class="artist-picker" aria-labelledby="artist-picker-title">
+      <div class="artist-picker-heading">
+        <div>
+          <h2 id="artist-picker-title">Choose an artist</h2>
+          <p>Each artist has a separate song list.</p>
+        </div>
+        <a id="artist-profile-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer">Artist profile ↗</a>
+      </div>
+      <div class="artist-options" role="group" aria-label="Artist">
+        <button type="button" class="artist-option active" data-artist="imagine-dragons" aria-pressed="true">
+          <img src="https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc" alt="" loading="lazy">
+          <span class="artist-option-copy"><strong>Imagine Dragons</strong><small>Alternative rock</small></span>
+          <span class="artist-option-status" aria-hidden="true">Selected</span>
+        </button>
+        <button type="button" class="artist-option" data-artist="kanye-west" aria-pressed="false">
+          <img src="https://i.scdn.co/image/a12d8543e28d71d9f1e7f5f363c1a6c73316f9e6" alt="" loading="lazy">
+          <span class="artist-option-copy"><strong>Kanye West</strong><small>Hip-hop</small></span>
+          <span class="artist-option-status" aria-hidden="true">Select</span>
+        </button>
+      </div>
+    </section>
+
     <section id="game-card" class="game-card" aria-labelledby="game-title">
       <div class="game-topline">
         <div><p class="eyebrow" id="artist-label">IMAGINE DRAGONS</p><h2 id="game-title">Name that song</h2></div>
         <div class="round-chip" id="round-chip">ROUND 1 / 10</div>
       </div>
 
-      <section class="artist-picker" aria-label="Choose an artist">
-        <div class="artist-picker-heading">
-          <span>ARTIST</span>
-          <a id="artist-profile-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer">Artist profile on Spotify ↗</a>
-        </div>
-        <div class="artist-options" role="group" aria-label="Artist">
-          <button type="button" class="artist-option active" data-artist="imagine-dragons" aria-pressed="true">
-            <img src="https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc" alt="" loading="lazy">
-            <span class="artist-option-copy"><strong>Imagine Dragons</strong><small>Alternative rock</small></span>
-          </button>
-          <button type="button" class="artist-option" data-artist="kanye-west" aria-pressed="false">
-            <img src="https://i.scdn.co/image/a12d8543e28d71d9f1e7f5f363c1a6c73316f9e6" alt="" loading="lazy">
-            <span class="artist-option-copy"><strong>Kanye West</strong><small>Hip-hop</small></span>
-          </button>
-        </div>
-      </section>
+      
 
       <div class="sound-stage">
         <a class="sound-orb" id="artist-orb-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer" aria-label="Open Imagine Dragons profile on Spotify">
@@ -95,7 +102,7 @@
         <div class="guess-actions">
           <span id="attempt-count">Clip: 1 second</span>
         </div>
-        <p id="feedback" class="feedback" aria-live="polite">Pick a difficulty, then start the game.</p>
+        <p id="feedback" class="feedback" aria-live="polite">Choose an artist and difficulty, then start the game.</p>
         </div>
       <section id="answer-reveal" class="answer-reveal" aria-live="polite" hidden>
         <div class="answer-cover-wrap">

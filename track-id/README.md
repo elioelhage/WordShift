@@ -1,6 +1,6 @@
 # Track ID
 
-Track ID is the multi-artist song-guessing game at `/track-id/` (the original `/dragon-tunes/` path remains available).
+Track ID is WordShift's multi-artist song-guessing game at `/track-id/`.
 
 ## Gameplay prototype
 
@@ -21,4 +21,4 @@ The rest of the game logic is separated from catalog loading so a licensed provi
 
 ## Local testing
 
-Serve the repository with a local web server and open `/track-id/`. Catalog requests and audio playback need a browser with network access. Test loading failures, tracks without previews, and browser playback behavior before launch.
+Serve the repository with a local web server and open `/track-id/`. The page assets live in this directory. Catalog requests and audio playback need a browser with network access. Test loading failures, tracks without previews, and browser playback behavior before launch.

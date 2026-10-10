@@ -56,6 +56,7 @@
     "imagine-dragons": {
       name: "Imagine Dragons",
       searchTerm: "Imagine Dragons",
+      artistAliases: ["Imagine Dragons"],
       profileImage: "https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc",
       spotifyUrl: "https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q",
       appleArtistUrl: "https://music.apple.com/ca/artist/imagine-dragons/358714030",
@@ -69,6 +70,7 @@
     "kanye-west": {
       name: "Kanye West",
       searchTerm: "Kanye West",
+      artistAliases: ["Kanye West", "Ye"],
       profileImage: "https://i.scdn.co/image/a12d8543e28d71d9f1e7f5f363c1a6c73316f9e6",
       spotifyUrl: "https://open.spotify.com/artist/5K4W6rqBFWDnAN6FQUkS6x",
       appleArtistUrl: "https://music.apple.com/ca/search?term=Kanye%20West",
@@ -85,6 +87,7 @@
   let chosenArtistId = "imagine-dragons";
   let chosenArtist = ARTISTS[chosenArtistId];
   const catalogCache = new Map();
+  const catalogPromises = new Map();
 
   let catalog = [];
   let playable = [];
@@ -98,7 +101,8 @@
   let clipSeconds = initialClipSeconds;
   let roundSolved = false;
   let gameStarted = false;
-  let loadingCatalog = false;
+  let startingGame = false;
+  let startRequestToken = 0;
   let previewTimer = null;
   let advanceTimer = null;
   let countdownTimer = null;
@@ -128,21 +132,20 @@
     return normalize(value);
   }
 
-  function isAlternateVersion(track) {
+  function isAlternateVersion(track, artistConfig = chosenArtist) {
     const title = String(track.trackName || "");
     const album = String(track.collectionName || "");
     const artist = normalize(track.artistName);
     if (alternatePattern.test(title) || alternatePattern.test(album)) return true;
-    // Treat tracks marketed with another featured artist as variants where a standard version exists.
-    if (/\b(feat(?:uring)?|ft)\b/i.test(title) || artist !== normalize(chosenArtist.name)) return true;
-    return false;
+    const acceptedNames = (artistConfig.artistAliases || [artistConfig.name]).map(normalize);
+    return /\b(feat(?:uring)?|ft)\b/i.test(title) || !acceptedNames.includes(artist);
   }
 
-  function trackQuality(track) {
+  function trackQuality(track, artistConfig = chosenArtist) {
     const title = String(track.trackName || "").trim();
     let quality = 0;
     if (normalize(title) === canonicalTitle(title)) quality += 10;
-    if (!isAlternateVersion(track)) quality += 20;
+    if (!isAlternateVersion(track, artistConfig)) quality += 20;
     if (!/\b(from the series|from the .* soundtrack|music from)\b/i.test(title)) quality += 2;
     if (/\b(deluxe|expanded|anniversary|remastered|greatest hits|best of)\b/i.test(track.collectionName || "")) quality -= 2;
     if (track.previewUrl) quality += 1;
@@ -173,42 +176,92 @@
   }
 
   function selectArtist(artistId) {
-    if (gameStarted || loadingCatalog || !ARTISTS[artistId]) return;
+    if (gameStarted || !ARTISTS[artistId]) return;
+    if (artistId === chosenArtistId && (catalogCache.has(artistId) || catalogPromises.has(artistId))) return;
+
+    // Invalidate any pending start attempt for the previously selected artist.
+    startRequestToken += 1;
+    startingGame = false;
     chosenArtistId = artistId;
     chosenArtist = ARTISTS[artistId];
     artistButtons.forEach((button) => {
       const active = button.dataset.artist === artistId;
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", String(active));
+      const status = button.querySelector(".artist-option-status");
+      if (status) status.textContent = active ? "Selected" : "Select";
     });
 
-    artistOrbImage.onerror = () => {
-      artistOrbImage.hidden = true;
-      artistOrbFallback.hidden = false;
-    };
+    const selectionArtistId = artistId;
+    artistOrbImage.hidden = true;
+    artistOrbFallback.textContent = chosenArtist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2);
+    artistOrbFallback.hidden = false;
+    artistOrbImage.alt = chosenArtist.name + " artist profile image";
     artistOrbImage.onload = () => {
+      if (chosenArtistId !== selectionArtistId) return;
       artistOrbImage.hidden = false;
       artistOrbFallback.hidden = true;
     };
-    artistOrbFallback.textContent = chosenArtist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2);
-    artistOrbFallback.hidden = true;
-    artistOrbImage.hidden = false;
-    artistOrbImage.alt = chosenArtist.name + " artist profile image";
+    artistOrbImage.onerror = () => {
+      if (chosenArtistId !== selectionArtistId) return;
+      artistOrbImage.hidden = true;
+      artistOrbFallback.hidden = false;
+    };
     artistOrbImage.src = chosenArtist.profileImage;
     artistOrbLink.href = chosenArtist.spotifyUrl;
     artistOrbLink.setAttribute("aria-label", "Open " + chosenArtist.name + " profile on Spotify");
     artistProfileLink.href = chosenArtist.spotifyUrl;
-    artistProfileLink.textContent = "Artist profile on Spotify ↗";
     $("artist-label").textContent = chosenArtist.name.toUpperCase();
     gameCard.dataset.artist = artistId;
+    closeSuggestions();
+    guessInput.value = "";
+    updateSongInputArtwork(null);
+    setControls();
 
-    const cached = catalogCache.get(artistId) || [];
-    catalog = cached;
-    playable = cached;
-    startButton.disabled = false;
-    startButton.textContent = "Start game →";
-    audioNote.textContent = "Audio previews load when you start. Availability can vary by region.";
-    setFeedback("Ready to play " + chosenArtist.name + ". Choose a difficulty, then start.");
+    const cached = catalogCache.get(artistId);
+    if (cached) {
+      catalog = cached;
+      playable = cached;
+      startButton.disabled = false;
+      startButton.textContent = "Start game →";
+      setCatalogAttribution(chosenArtist);
+      setFeedback("Ready to play " + chosenArtist.name + ". Choose a difficulty, then start.");
+      return;
+    }
+
+    catalog = [];
+    playable = [];
+    startButton.disabled = true;
+    startButton.textContent = "Loading songs…";
+    audioNote.textContent = "Loading songs for " + chosenArtist.name + "…";
+    setFeedback("Loading the " + chosenArtist.name + " song list…");
+    loadCatalog(artistId).then((tracks) => {
+      if (chosenArtistId !== selectionArtistId || gameStarted) return;
+      catalog = tracks;
+      playable = tracks;
+      startButton.disabled = false;
+      startButton.textContent = "Start game →";
+      setCatalogAttribution(chosenArtist);
+      setFeedback("Ready to play " + chosenArtist.name + ". Choose a difficulty, then start.");
+    }).catch((error) => {
+      if (chosenArtistId !== selectionArtistId || gameStarted) return;
+      startButton.disabled = false;
+      startButton.textContent = "Retry loading songs ↻";
+      audioNote.textContent = "Track previews depend on third-party catalog availability in your region.";
+      setFeedback(error.message || "Could not load songs. Try again.", "error");
+    });
+  }
+
+  function setCatalogAttribution(artistConfig) {
+    audioNote.replaceChildren();
+    const attribution = document.createElement("span");
+    attribution.textContent = "Track metadata and available previews by Apple Music/iTunes. ";
+    const link = document.createElement("a");
+    link.href = artistConfig.appleArtistUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open " + artistConfig.name + " on Apple Music";
+    audioNote.append(attribution, link);
   }
 
   function closeSuggestions() {
@@ -338,7 +391,7 @@
     return url.replace(/\b100x100bb\b/i, "600x600bb").replace(/\b100x100\b/i, "600x600");
   }
 
-  function deduplicateTracks(tracks) {
+  function deduplicateTracks(tracks, artistConfig = chosenArtist) {
     const groups = new Map();
     for (const raw of tracks) {
       const title = String(raw.trackName || "").trim();
@@ -348,10 +401,10 @@
         id,
         title,
         album: raw.collectionName || "",
-        artist: raw.artistName || chosenArtist.name,
+        artist: raw.artistName || artistConfig.name,
         previewUrl: raw.previewUrl || "",
         artworkUrl: enhanceArtwork(raw.artworkUrl100 || raw.artworkUrl60 || ""),
-        storeUrl: raw.trackViewUrl || raw.collectionViewUrl || chosenArtist.appleArtistUrl || chosenArtist.spotifyUrl,
+        storeUrl: raw.trackViewUrl || raw.collectionViewUrl || artistConfig.appleArtistUrl || artistConfig.spotifyUrl,
         raw
       };
       if (!candidate.previewUrl) continue;
@@ -363,61 +416,40 @@
 
     const unique = [];
     for (const group of groups.values()) {
-      // Prefer the standard studio title. If a group only contains live/remix/feature variants, omit it.
-      const clean = group.filter((track) => !isAlternateVersion(track.raw));
+      const clean = group.filter((track) => !isAlternateVersion(track.raw, artistConfig));
       if (!clean.length) continue;
-      clean.sort((a, b) => trackQuality(b.raw) - trackQuality(a.raw));
+      clean.sort((a, b) => trackQuality(b.raw, artistConfig) - trackQuality(a.raw, artistConfig));
       unique.push(clean[0]);
     }
     return unique.sort((a, b) => a.title.localeCompare(b.title));
   }
 
-  async function loadCatalog() {
-    if (loadingCatalog) return;
-    loadingCatalog = true;
-    startButton.disabled = true;
-    startButton.textContent = "Loading songs…";
-    artistButtons.forEach((button) => { button.disabled = true; });
-    audioNote.textContent = "Loading " + chosenArtist.name + " tracks and artwork…";
-    try {
-      const requestedArtistId = chosenArtistId;
-      const results = await appleSearch(chosenArtist.searchTerm);
-      if (requestedArtistId !== chosenArtistId) return;
+  async function loadCatalog(artistId = chosenArtistId) {
+    const artistConfig = ARTISTS[artistId];
+    if (!artistConfig) throw new Error("Choose a supported artist.");
+    const cached = catalogCache.get(artistId);
+    if (cached) return cached;
+    const pending = catalogPromises.get(artistId);
+    if (pending) return pending;
+
+    const request = (async () => {
+      const results = await appleSearch(artistConfig.searchTerm);
       const tracks = Array.isArray(results.results) ? results.results : [];
-      const artistMatches = tracks.filter((track) => normalize(track.artistName) === normalize(chosenArtist.name));
-      catalog = deduplicateTracks(artistMatches);
-      playable = catalog;
-      catalogCache.set(chosenArtistId, catalog);
-
-      audioNote.replaceChildren();
-      const attribution = document.createElement("span");
-      attribution.textContent = "Track metadata and available previews by Apple Music/iTunes. ";
-      const link = document.createElement("a");
-      link.href = chosenArtist.appleArtistUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = "Open " + chosenArtist.name + " on Apple Music";
-      audioNote.append(attribution, link);
-
-      if (playable.length < 1) {
-        throw new Error("No clean, playable " + chosenArtist.name + " tracks were returned in your region.");
+      const acceptedNames = (artistConfig.artistAliases || [artistConfig.name]).map(normalize);
+      const artistMatches = tracks.filter((track) => acceptedNames.includes(normalize(track.artistName)));
+      const uniqueTracks = deduplicateTracks(artistMatches, artistConfig);
+      if (!uniqueTracks.length) {
+        throw new Error("No playable songs were returned for " + artistConfig.name + ". Try reloading the catalog.");
       }
-      startButton.textContent = "Start game →";
-      startButton.disabled = false;
-      setFeedback("Loaded " + playable.length + " tracks for " + chosenArtist.name + ".");
-    } catch (error) {
-      console.error("Track ID catalog load failed:", error);
-      audioNote.textContent = "Track information and previews depend on third-party catalog availability in your region.";
-      startButton.textContent = "Retry loading songs ↻";
-      startButton.disabled = false;
-      setFeedback(error.message || "Could not load the song catalog.", "error");
+      catalogCache.set(artistId, uniqueTracks);
+      return uniqueTracks;
+    })();
+
+    catalogPromises.set(artistId, request);
+    try {
+      return await request;
     } finally {
-      loadingCatalog = false;
-      artistButtons.forEach((button) => { button.disabled = false; });
-      if (!gameStarted && playable.length) {
-        startButton.disabled = false;
-        startButton.textContent = "Start game →";
-      }
+      if (catalogPromises.get(artistId) === request) catalogPromises.delete(artistId);
     }
   }
 
@@ -764,35 +796,57 @@
   }
 
   async function startGame() {
-    if (loadingCatalog || gameStarted) return;
-    if (!playable.length) {
-      await loadCatalog();
-      if (!playable.length) return;
+    if (gameStarted || startingGame) return;
+    startingGame = true;
+    const requestToken = ++startRequestToken;
+    const artistId = chosenArtistId;
+    startButton.disabled = true;
+    startButton.textContent = "Loading songs…";
+
+    try {
+      const songs = await loadCatalog(artistId);
+      if (requestToken !== startRequestToken || artistId !== chosenArtistId) return;
+      catalog = songs;
+      playable = songs;
+
+      const pool = getDifficultyPool();
+      if (pool.length < roundsPerGame) {
+        setFeedback("Only " + pool.length + " songs are available for this difficulty. Try another difficulty or artist.", "error");
+        return;
+      }
+
+      gameStarted = true;
+      roundIndex = 0;
+      roundsPlayed = 0;
+      score = 0;
+      streak = 0;
+      roundPool = shuffle(pool);
+      usedIds = new Set();
+      scoreLabel.textContent = "0";
+      streakLabel.textContent = "0";
+      resultsModal.hidden = true;
+      artistPicker.hidden = true;
+      difficultyPicker.hidden = true;
+      gameCard.dataset.difficulty = chosenDifficulty;
+      guessForm.hidden = false;
+      answerReveal.hidden = true;
+      artistButtons.forEach((button) => { button.disabled = true; });
+      difficultyButtons.forEach((button) => { button.disabled = true; });
+      skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
+      startRound();
+    } catch (error) {
+      if (requestToken === startRequestToken && artistId === chosenArtistId) {
+        setFeedback(error.message || "Could not load the song list. Please retry.", "error");
+      }
+    } finally {
+      if (requestToken === startRequestToken) {
+        startingGame = false;
+        if (!gameStarted && artistId === chosenArtistId) {
+          startButton.disabled = false;
+          startButton.textContent = catalogCache.has(artistId) ? "Start game →" : "Retry loading songs ↻";
+        }
+      }
     }
-    const pool = getDifficultyPool();
-    if (pool.length < roundsPerGame) {
-      setFeedback("Only " + pool.length + " unique songs are available for this difficulty; choose another artist or try again later.", "error");
-      return;
-    }
-    gameStarted = true;
-    roundIndex = 0;
-    roundsPlayed = 0;
-    score = 0;
-    streak = 0;
-    roundPool = shuffle(pool);
-    usedIds = new Set();
-    scoreLabel.textContent = "0";
-    streakLabel.textContent = "0";
-    resultsModal.hidden = true;
-    artistPicker.hidden = true;
-    difficultyPicker.hidden = true;
-    gameCard.dataset.difficulty = chosenDifficulty;
-    guessForm.hidden = false;
-    answerReveal.hidden = true;
-    artistButtons.forEach((button) => { button.disabled = true; });
-    difficultyButtons.forEach((button) => { button.disabled = true; });
-    skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
-    startRound();
   }
 
   artistButtons.forEach((button) => {
@@ -841,11 +895,12 @@
     difficultyPicker.hidden = false;
     gameCard.removeAttribute("data-difficulty");
     startButton.hidden = false;
-    startButton.disabled = false;
-    startButton.textContent = "Start game →";
+    startButton.disabled = !catalogCache.has(chosenArtistId);
+    startButton.textContent = catalogCache.has(chosenArtistId) ? "Start game →" : "Loading songs…";
     guessForm.hidden = false;
     answerReveal.hidden = true;
     setControls();
+    selectArtist(chosenArtistId);
     setFeedback("Choose an artist and difficulty, then start a new run.");
   });
   audio.addEventListener("ended", () => {
