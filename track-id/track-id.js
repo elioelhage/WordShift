@@ -194,8 +194,8 @@
 
     const selectionArtistId = artistId;
     artistOrbImage.hidden = true;
-    artistOrbFallback.hidden = true;
     artistOrbFallback.textContent = chosenArtist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2);
+    artistOrbFallback.hidden = false;
     artistOrbImage.alt = chosenArtist.name + " artist profile image";
     artistOrbImage.onload = () => {
       if (chosenArtistId !== selectionArtistId) return;
