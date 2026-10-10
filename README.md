@@ -1,37 +1,43 @@
 # WordShift
 
-WordShift is a daily word game built around changing word lengths, fast feedback, optional hints, competitive statistics, and 1v1 race mode.
+WordShift is a browser-game hub, starting with a daily word puzzle, competitive 1v1 races, and artist-focused music guessing games.
 
 **Play:** https://wordshift.dev
 
-## Features
+## Games
 
-- **Daily puzzle** — a new encrypted daily solution with a word length that can change from day to day.
-- **Adaptive board** — the number of rows and hints adjusts to the current puzzle.
-- **Word validation** — guesses are checked before they are submitted.
-- **Hints** — limited daily hints provide help without giving away the entire answer.
-- **Accounts** — save progress and statistics across sessions.
-- **Leaderboard** — compare average guesses and overall play history.
+- **WordShift** — a daily word puzzle with adaptive word lengths, feedback, hints, accounts, and leaderboards.
 - **Race mode** — create or join a private 1v1 room and race another player.
-- **Themes** — light and dark presentation options, with additional theme support in the client.
-- **Reveal word** — players can voluntarily end a daily game and see the solution; revealed games do not produce leaderboard results.
+- **Dragon Tunes** — guess Imagine Dragons songs from progressively longer audio previews. Choose Easy, Medium, or Hard and play ten rounds.
 
-## How to Play
+## Dragon Tunes
+
+Open **https://wordshift.dev/dragon-tunes**.
+
+Each round starts with a one-second snippet. Skipping reveals one additional second, up to five seconds. Correct answers reward more points when fewer seconds were needed. Song metadata and available previews are fetched from the Apple Music/iTunes catalog; preview availability can vary by region. The game displays an Apple Music attribution/link alongside the preview source.
+
+The music catalog is a third-party service. Song titles and recordings belong to their respective rights holders, and WordShift is not affiliated with Imagine Dragons.
+
+## WordShift Features
+
+- Daily puzzle and adaptive board.
+- Word validation and optional hints.
+- Accounts and persistent competitive statistics.
+- Global leaderboard and 1v1 race mode.
+- Light/dark presentation options.
+- Reveal word; revealed games do not produce leaderboard results.
+
+## How to Play WordShift
 
 1. Open https://wordshift.dev.
 2. Read the word-length indicator for the day.
 3. Enter a word and press **Enter**.
-4. Use the feedback to refine your next guess:
-   - **Green** — the letter is correct and in the correct position.
-   - **Yellow** — the letter is in the word but in another position.
-   - **Gray** — the letter is not part of the solution.
+4. Use feedback to refine your next guess: green means the letter is in the right position, yellow means the letter is in the word but another position, and gray means the letter is absent.
 5. Continue until you solve the word or run out of attempts.
 
-The daily puzzle can also be played as a guest. An account is only required for account-based features such as persistent competitive statistics and leaderboard placement.
+The daily puzzle can be played as a guest. An account is required only for account-based features such as persistent competitive statistics and leaderboard placement.
 
 ## Race Mode
-
-Race mode is a separate 1v1 experience.
 
 - Open **https://wordshift.dev/race**.
 - Create a room or enter an existing room code.
@@ -43,55 +49,39 @@ Race mode is a separate 1v1 experience.
 
 ```text
 WordShift/
-├── index.html          # Daily game
-├── race.html            # Race lobby/game
-├── leaderboard.html    # Leaderboard page
-├── script.js            # Daily game logic
-├── race.js              # Race mode logic
-├── style.css            # Main styling
-├── race.css             # Race styling
-├── words.js             # Local/fallback word data
-└── backend/             # Backend service used by the frontend
+├── index.html
+├── style.css
+├── script.js
+├── script-core.js
+├── race/
+├── leaderboard/
+├── dragon-tunes/
+│   ├── index.html
+│   ├── dragon-tunes.css
+│   └── dragon-tunes.js
+├── supabase/
+└── backend/
 ```
-
-The extensionless public routes are:
-
-- `https://wordshift.dev/`
-- `https://wordshift.dev/race`
-- `https://wordshift.dev/leaderboard`
 
 ## Technology
 
 - Vanilla HTML, CSS, and JavaScript
-- Supabase for persistent game/account data
+- Supabase for persistent WordShift game/account data
 - Render for the backend API used to provide protected configuration
-- GitHub Pages for frontend hosting
+- Static frontend hosting with Vercel-compatible routes
 
 ## Local Development
 
-The frontend is a static site. Open `index.html` through a local static server rather than relying on `file://` when testing browser APIs and external requests.
-
-The backend lives in `backend/` and is deployed separately. Frontend configuration is retrieved from the backend at runtime.
-
-## Data & Security
-
-Daily solutions are stored encrypted and decrypted by the client when a puzzle is loaded. Account and leaderboard functionality uses Supabase through the configured application API.
+The frontend is static. Open pages through a local static server rather than relying on `file://` when testing browser APIs and external requests. The backend lives in `backend/` and is deployed separately.
 
 Do not commit private backend credentials, service-role keys, or other secrets to the repository.
 
 ## Reporting a Bug
 
-If something is broken, include:
-
-- the page where it happened;
-- the steps that reproduce it;
-- your browser/device;
-- the expected behavior;
-- the actual behavior; and
-- any relevant console error.
+Include the page where it happened, reproduction steps, browser/device, expected behavior, actual behavior, and relevant console errors.
 
 ## Ownership
 
-WordShift is an original project by **Elio El Hage**. The website, game implementation, visual design, and original project content are owned by the developer except where third-party software or services are used.
+WordShift is an original project by **Elio El Hage**. Website code, game implementation, visual design, and original project content are owned by the developer except where third-party software or services are used.
 
 © 2026 Elio El Hage. All rights reserved.
