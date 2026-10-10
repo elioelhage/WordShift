@@ -87,6 +87,7 @@
   let chosenArtistId = "imagine-dragons";
   let chosenArtist = ARTISTS[chosenArtistId];
   const catalogCache = new Map();
+  const catalogPromises = new Map();
 
   let catalog = [];
   let playable = [];
