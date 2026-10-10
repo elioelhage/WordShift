@@ -286,3 +286,182 @@ footer a { text-decoration:none; } footer a:hover { color:var(--text); }
   .difficulty-button.active,.answer-reveal { animation:none; }
   .answer-reveal.is-autoplaying .auto-advance-track span { animation:none; }
 }
+
+
+/* Round-flow refinement: difficulty color is carried by the game card once play begins. */
+.game-card[data-difficulty="easy"] {
+  --game-accent:#b7f35e;
+  --game-accent-rgb:183,243,94;
+  border-color:rgba(183,243,94,.48);
+  background:linear-gradient(145deg,rgba(183,243,94,.065),transparent 45%),var(--panel);
+  box-shadow:0 24px 100px rgba(0,0,0,.24),0 0 0 1px rgba(183,243,94,.035);
+}
+.game-card[data-difficulty="medium"] {
+  --game-accent:#fbbf24;
+  --game-accent-rgb:251,191,36;
+  border-color:rgba(251,191,36,.5);
+  background:linear-gradient(145deg,rgba(251,191,36,.065),transparent 45%),var(--panel);
+  box-shadow:0 24px 100px rgba(0,0,0,.24),0 0 0 1px rgba(251,191,36,.035);
+}
+.game-card[data-difficulty="hard"] {
+  --game-accent:#fb7185;
+  --game-accent-rgb:251,113,133;
+  border-color:rgba(251,113,133,.52);
+  background:linear-gradient(145deg,rgba(251,113,133,.065),transparent 45%),var(--panel);
+  box-shadow:0 24px 100px rgba(0,0,0,.24),0 0 0 1px rgba(251,113,133,.035);
+}
+.game-card[data-difficulty] .sound-stage {
+  border-color:rgba(var(--game-accent-rgb),.28);
+  background:radial-gradient(ellipse at 50% 5%,rgba(var(--game-accent-rgb),.11),transparent 65%),#121217;
+}
+.game-card[data-difficulty] .clip-label { color:var(--game-accent); }
+.game-card[data-difficulty] .clip-timeline__track #clip-progress { background:var(--game-accent); }
+.game-card[data-difficulty] .clip-timeline__markers span.active,
+.game-card[data-difficulty] .clip-timeline__markers span.unlocked { color:var(--game-accent); }
+.game-card[data-difficulty] .answer-reveal { border-color:rgba(var(--game-accent-rgb),.3); }
+.difficulty[hidden] { display:none !important; }
+.guess-form[hidden] { display:none !important; }
+
+/* Sound-stage segmented playhead. Stage boundaries mark 1.4s, 2.5s, 4s and 5s. */
+.sound-stage {
+  padding:34px clamp(16px,4vw,34px) 27px;
+  min-height:360px;
+}
+.clip-timeline { width:min(560px,100%); margin:8px auto 21px; }
+.clip-timeline__track {
+  --clip-end-width:28%;
+  --clip-duration:1.4s;
+  position:relative;
+  height:13px;
+  overflow:hidden;
+  border-radius:999px;
+  background:
+    linear-gradient(to right,transparent calc(28% - 1px),#555561 calc(28% - 1px),#555561 calc(28% + 1px),transparent calc(28% + 1px)),
+    linear-gradient(to right,transparent calc(50% - 1px),#555561 calc(50% - 1px),#555561 calc(50% + 1px),transparent calc(50% + 1px)),
+    linear-gradient(to right,transparent calc(80% - 1px),#555561 calc(80% - 1px),#555561 calc(80% + 1px),transparent calc(80% + 1px)),
+    #2a2a34;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.35);
+}
+#clip-progress {
+  position:absolute;
+  z-index:1;
+  inset:0 auto 0 0;
+  width:28%;
+  border-radius:inherit;
+  background:var(--accent);
+  box-shadow:0 0 12px color-mix(in srgb,var(--accent) 48%,transparent);
+}
+#clip-progressbar.is-playing #clip-progress {
+  animation:clip-playhead var(--clip-duration) linear forwards;
+}
+@keyframes clip-playhead {
+  from { width:0; }
+  to { width:var(--clip-end-width); }
+}
+.clip-tick { position:absolute; z-index:2; top:0; bottom:0; width:2px; background:#6d6d7b; pointer-events:none; }
+.clip-tick--one { left:28%; } .clip-tick--two { left:50%; } .clip-tick--four { left:80%; }
+.clip-timeline__markers {
+  display:grid;
+  grid-template-columns:28fr 22fr 30fr 20fr;
+  align-items:start;
+  gap:0;
+  margin-top:9px;
+  color:#838391;
+  font-size:.72rem;
+  font-weight:750;
+  font-variant-numeric:tabular-nums;
+}
+.clip-timeline__markers span { text-align:center; opacity:.62; transition:color .18s,opacity .18s,transform .18s; }
+.clip-timeline__markers span:first-child { text-align:left; }
+.clip-timeline__markers span:last-child { text-align:right; }
+.clip-timeline__markers span.active { opacity:1; color:var(--accent); transform:translateY(-1px); }
+.clip-timeline__markers span.unlocked { opacity:.9; color:var(--accent); }
+.waveform { height:56px; max-width:500px; margin-bottom:12px; }
+.stage-caption { margin-bottom:16px; }
+.stage-actions {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:2px;
+}
+.stage-actions .play-button { min-width:165px; }
+.stage-skip-button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-width:165px;
+  border:1px solid rgba(183,243,94,.4);
+  border-radius:100px;
+  padding:11px 17px;
+  background:rgba(183,243,94,.09);
+  color:var(--text);
+  font-weight:850;
+  cursor:pointer;
+  transition:transform .16s,border-color .16s,background .16s;
+}
+.stage-skip-button span { color:var(--accent); }
+.stage-skip-button:hover:not(:disabled) { transform:translateY(-1px); border-color:var(--accent); background:rgba(183,243,94,.15); }
+.stage-skip-button:disabled { opacity:.42; cursor:not-allowed; }
+.game-card[data-difficulty="medium"] .stage-skip-button { border-color:rgba(251,191,36,.4); background:rgba(251,191,36,.08); }
+.game-card[data-difficulty="medium"] .stage-skip-button span { color:#fbbf24; }
+.game-card[data-difficulty="hard"] .stage-skip-button { border-color:rgba(251,113,133,.4); background:rgba(251,113,133,.08); }
+.game-card[data-difficulty="hard"] .stage-skip-button span { color:#fb7185; }
+
+/* Artwork appears both in the live picker and in each dropdown option. */
+.song-picker.has-preview input { padding-left:52px; }
+.song-input-art {
+  position:absolute;
+  z-index:3;
+  top:50%;
+  left:9px;
+  width:33px;
+  height:33px;
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.song-input-art[hidden] { display:none; }
+.song-input-art img { display:block; width:100%; height:100%; object-fit:cover; border-radius:7px; border:1px solid #4b4b58; background:#25252e; }
+.song-suggestion::before { display:none; }
+.song-suggestion { gap:10px; min-height:56px; }
+.song-suggestion__art,.song-suggestion__fallback {
+  display:grid;
+  place-items:center;
+  flex:0 0 40px;
+  width:40px;
+  height:40px;
+  border-radius:9px;
+  object-fit:cover;
+  background:#282832;
+  color:var(--accent);
+}
+.song-suggestion__fallback { font-size:1.2rem; }
+.song-suggestion__copy { display:flex; flex-direction:column; min-width:0; }
+.song-suggestion__title { display:block; font-weight:800; overflow:hidden; text-overflow:ellipsis; }
+.song-suggestion__copy small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* The reveal replaces the guess form; its advance control stays in the reveal card. */
+.answer-reveal {
+  grid-template-columns:96px minmax(0,1fr) minmax(92px,124px);
+  margin-top:0;
+}
+.answer-next-button { grid-column:1 / -1; width:100%; margin-top:2px; }
+.answer-next-button[hidden] { display:none !important; }
+.auto-advance-copy strong { min-width:2.2ch; text-align:right; }
+.game-footer #start-button { margin-left:auto; }
+@media(max-width:580px) {
+  .sound-stage { padding:25px 12px 21px; min-height:0; }
+  .clip-timeline { margin-bottom:17px; }
+  .clip-timeline__markers { font-size:.65rem; }
+  .stage-actions { display:grid; grid-template-columns:1fr 1fr; width:100%; }
+  .stage-actions .play-button,.stage-skip-button { min-width:0; width:100%; padding:11px 8px; font-size:.8rem; }
+  .answer-reveal { margin-top:0; }
+}
+@media(max-width:370px) {
+  .stage-actions { grid-template-columns:1fr; }
+}
+@media(prefers-reduced-motion:reduce) {
+  #clip-progressbar.is-playing #clip-progress { animation:none; width:var(--clip-end-width); }
+}
