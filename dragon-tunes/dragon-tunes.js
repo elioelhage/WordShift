@@ -56,7 +56,7 @@
     "imagine-dragons": {
       name: "Imagine Dragons",
       searchTerm: "Imagine Dragons",
-      profileImage: "https://www.popfiltr.com/artist-profile-assets/v1/4132/bff0c14744937bcaf0b30bc4e20c9ba5e38897329fb7d2a997bd7e2665d3f57a.jpg",
+      profileImage: "https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc",
       spotifyUrl: "https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q",
       appleArtistUrl: "https://music.apple.com/ca/artist/imagine-dragons/358714030",
       easyTitles: [
