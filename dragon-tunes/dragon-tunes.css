@@ -293,18 +293,21 @@ footer a { text-decoration:none; } footer a:hover { color:var(--text); }
   --game-accent:#b7f35e;
   --game-accent-rgb:183,243,94;
   border-color:rgba(183,243,94,.48);
+  background:linear-gradient(145deg,rgba(183,243,94,.065),transparent 45%),var(--panel);
   box-shadow:0 24px 100px rgba(0,0,0,.24),0 0 0 1px rgba(183,243,94,.035);
 }
 .game-card[data-difficulty="medium"] {
   --game-accent:#fbbf24;
   --game-accent-rgb:251,191,36;
   border-color:rgba(251,191,36,.5);
+  background:linear-gradient(145deg,rgba(251,191,36,.065),transparent 45%),var(--panel);
   box-shadow:0 24px 100px rgba(0,0,0,.24),0 0 0 1px rgba(251,191,36,.035);
 }
 .game-card[data-difficulty="hard"] {
   --game-accent:#fb7185;
   --game-accent-rgb:251,113,133;
   border-color:rgba(251,113,133,.52);
+  background:linear-gradient(145deg,rgba(251,113,133,.065),transparent 45%),var(--panel);
   box-shadow:0 24px 100px rgba(0,0,0,.24),0 0 0 1px rgba(251,113,133,.035);
 }
 .game-card[data-difficulty] .sound-stage {
