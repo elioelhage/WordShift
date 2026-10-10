@@ -68,11 +68,13 @@
 
   function canonicalTitle(title) {
     let value = String(title || "").trim();
-    // Remove common bracketed or dash-suffixed editions, not words that are part of the real title.
-    value = value.replace(/\s*[([{][^\])}]*\b(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped|piano version|rock version|commentary)\b[^\])}]*[\])}]/gi, "");
-    value = value.replace(/\s*[-–—:]\s*(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped)\b.*$/i, "");
-    value = value.replace(/\s*[([{]\s*(?:from the series|from the .* soundtrack|music from .*|feat(?:uring)?\.?|ft\.?)\b.*?[\])}]/gi, "");
-    value = value.replace(/\s+(?:feat(?:uring)?|ft\.?)\s+.*$/i, "");
+    const versionWords = "\\b(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped|piano version|rock version|commentary)\\b";
+    value = value.replace(new RegExp("\\s*\\([^)]*" + versionWords + "[^)]*\\)", "gi"), "");
+    value = value.replace(new RegExp("\\s*\\[[^\\]]*" + versionWords + "[^\\]]*\\]", "gi"), "");
+    value = value.replace(/\\s*[-–—:]\\s*(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped)\\b.*$/i, "");
+    value = value.replace(/\\s*\\((?:from the series|from the .* soundtrack|music from .*|feat(?:uring)?\\.?|ft\\.?).*?\\)/gi, "");
+    value = value.replace(/\\s*\\[(?:from the series|from the .* soundtrack|music from .*|feat(?:uring)?\\.?|ft\\.?).*?\\]/gi, "");
+    value = value.replace(/\\s+(?:feat(?:uring)?|ft\\.?)\\s+.*$/i, "");
     return normalize(value);
   }
 
@@ -426,9 +428,8 @@
     setAudioTrack(currentTrack);
     autoAdvanceBox.hidden = false;
     autoAdvanceMessage.textContent = "Playing the song for 8 seconds…";
-    autoAdvanceCountdown.textContent = "08";
+    autoAdvanceCountdown.textContent = String(answerPlaybackSeconds).padStart(2, "0");
     autoAdvanceProgress.style.animation = "none";
-    // Force the progress animation to restart when an answer is revealed.
     void autoAdvanceProgress.offsetWidth;
     autoAdvanceProgress.style.animation = "";
     answerReveal.classList.add("is-autoplaying");
@@ -436,6 +437,21 @@
     stageCaption.textContent = "Enjoy a little of the song before the next round.";
     playButton.disabled = true;
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Playing answer…';
+    waveform.classList.add("playing");
+
+    const endAt = Date.now() + answerPlaybackSeconds * 1000;
+    const updateCountdown = () => {
+      if (token !== playbackToken) return;
+      const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+      autoAdvanceCountdown.textContent = String(remaining).padStart(2, "0");
+    };
+    updateCountdown();
+    countdownTimer = window.setInterval(updateCountdown, 180);
+    advanceTimer = window.setTimeout(() => {
+      if (token !== playbackToken) return;
+      advanceTimer = null;
+      nextRound();
+    }, answerPlaybackSeconds * 1000);
 
     const startAt = () => {
       if (token !== playbackToken || !currentTrack) return;
@@ -443,45 +459,15 @@
       const playback = audio.play();
       if (playback && typeof playback.catch === "function") {
         playback.catch(() => {
-          if (token === playbackToken) autoAdvanceMessage.textContent = "Moving to the next song shortly…";
+          if (token === playbackToken) autoAdvanceMessage.textContent = "Preview unavailable — moving to the next song shortly…";
         });
       }
-      const endAt = Date.now() + answerPlaybackSeconds * 1000;
-      const updateCountdown = () => {
-        if (token !== playbackToken) return;
-        const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-        autoAdvanceCountdown.textContent = String(remaining).padStart(2, "0");
-      };
-      updateCountdown();
-      countdownTimer = window.setInterval(updateCountdown, 180);
-      previewTimer = window.setTimeout(() => {
-        if (token !== playbackToken) return;
-        audio.pause();
-        previewTimer = null;
-        waveform.classList.remove("playing");
-      }, answerPlaybackSeconds * 1000);
-      advanceTimer = window.setTimeout(() => {
-        if (token !== playbackToken) return;
-        advanceTimer = null;
-        nextRound();
-      }, answerPlaybackSeconds * 1000);
     };
-
-    waveform.classList.add("playing");
     if (audio.readyState >= 1) startAt();
     else {
       audio.addEventListener("loadedmetadata", startAt, {once: true});
       audio.addEventListener("error", () => {
-        if (token !== playbackToken) return;
-        autoAdvanceMessage.textContent = "Preview unavailable — moving to the next song shortly…";
-        // Preserve the automatic advance even if audio fails to start.
-        advanceTimer = window.setTimeout(() => {
-          if (token === playbackToken) nextRound();
-        }, answerPlaybackSeconds * 1000);
-        countdownTimer = window.setInterval(() => {
-          const remaining = Math.max(0, Math.ceil((answerPlaybackSeconds * 1000 - ((advanceTimer ? 0 : 0))) / 1000));
-          autoAdvanceCountdown.textContent = String(remaining).padStart(2, "0");
-        }, 1000);
+        if (token === playbackToken) autoAdvanceMessage.textContent = "Preview unavailable — moving to the next song shortly…";
       }, {once: true});
     }
   }
