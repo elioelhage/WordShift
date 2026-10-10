@@ -12,7 +12,7 @@ WordShift is a browser-game hub, starting with a daily word puzzle, competitive 
 
 ## Track ID
 
-Open **https://wordshift.dev/track-id/**.
+Open **https://wordshift.dev/track-id/**. The game has its own page and asset directory.
 
 Choose Imagine Dragons or Kanye West before starting, then select Easy, Medium, or Hard. Each round begins with a clip labelled one second and progresses through the 2-second, 4-second, and 5-second stages as you skip. Correct guesses earn fewer base points at later stages, with difficulty affecting the final score. The selected artist's profile photo appears in the sound orb; a correct answer reveals the song cover and album details. After a correct guess, the audio continues for eight seconds before advancing automatically, with an option to move on immediately.
 
