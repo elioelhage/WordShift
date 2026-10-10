@@ -13,6 +13,12 @@
   const guessForm = $("guess-form");
   const gameCard = $("game-card");
   const difficultyPicker = document.querySelector(".difficulty");
+  const artistPicker = document.querySelector(".artist-picker");
+  const artistProfileLink = $("artist-profile-link");
+  const artistOrbLink = $("artist-orb-link");
+  const artistOrbImage = $("artist-orb-image");
+  const artistOrbFallback = $("artist-orb-fallback");
+  const artistButtons = [...document.querySelectorAll("[data-artist]")];
   const clipProgressbar = $("clip-progressbar");
   const clipProgress = $("clip-progress");
   const clipMarkers = [...document.querySelectorAll(".clip-timeline__markers [data-stage]")];
@@ -46,7 +52,39 @@
   const initialClipSeconds = clipStages[0].seconds;
   const answerPlaybackSeconds = 8;
   const APPLE_SEARCH_URL = "https://itunes.apple.com/search";
-  const ARTIST_WIKI_API = "https://en.wikipedia.org/api/rest_v1/page/summary/Imagine_Dragons";
+  const ARTISTS = {
+    "imagine-dragons": {
+      name: "Imagine Dragons",
+      searchTerm: "Imagine Dragons",
+      profileImage: "https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc",
+      spotifyUrl: "https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q",
+      appleArtistUrl: "https://music.apple.com/ca/artist/imagine-dragons/358714030",
+      easyTitles: [
+        "believer", "thunder", "radioactive", "demons", "it's time", "whatever it takes",
+        "bones", "enemy", "natural", "on top of the world", "bad liar", "follow you",
+        "sharks", "wrecked", "zero", "i bet my life", "next to me", "walking the wire",
+        "mouth of the river", "gold", "birds", "nice to meet you"
+      ]
+    },
+    "kanye-west": {
+      name: "Kanye West",
+      searchTerm: "Kanye West",
+      profileImage: "https://i.scdn.co/image/a12d8543e28d71d9f1e7f5f363c1a6c73316f9e6",
+      spotifyUrl: "https://open.spotify.com/artist/5K4W6rqBFWDnAN6FQUkS6x",
+      appleArtistUrl: "https://music.apple.com/ca/search?term=Kanye%20West",
+      easyTitles: [
+        "stronger", "heartless", "gold digger", "power", "flashing lights", "good life",
+        "all falls down", "through the wire", "jesus walks", "can't tell me nothing",
+        "homecoming", "runaway", "bound 2", "black skinhead", "famous", "fade",
+        "ultralight beam", "father stretch my hands pt. 1", "all of the lights",
+        "touch the sky", "good morning", "no church in the wild", "ghost town",
+        "violent crimes", "off the grid", "i wonder", "love lockdown", "monster"
+      ]
+    }
+  };
+  let chosenArtistId = "imagine-dragons";
+  let chosenArtist = ARTISTS[chosenArtistId];
+  const catalogCache = new Map();
 
   let catalog = [];
   let playable = [];
@@ -67,8 +105,6 @@
   let playbackToken = 0;
   let roundPool = [];
   let usedIds = new Set();
-  let artistInfo = null;
-  let artistInfoPromise = null;
   let activeSuggestionIndex = -1;
   const difficultyButtons = [...document.querySelectorAll("[data-difficulty]")];
   const picker = document.querySelector(".song-picker");
@@ -98,7 +134,7 @@
     const artist = normalize(track.artistName);
     if (alternatePattern.test(title) || alternatePattern.test(album)) return true;
     // Treat tracks marketed with another featured artist as variants where a standard version exists.
-    if (/\b(feat(?:uring)?|ft)\b/i.test(title) || artist !== "imagine dragons") return true;
+    if (/\b(feat(?:uring)?|ft)\b/i.test(title) || artist !== normalize(chosenArtist.name)) return true;
     return false;
   }
 
@@ -134,6 +170,45 @@
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", String(active));
     });
+  }
+
+  function selectArtist(artistId) {
+    if (gameStarted || loadingCatalog || !ARTISTS[artistId]) return;
+    chosenArtistId = artistId;
+    chosenArtist = ARTISTS[artistId];
+    artistButtons.forEach((button) => {
+      const active = button.dataset.artist === artistId;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+
+    artistOrbImage.onerror = () => {
+      artistOrbImage.hidden = true;
+      artistOrbFallback.hidden = false;
+    };
+    artistOrbImage.onload = () => {
+      artistOrbImage.hidden = false;
+      artistOrbFallback.hidden = true;
+    };
+    artistOrbFallback.textContent = chosenArtist.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2);
+    artistOrbFallback.hidden = true;
+    artistOrbImage.hidden = false;
+    artistOrbImage.alt = chosenArtist.name + " artist profile image";
+    artistOrbImage.src = chosenArtist.profileImage;
+    artistOrbLink.href = chosenArtist.spotifyUrl;
+    artistOrbLink.setAttribute("aria-label", "Open " + chosenArtist.name + " profile on Spotify");
+    artistProfileLink.href = chosenArtist.spotifyUrl;
+    artistProfileLink.textContent = "Artist profile on Spotify ↗";
+    $("artist-label").textContent = chosenArtist.name.toUpperCase();
+    gameCard.dataset.artist = artistId;
+
+    const cached = catalogCache.get(artistId) || [];
+    catalog = cached;
+    playable = cached;
+    startButton.disabled = false;
+    startButton.textContent = "Start game →";
+    audioNote.textContent = "Audio previews load when you start. Availability can vary by region.";
+    setFeedback("Ready to play " + chosenArtist.name + ". Choose a difficulty, then start.");
   }
 
   function closeSuggestions() {
@@ -220,7 +295,7 @@
       title.className = "song-suggestion__title";
       title.textContent = track.title;
       const album = document.createElement("small");
-      album.textContent = track.album || "Imagine Dragons";
+      album.textContent = track.album || chosenArtist.name;
       const copy = document.createElement("span");
       copy.className = "song-suggestion__copy";
       copy.append(title, album);
@@ -257,25 +332,6 @@
     });
   }
 
-  async function loadArtistInfo() {
-    if (artistInfoPromise) return artistInfoPromise;
-    artistInfoPromise = fetch(ARTIST_WIKI_API, {headers: {Accept: "application/json"}})
-      .then((response) => {
-        if (!response.ok) throw new Error("Artist photo unavailable");
-        return response.json();
-      })
-      .then((data) => {
-        artistInfo = {
-          image: data.thumbnail?.source || data.originalimage?.source || "",
-          page: data.content_urls?.desktop?.page || "https://en.wikipedia.org/wiki/Imagine_Dragons",
-          description: data.description || ""
-        };
-        return artistInfo;
-      })
-      .catch(() => null);
-    return artistInfoPromise;
-  }
-
   function enhanceArtwork(url) {
     if (!url) return "";
     // Apple commonly returns 100x100 artwork; request a larger rendition when that URL pattern is present.
@@ -292,10 +348,10 @@
         id,
         title,
         album: raw.collectionName || "",
-        artist: raw.artistName || "Imagine Dragons",
+        artist: raw.artistName || chosenArtist.name,
         previewUrl: raw.previewUrl || "",
         artworkUrl: enhanceArtwork(raw.artworkUrl100 || raw.artworkUrl60 || ""),
-        storeUrl: raw.trackViewUrl || raw.collectionViewUrl || "https://music.apple.com/ca/artist/imagine-dragons/358714030",
+        storeUrl: raw.trackViewUrl || raw.collectionViewUrl || chosenArtist.appleArtistUrl || chosenArtist.spotifyUrl,
         raw
       };
       if (!candidate.previewUrl) continue;
@@ -321,48 +377,52 @@
     loadingCatalog = true;
     startButton.disabled = true;
     startButton.textContent = "Loading songs…";
-    audioNote.textContent = "Loading Imagine Dragons tracks and artwork…";
+    artistButtons.forEach((button) => { button.disabled = true; });
+    audioNote.textContent = "Loading " + chosenArtist.name + " tracks and artwork…";
     try {
-      const results = await appleSearch("Imagine Dragons");
+      const requestedArtistId = chosenArtistId;
+      const results = await appleSearch(chosenArtist.searchTerm);
+      if (requestedArtistId !== chosenArtistId) return;
       const tracks = Array.isArray(results.results) ? results.results : [];
-      const artistMatches = tracks.filter((track) => normalize(track.artistName).includes("imagine dragons"));
+      const artistMatches = tracks.filter((track) => normalize(track.artistName) === normalize(chosenArtist.name));
       catalog = deduplicateTracks(artistMatches);
       playable = catalog;
+      catalogCache.set(chosenArtistId, catalog);
 
       audioNote.replaceChildren();
       const attribution = document.createElement("span");
-      attribution.textContent = "Catalog metadata and available previews by Apple Music/iTunes. ";
+      attribution.textContent = "Track metadata and available previews by Apple Music/iTunes. ";
       const link = document.createElement("a");
-      link.href = "https://music.apple.com/ca/artist/imagine-dragons/358714030";
+      link.href = chosenArtist.appleArtistUrl;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = "Open Imagine Dragons on Apple Music";
+      link.textContent = "Open " + chosenArtist.name + " on Apple Music";
       audioNote.append(attribution, link);
 
       if (playable.length < 1) {
-        throw new Error("No clean, playable Imagine Dragons tracks were returned in your region.");
+        throw new Error("No clean, playable " + chosenArtist.name + " tracks were returned in your region.");
       }
       startButton.textContent = "Start game →";
       startButton.disabled = false;
-      setFeedback(`Loaded ${playable.length} unique studio tracks with available previews.`);
+      setFeedback("Loaded " + playable.length + " tracks for " + chosenArtist.name + ".");
     } catch (error) {
-      console.error("Dragon Tunes catalog load failed:", error);
+      console.error("Track ID catalog load failed:", error);
       audioNote.textContent = "Track information and previews depend on third-party catalog availability in your region.";
       startButton.textContent = "Retry loading songs ↻";
       startButton.disabled = false;
       setFeedback(error.message || "Could not load the song catalog.", "error");
     } finally {
       loadingCatalog = false;
+      artistButtons.forEach((button) => { button.disabled = false; });
+      if (!gameStarted && playable.length) {
+        startButton.disabled = false;
+        startButton.textContent = "Start game →";
+      }
     }
   }
 
   function getDifficultyPool() {
-    const easyTitles = new Set([
-      "believer", "thunder", "radioactive", "demons", "it's time", "whatever it takes",
-      "bones", "enemy", "natural", "on top of the world", "bad liar", "follow you",
-      "sharks", "wrecked", "zero", "i bet my life", "next to me", "walking the wire",
-      "mouth of the river", "gold", "birds", "nice to meet you"
-    ].map(normalize));
+    const easyTitles = new Set(chosenArtist.easyTitles.map(normalize));
     if (chosenDifficulty === "easy") {
       const hits = playable.filter((track) => easyTitles.has(normalize(track.title)));
       return hits.length >= roundsPerGame ? hits : playable;
@@ -497,16 +557,6 @@
       fallback.hidden = false;
     }
 
-    const thisTrackId = currentTrack.id;
-    loadArtistInfo().then((info) => {
-      if (!info || !info.image || !currentTrack || currentTrack.id !== thisTrackId) return;
-      const artistCard = $("artist-card");
-      const artistImage = $("artist-image");
-      artistImage.onerror = () => { artistCard.hidden = true; };
-      artistImage.src = info.image;
-      artistCard.hidden = false;
-      $("artist-source-link").href = info.page;
-    });
   }
 
   function playAnswerThenAdvance() {
@@ -591,7 +641,6 @@
     answerReveal.hidden = true;
     answerReveal.classList.remove("is-autoplaying");
     guessForm.hidden = false;
-    $("artist-card").hidden = true;
     updateSongInputArtwork(null);
     roundChip.textContent = "ROUND " + (roundIndex + 1) + " / " + roundsPerGame;
     clipLabel.textContent = "YOUR FIRST CLIP";
@@ -640,7 +689,9 @@
     stopAudio();
     closeSuggestions();
     setControls();
-    const points = won ? Math.max(100, 600 - clipStageIndex * 100) : 0;
+    const basePoints = [100, 60, 40, 20][clipStageIndex] || 20;
+    const difficultyMultiplier = {easy: 1, medium: 1.5, hard: 2}[chosenDifficulty];
+    const points = won ? Math.round(basePoints * difficultyMultiplier) : 0;
     if (won) {
       score += points;
       streak += 1;
@@ -697,7 +748,7 @@
     startButton.hidden = true;
     nextButton.hidden = true;
     roundChip.textContent = "GAME COMPLETE";
-    resultsCopy.textContent = "You scored " + score + " points across " + roundsPlayed + " rounds, with a final streak of " + streak + ". Ready for another run?";
+    resultsCopy.textContent = "You scored " + score + " points across " + roundsPlayed + " rounds. Ready for another run?";
     resultsModal.hidden = false;
     $("play-again").focus();
   }
@@ -712,15 +763,15 @@
     startRound();
   }
 
-  function startGame() {
-    if (loadingCatalog) return;
+  async function startGame() {
+    if (loadingCatalog || gameStarted) return;
     if (!playable.length) {
-      loadCatalog();
-      return;
+      await loadCatalog();
+      if (!playable.length) return;
     }
     const pool = getDifficultyPool();
     if (pool.length < roundsPerGame) {
-      setFeedback("Only " + pool.length + " unique songs are available for this difficulty; choose another difficulty or try again later.", "error");
+      setFeedback("Only " + pool.length + " unique songs are available for this difficulty; choose another artist or try again later.", "error");
       return;
     }
     gameStarted = true;
@@ -733,15 +784,22 @@
     scoreLabel.textContent = "0";
     streakLabel.textContent = "0";
     resultsModal.hidden = true;
+    artistPicker.hidden = true;
     difficultyPicker.hidden = true;
     gameCard.dataset.difficulty = chosenDifficulty;
     guessForm.hidden = false;
     answerReveal.hidden = true;
+    artistButtons.forEach((button) => { button.disabled = true; });
     difficultyButtons.forEach((button) => { button.disabled = true; });
     skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
     startRound();
   }
 
+  artistButtons.forEach((button) => {
+    const image = button.querySelector("img");
+    if (image) image.addEventListener("error", () => { button.classList.add("image-unavailable"); });
+    button.addEventListener("click", () => selectArtist(button.dataset.artist));
+  });
   difficultyButtons.forEach((button) => button.addEventListener("click", () => setDifficulty(button.dataset.difficulty)));
   startButton.addEventListener("click", startGame);
   nextButton.addEventListener("click", nextRound);
@@ -777,15 +835,18 @@
   $("play-again").addEventListener("click", () => {
     resultsModal.hidden = true;
     gameStarted = false;
+    artistButtons.forEach((button) => { button.disabled = false; });
     difficultyButtons.forEach((button) => { button.disabled = false; });
+    artistPicker.hidden = false;
     difficultyPicker.hidden = false;
     gameCard.removeAttribute("data-difficulty");
     startButton.hidden = false;
+    startButton.disabled = false;
     startButton.textContent = "Start game →";
     guessForm.hidden = false;
     answerReveal.hidden = true;
     setControls();
-    setFeedback("Choose a difficulty, then start a new run.");
+    setFeedback("Choose an artist and difficulty, then start a new run.");
   });
   audio.addEventListener("ended", () => {
     if (previewTimer) window.clearTimeout(previewTimer);
@@ -801,6 +862,5 @@
 
   skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
   refreshClipTimeline(false);
-  loadArtistInfo();
-  loadCatalog();
+  selectArtist("imagine-dragons");
 })();

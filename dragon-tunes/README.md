@@ -1,16 +1,16 @@
-# Dragon Tunes
+# Track ID
 
-Dragon Tunes is the Imagine Dragons song-guessing game at `/dragon-tunes/`.
+Track ID is the multi-artist song-guessing game at `/track-id/` (the original `/dragon-tunes/` path remains available).
 
 ## Gameplay prototype
 
-- Easy, Medium, and Hard song pools.
-- Ten rounds per run.
-- Playback starts at two seconds; each skip reveals one additional second, up to six.
-- Score rewards earlier correct guesses.
+- Choose between Imagine Dragons and Kanye West before a run.
+- Easy, Medium, and Hard song pools with ten rounds per run.
+- The first clip is 1.4 seconds of audio but is labelled one second; later stages reveal 2.5, 4, and 5 seconds.
+- Each stage has a different base score; difficulty affects the score awarded. The site does not disclose the multipliers.
 - Duplicate album/single releases are grouped by normalized title; live, remix, acoustic, instrumental, remastered, and featured-artist variants are filtered out where possible.
 - A custom searchable song picker supports mouse and keyboard navigation.
-- Correct answers reveal song-cover art, album/artist details, and an artist photo when available.
+- The selected artist's profile image appears in the sound orb; correct answers reveal song-cover art and album details.
 - On a correct guess, playback resumes about 0.4 seconds before the end of the guessing clip and continues for eight seconds before advancing automatically; the in-panel button can advance sooner.
 
 ## Important audio rights note
@@ -21,4 +21,4 @@ The rest of the game logic is separated from catalog loading so a licensed provi
 
 ## Local testing
 
-Serve the repository with a local web server and open `/dragon-tunes/`. Catalog requests and audio playback need a browser with network access. Test loading failures, tracks without previews, and browser playback behavior before launch.
+Serve the repository with a local web server and open `/track-id/`. Catalog requests and audio playback need a browser with network access. Test loading failures, tracks without previews, and browser playback behavior before launch.
