@@ -245,7 +245,7 @@
     const unique = [];
     for (const group of groups.values()) {
       // Prefer the standard studio title. If a group only contains live/remix/feature variants, omit it.
-      const clean = group.filter((track) => !isAlternateVersion(track));
+      const clean = group.filter((track) => !isAlternateVersion(track.raw));
       if (!clean.length) continue;
       clean.sort((a, b) => trackQuality(b.raw) - trackQuality(a.raw));
       unique.push(clean[0]);
