@@ -14,7 +14,7 @@ WordShift is a browser-game hub, starting with a daily word puzzle, competitive 
 
 Open **https://wordshift.dev/dragon-tunes**.
 
-Each round starts with a one-second snippet. Skipping reveals one additional second, up to five seconds. Correct answers reward more points when fewer seconds were needed. Song metadata and available previews are fetched from the Apple Music/iTunes catalog; preview availability can vary by region. The game displays an Apple Music attribution/link alongside the preview source.
+Each round starts with a two-second snippet. Skipping reveals one additional second, up to six seconds. Correct answers reward more points when fewer seconds were needed. A correct answer reveals the song and album artwork, an artist photo, and album details; the preview then plays for eight seconds before the next round starts automatically. Players can skip that wait and advance immediately. Song metadata and available previews are fetched from the Apple Music/iTunes catalog; preview availability can vary by region. The game displays attribution and a link back to Apple Music.
 
 The music catalog is a third-party service. Song titles and recordings belong to their respective rights holders, and WordShift is not affiliated with Imagine Dragons.
 
