@@ -68,9 +68,8 @@
 
   function canonicalTitle(title) {
     let value = String(title || "").trim();
-    const versionWords = "\\b(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped|piano version|rock version|commentary)\\b";
-    value = value.replace(new RegExp("\\s*\\([^)]*" + versionWords + "[^)]*\\)", "gi"), "");
-    value = value.replace(new RegExp("\\s*\\[[^\]]*" + versionWords + "[^\]]*\]", "gi"), "");
+    value = value.replace(/\s*\([^)]*\b(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped|piano version|rock version|commentary)\b[^)]*\)/gi, "");
+    value = value.replace(/\s*\[[^\]]*\b(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped|piano version|rock version|commentary)\b[^\]]*\]/gi, "");
     value = value.replace(/\s*[-–—:]\s*(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped)\b.*$/i, "");
     value = value.replace(/\s*\((?:from the series|from the .* soundtrack|music from .*|feat(?:uring)?\.?|ft\.?).*?\)/gi, "");
     value = value.replace(/\s*\[(?:from the series|from the .* soundtrack|music from .*|feat(?:uring)?\.?|ft\.?).*?\]/gi, "");
