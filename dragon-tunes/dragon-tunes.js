@@ -71,6 +71,7 @@
     value = value.replace(/\s*\([^)]*\b(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped|piano version|rock version|commentary)\b[^)]*\)/gi, "");
     value = value.replace(/\s*\[[^\]]*\b(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped|piano version|rock version|commentary)\b[^\]]*\]/gi, "");
     value = value.replace(/\s*[-–—:]\s*(?:live|remix|acoustic|instrumental|karaoke|sped up|slowed|nightcore|radio edit|remaster(?:ed)?|demo|cover|orchestral|reimagined|stripped)\b.*$/i, "");
+    value = value.replace(/\s*[-–—:]\s*(?:from the series|from the .* soundtrack|music from .*|feat(?:uring)?\.?|ft\.?)\b.*$/i, "");
     value = value.replace(/\s*\((?:from the series|from the .* soundtrack|music from .*|feat(?:uring)?\.?|ft\.?).*?\)/gi, "");
     value = value.replace(/\s*\[(?:from the series|from the .* soundtrack|music from .*|feat(?:uring)?\.?|ft\.?).*?\]/gi, "");
     value = value.replace(/\s+(?:feat(?:uring)?|ft\.?)\s+.*$/i, "");
@@ -295,7 +296,7 @@
 
   function getDifficultyPool() {
     const easyTitles = new Set([
-      "believer", "thunder", "radioactive", "demons", "its time", "whatever it takes",
+      "believer", "thunder", "radioactive", "demons", "it's time", "whatever it takes",
       "bones", "enemy", "natural", "on top of the world", "bad liar", "follow you",
       "sharks", "wrecked", "zero", "i bet my life", "next to me", "walking the wire",
       "mouth of the river", "gold", "birds", "nice to meet you"
@@ -547,7 +548,7 @@
     }
     showAnswerDetails();
     nextButton.hidden = false;
-    nextButton.textContent = won ? "Skip to next song →" : "Next song →";
+    nextButton.textContent = won && roundIndex + 1 >= roundsPerGame ? "Skip to results →" : (won ? "Skip to next song →" : "Next song →");
     if (won) {
       playAnswerThenAdvance();
     } else {
