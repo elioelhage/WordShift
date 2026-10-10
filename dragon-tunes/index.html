@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#101014">
-  <meta name="description" content="Dragon Tunes — guess the Imagine Dragons song from a tiny audio snippet.">
-  <title>Dragon Tunes — WordShift</title>
+  <meta name="description" content="Track ID — choose an artist and identify songs from short audio clips.">
+  <title>Track ID — WordShift</title>
+  <link rel="canonical" href="https://wordshift.dev/track-id/">
   <link rel="stylesheet" href="/dragon-tunes/dragon-tunes.css">
   <script defer src="/dragon-tunes/dragon-tunes.js"></script>
 </head>
@@ -17,19 +18,39 @@
 
   <main class="page-shell">
     <section class="intro">
-      <p class="eyebrow">WORDSHIFT ARCADE · GAME 02</p>
-      <h1>Dragon <span>Tunes</span></h1>
-      <p class="intro-copy">One second. One song. How well do you know Imagine Dragons?</p>
+      <p class="eyebrow">WORDSHIFT ARCADE · MUSIC QUIZ</p>
+      <h1>Track <span>ID</span></h1>
+      <p class="intro-copy">Pick an artist. Hear a short clip. Name the song.</p>
     </section>
 
     <section id="game-card" class="game-card" aria-labelledby="game-title">
       <div class="game-topline">
-        <div><p class="eyebrow">IMAGINE DRAGONS</p><h2 id="game-title">Name that song</h2></div>
+        <div><p class="eyebrow" id="artist-label">IMAGINE DRAGONS</p><h2 id="game-title">Name that song</h2></div>
         <div class="round-chip" id="round-chip">ROUND 1 / 10</div>
       </div>
 
+      <section class="artist-picker" aria-label="Choose an artist">
+        <div class="artist-picker-heading">
+          <span>ARTIST</span>
+          <a id="artist-profile-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer">Artist profile on Spotify ↗</a>
+        </div>
+        <div class="artist-options" role="group" aria-label="Artist">
+          <button type="button" class="artist-option active" data-artist="imagine-dragons" aria-pressed="true">
+            <img src="https://www.popfiltr.com/artist-profile-assets/v1/4132/bff0c14744937bcaf0b30bc4e20c9ba5e38897329fb7d2a997bd7e2665d3f57a.jpg" alt="" loading="lazy">
+            <span class="artist-option-copy"><strong>Imagine Dragons</strong><small>Alternative rock</small></span>
+          </button>
+          <button type="button" class="artist-option" data-artist="kanye-west" aria-pressed="false">
+            <img src="https://i.scdn.co/image/a12d8543e28d71d9f1e7f5f363c1a6c73316f9e6" alt="" loading="lazy">
+            <span class="artist-option-copy"><strong>Kanye West</strong><small>Hip-hop</small></span>
+          </button>
+        </div>
+      </section>
+
       <div class="sound-stage">
-        <div class="sound-orb" aria-hidden="true"><span>♪</span></div>
+        <a class="sound-orb" id="artist-orb-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer" aria-label="Open Imagine Dragons profile on Spotify">
+          <img id="artist-orb-image" src="https://www.popfiltr.com/artist-profile-assets/v1/4132/bff0c14744937bcaf0b30bc4e20c9ba5e38897329fb7d2a997bd7e2665d3f57a.jpg" alt="Imagine Dragons artist profile" loading="lazy">
+          <span id="artist-orb-fallback" hidden aria-hidden="true">♪</span>
+        </a>
         <p class="clip-label" id="clip-label">YOUR FIRST CLIP</p>
         <div class="clip-timeline" aria-label="Clip length progress">
           <div class="clip-timeline__track" role="progressbar" aria-label="Preview length revealed" aria-valuemin="0" aria-valuemax="5" aria-valuenow="1" id="clip-progressbar">
@@ -88,10 +109,6 @@
           <p id="answer-album" class="answer-album">Album</p>
           <a id="answer-store-link" class="answer-store-link" target="_blank" rel="noopener noreferrer">Open song in Apple Music ↗</a>
         </div>
-        <aside id="artist-card" class="artist-card" hidden>
-          <img id="artist-image" alt="Imagine Dragons artist photo" loading="lazy">
-          <div class="artist-card-caption"><span>ARTIST PHOTO</span><a id="artist-source-link" href="https://en.wikipedia.org/wiki/Imagine_Dragons" target="_blank" rel="noopener noreferrer">Source: Wikipedia ↗</a></div>
-        </aside>
         <div id="auto-advance" class="auto-advance" hidden>
           <div class="auto-advance-copy"><span id="auto-advance-message">Playing the song for 8 seconds…</span><strong id="auto-advance-countdown">08</strong></div>
           <div class="auto-advance-track"><span id="auto-advance-progress"></span></div>
@@ -110,11 +127,11 @@
     <section class="how-to">
       <h2>How to play</h2>
       <div class="rules-grid">
-        <article><span>01</span><h3>Listen</h3><p>The first clip is labelled as one second, followed by 2-second, 4-second, and 5-second stages.</p></article>
-        <article><span>02</span><h3>Guess or skip</h3><p>Skip through the 2-second, 4-second, and 5-second reveal stages.</p></article>
-        <article><span>03</span><h3>Build your streak</h3><p>Correct answers score more when you need fewer skips.</p></article>
+        <article><span>01</span><h3>Listen</h3><p>Every round starts with a short clip. Listen again as often as you need.</p></article>
+        <article><span>02</span><h3>Guess or skip</h3><p>Each skip reveals a longer clip and lowers the base points for a correct answer.</p></article>
+        <article><span>03</span><h3>Score points</h3><p>Identify the song as early as you can. Choose a tougher difficulty for a bigger challenge.</p></article>
       </div>
-      <p class="fine-print">Dragon Tunes is a fan-made WordShift game and is not affiliated with Imagine Dragons. Song titles and recordings belong to their respective rights holders. Audio is supplied by a third-party catalog; a result may be unavailable if no preview is provided.</p>
+      <p class="fine-print">Track ID is an independent WordShift game and is not affiliated with the featured artists. Song titles, artist photos, and recordings belong to their respective rights holders. Audio previews are supplied by a third-party catalog and may be unavailable in some regions.</p>
     </section>
   </main>
 
