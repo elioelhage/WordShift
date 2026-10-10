@@ -607,6 +607,7 @@
     startButton.hidden = true;
     setFeedback("Listen to the snippet, then type your guess.");
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 1 second';
+    skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
   }
 
   function cleanGuess(value) {
