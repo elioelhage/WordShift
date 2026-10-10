@@ -23,13 +23,8 @@
   const resultsCopy = $("results-copy");
   const roundsPerGame = 10;
   const maxClipSeconds = 5;
-
-  /*
-   * Track catalog comes from Apple's public iTunes Search API. Preview URLs are
-   * treated as optional, because a track may not have a playable preview.
-   * Keep Apple Music attribution/store link next to all supplied previews.
-   */
   const APPLE_SEARCH_URL = "https://itunes.apple.com/search";
+
   let catalog = [];
   let playable = [];
   let currentTrack = null;
@@ -40,9 +35,11 @@
   let clipSeconds = 1;
   let roundSolved = false;
   let gameStarted = false;
+  let loadingCatalog = false;
   let previewTimer = null;
   let roundPool = [];
   let usedIds = new Set();
+  let playbackToken = 0;
   const difficultyButtons = [...document.querySelectorAll("[data-difficulty]")];
 
   const normalize = (value) => String(value || "")
@@ -51,6 +48,7 @@
     .trim().replace(/\s+/g, " ");
 
   function setFeedback(text, kind = "") {
+    feedback.replaceChildren();
     feedback.textContent = text;
     feedback.className = "feedback" + (kind ? " " + kind : "");
   }
@@ -72,25 +70,26 @@
     });
   }
 
-  function appleSearch(term, limit = 100) {
+  function appleSearch(term, limit = 200) {
     const url = new URL(APPLE_SEARCH_URL);
     url.searchParams.set("term", term);
     url.searchParams.set("entity", "song");
     url.searchParams.set("country", "ca");
     url.searchParams.set("limit", String(limit));
-    return fetch(url.toString(), {mode: "cors"})
-      .then((response) => {
-        if (!response.ok) throw new Error("The music catalog is unavailable right now.");
-        return response.json();
-      });
+    return fetch(url.toString(), {mode: "cors"}).then((response) => {
+      if (!response.ok) throw new Error("The music catalog is unavailable right now.");
+      return response.json();
+    });
   }
 
   async function loadCatalog() {
+    if (loadingCatalog) return;
+    loadingCatalog = true;
     startButton.disabled = true;
     startButton.textContent = "Loading songs…";
     audioNote.textContent = "Loading Imagine Dragons tracks from the Apple Music/iTunes catalog…";
     try {
-      const results = await appleSearch("Imagine Dragons", 200);
+      const results = await appleSearch("Imagine Dragons");
       const tracks = Array.isArray(results.results) ? results.results : [];
       const seen = new Set();
       catalog = tracks.filter((track) => {
@@ -106,49 +105,45 @@
         album: track.collectionName || "",
         artist: track.artistName,
         previewUrl: track.previewUrl || "",
-        storeUrl: track.trackViewUrl || track.collectionViewUrl || "https://music.apple.com/ca/artist/imagine-dragons/358714030",
-        artwork: track.artworkUrl100 || ""
+        storeUrl: track.trackViewUrl || track.collectionViewUrl || "https://music.apple.com/ca/artist/imagine-dragons/358714030"
       }));
       playable = catalog.filter((track) => track.previewUrl);
-      if (!catalog.length) throw new Error("No Imagine Dragons tracks were returned in your region.");
       datalist.replaceChildren(...catalog.map((track) => {
         const option = document.createElement("option");
         option.value = track.title;
         return option;
       }));
-      audioNote.innerHTML = "";
-      const text = document.createElement("span");
-      text.textContent = "Track previews and artwork provided by Apple Music/iTunes. ";
+
+      audioNote.replaceChildren();
+      const attribution = document.createElement("span");
+      attribution.textContent = "Catalog and available promotional previews by Apple Music/iTunes. ";
       const link = document.createElement("a");
       link.href = "https://music.apple.com/ca/artist/imagine-dragons/358714030";
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.textContent = "Open Imagine Dragons on Apple Music";
-      audioNote.append(text, link);
+      audioNote.append(attribution, link);
+
+      if (!catalog.length || !playable.length) {
+        throw new Error("No playable Imagine Dragons previews were returned in your region.");
+      }
       startButton.textContent = "Start game →";
       startButton.disabled = false;
-      if (!playable.length) {
-        setFeedback("The catalog returned song details but no playable previews. Try again later or choose another audio source.", "error");
-        audioNote.prepend(document.createTextNode("No playable preview is currently available. "));
-        startButton.disabled = true;
-      } else {
-        setFeedback(`Loaded ${catalog.length} tracks; ${playable.length} have previews available.`);
-      }
+      setFeedback(`Loaded ${catalog.length} tracks; ${playable.length} have previews available.`);
     } catch (error) {
       console.error("Dragon Tunes catalog load failed:", error);
-      audioNote.textContent = "We couldn’t load the song catalog. Check your connection and try again.";
+      audioNote.textContent = "Audio previews come from the Apple Music/iTunes catalog and may not be available for every track or region.";
       startButton.textContent = "Retry loading songs ↻";
       startButton.disabled = false;
       setFeedback(error.message || "Could not load the song catalog.", "error");
+    } finally {
+      loadingCatalog = false;
     }
   }
 
   function getDifficultyPool() {
-    // Easy prioritizes popular singles; medium includes the full catalog; hard
-    // biases toward less familiar/non-single album tracks without guaranteeing
-    // every track is obscure across releases.
     const easyTitles = new Set([
-      "believer", "thunder", "radioactive", "demons", "it's time", "whatever it takes",
+      "believer", "thunder", "radioactive", "demons", "its time", "whatever it takes",
       "bones", "enemy", "natural", "on top of the world", "bad liar", "follow you",
       "sharks", "wrecked", "zero", "i bet my life", "next to me", "walking the wire",
       "mouth of the river", "gold", "birds", "nice to meet you"
@@ -158,8 +153,8 @@
       return hits.length >= 5 ? hits : playable;
     }
     if (chosenDifficulty === "hard") {
-      const hits = playable.filter((track) => !easyTitles.has(normalize(track.title)));
-      return hits.length >= 5 ? hits : playable;
+      const deeperCuts = playable.filter((track) => !easyTitles.has(normalize(track.title)));
+      return deeperCuts.length >= 5 ? deeperCuts : playable;
     }
     return playable;
   }
@@ -174,15 +169,18 @@
   }
 
   function stopAudio() {
+    playbackToken += 1;
     if (previewTimer) window.clearTimeout(previewTimer);
     previewTimer = null;
     audio.pause();
     waveform.classList.remove("playing");
+    playButton.disabled = !currentTrack || roundSolved;
+    return playbackToken;
   }
 
   function playSnippet(seconds = clipSeconds) {
     if (!currentTrack || !currentTrack.previewUrl || roundSolved) return;
-    stopAudio();
+    const token = stopAudio();
     if (audio.src !== currentTrack.previewUrl) {
       audio.src = currentTrack.previewUrl;
       audio.load();
@@ -192,13 +190,18 @@
     waveform.classList.add("playing");
     playButton.disabled = true;
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Playing…';
+
     const startAt = () => {
-      audio.currentTime = 0;
+      if (token !== playbackToken || roundSolved || !currentTrack) return;
+      try { audio.currentTime = 0; } catch (_) {}
       const playback = audio.play();
       if (playback && typeof playback.catch === "function") {
         playback.catch((error) => {
+          if (token !== playbackToken) return;
           console.warn("Preview playback was blocked:", error);
-          setFeedback("Playback was blocked. Press Play again to allow audio.", "error");
+          if (previewTimer) window.clearTimeout(previewTimer);
+          previewTimer = null;
+          setFeedback("Playback was blocked. Press play again to allow audio.", "error");
           stageCaption.textContent = "Tap play to listen.";
           waveform.classList.remove("playing");
           playButton.disabled = false;
@@ -206,17 +209,24 @@
         });
       }
       previewTimer = window.setTimeout(() => {
-        stopAudio();
+        if (token !== playbackToken) return;
+        audio.pause();
+        previewTimer = null;
+        waveform.classList.remove("playing");
         stageCaption.textContent = "Clip finished. Make your guess or listen again.";
         playButton.disabled = false;
         playButton.innerHTML = '<span aria-hidden="true">▶</span> Replay snippet';
       }, Math.max(1, seconds) * 1000);
     };
+
     if (audio.readyState >= 1) startAt();
     else {
       audio.addEventListener("loadedmetadata", startAt, {once: true});
       audio.addEventListener("error", () => {
-        stopAudio();
+        if (token !== playbackToken) return;
+        if (previewTimer) window.clearTimeout(previewTimer);
+        previewTimer = null;
+        waveform.classList.remove("playing");
         stageCaption.textContent = "This preview couldn't be played.";
         setFeedback("This song's preview is unavailable. Skip to another round.", "error");
         playButton.disabled = false;
@@ -234,12 +244,12 @@
       next = roundPool.find((track) => !usedIds.has(track.id));
     }
     if (!next) {
-      setFeedback("No more songs with playable previews in this catalog. Try another difficulty or come back later.", "error");
+      setFeedback("No more songs with playable previews were found.", "error");
       finishGame();
       return;
     }
-    usedIds.add(next.id);
     currentTrack = next;
+    usedIds.add(next.id);
     clipSeconds = 1;
     roundSolved = false;
     stopAudio();
@@ -255,7 +265,6 @@
     startButton.hidden = true;
     setFeedback("Listen to the snippet, then type your guess.");
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 1 second';
-    guessInput.focus({preventScroll: true});
   }
 
   function cleanGuess(value) {
@@ -304,15 +313,13 @@
     storeLink.target = "_blank";
     storeLink.rel = "noopener noreferrer";
     storeLink.textContent = "Open song in Apple Music";
-    storeLink.className = "store-attribution";
     storeLink.style.display = "inline-block";
     storeLink.style.marginTop = "8px";
     storeLink.style.fontSize = ".75rem";
     storeLink.style.color = "var(--accent)";
     feedback.append(document.createElement("br"), storeLink);
     nextButton.hidden = false;
-    if (roundIndex + 1 >= roundsPerGame) nextButton.textContent = "View results →";
-    else nextButton.textContent = "Next song →";
+    nextButton.textContent = roundIndex + 1 >= roundsPerGame ? "View results →" : "Next song →";
     nextButton.focus({preventScroll: true});
   }
 
@@ -339,13 +346,12 @@
     startButton.hidden = true;
     nextButton.hidden = true;
     roundChip.textContent = "GAME COMPLETE";
-    resultsCopy.textContent = `You scored ${score} points across ${roundIndex} round${roundIndex === 1 ? "" : "s"} with a final streak of ${streak}. Ready for another run?`;
+    resultsCopy.textContent = `You scored ${score} points across ${Math.min(roundIndex + (roundSolved ? 1 : 0), roundsPerGame)} round(s), with a final streak of ${streak}. Ready for another run?`;
     modal.hidden = false;
     $("play-again").focus();
   }
 
   function nextRound() {
-    stopAudio();
     if (roundIndex + 1 >= roundsPerGame) {
       finishGame();
       return;
@@ -355,6 +361,7 @@
   }
 
   function startGame() {
+    if (loadingCatalog) return;
     if (!playable.length) {
       loadCatalog();
       return;
@@ -398,7 +405,5 @@
     }
   });
 
-  // Load the catalog early to make the first click responsive, but the game
-  // still has a retry path if the request fails.
   loadCatalog();
 })();
