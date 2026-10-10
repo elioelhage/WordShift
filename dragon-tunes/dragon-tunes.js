@@ -10,6 +10,14 @@
   const submitButton = $("submit-guess");
   const guessInput = $("guess-input");
   const suggestionBox = $("song-suggestions");
+  const guessForm = $("guess-form");
+  const gameCard = $("game-card");
+  const difficultyPicker = document.querySelector(".difficulty");
+  const clipProgressbar = $("clip-progressbar");
+  const clipProgress = $("clip-progress");
+  const clipMarkers = [...document.querySelectorAll(".clip-timeline__markers [data-stage]")];
+  const songInputArt = $("song-input-art");
+  const songInputArtImage = $("song-input-art-img");
   const feedback = $("feedback");
   const audioNote = $("audio-note");
   const stageCaption = $("stage-caption");
@@ -28,9 +36,14 @@
   const resultsCopy = $("results-copy");
   const roundsPerGame = 10;
 
-  // The initial clip is intentionally longer than a literal one-second Heardle clip.
-  const initialClipSeconds = 2;
-  const maxClipSeconds = 6;
+  // The first clip is 1.4 seconds in audio but is advertised as "1 sec".
+  const clipStages = [
+    {label: 1, seconds: 1.4},
+    {label: 2, seconds: 2.5},
+    {label: 4, seconds: 4},
+    {label: 5, seconds: 5}
+  ];
+  const initialClipSeconds = clipStages[0].seconds;
   const answerPlaybackSeconds = 8;
   const APPLE_SEARCH_URL = "https://itunes.apple.com/search";
   const ARTIST_WIKI_API = "https://en.wikipedia.org/api/rest_v1/page/summary/Imagine_Dragons";
@@ -43,6 +56,7 @@
   let roundsPlayed = 0;
   let score = 0;
   let streak = 0;
+  let clipStageIndex = 0;
   let clipSeconds = initialClipSeconds;
   let roundSolved = false;
   let gameStarted = false;
@@ -130,9 +144,26 @@
   }
 
   function chooseSuggestion(track) {
+    if (!track) return;
     guessInput.value = track.title;
+    updateSongInputArtwork(track);
     closeSuggestions();
     guessInput.focus();
+  }
+
+  function updateSongInputArtwork(track) {
+    if (!track || !track.artworkUrl) {
+      songInputArt.hidden = true;
+      picker.classList.remove("has-preview");
+      return;
+    }
+    songInputArtImage.onerror = () => {
+      songInputArt.hidden = true;
+      picker.classList.remove("has-preview");
+    };
+    songInputArtImage.src = track.artworkUrl;
+    songInputArt.hidden = false;
+    picker.classList.add("has-preview");
   }
 
   function renderSuggestions() {
@@ -141,27 +172,58 @@
     activeSuggestionIndex = -1;
     if (guessInput.disabled || query.length < 2) {
       closeSuggestions();
+      updateSongInputArtwork(null);
       return;
     }
+
     const matches = playable
       .filter((track) => normalize(track.title).includes(query))
+      .sort((a, b) => {
+        const aTitle = normalize(a.title);
+        const bTitle = normalize(b.title);
+        const aPrefix = aTitle.startsWith(query) ? 0 : 1;
+        const bPrefix = bTitle.startsWith(query) ? 0 : 1;
+        return aPrefix - bPrefix || aTitle.localeCompare(bTitle);
+      })
       .slice(0, 8);
+
+    updateSongInputArtwork(matches[0] || null);
     if (!matches.length) {
       closeSuggestions();
       return;
     }
-    matches.forEach((track, index) => {
+
+    matches.forEach((track) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "song-suggestion";
+      button.dataset.trackId = track.id;
       button.setAttribute("role", "option");
       button.setAttribute("aria-selected", "false");
-      const label = document.createElement("span");
-      label.textContent = track.title;
+
+      if (track.artworkUrl) {
+        const image = document.createElement("img");
+        image.className = "song-suggestion__art";
+        image.alt = "";
+        image.loading = "lazy";
+        image.src = track.artworkUrl;
+        image.onerror = () => { image.hidden = true; };
+        button.append(image);
+      } else {
+        const fallback = document.createElement("span");
+        fallback.className = "song-suggestion__fallback";
+        fallback.textContent = "♫";
+        button.append(fallback);
+      }
+
+      const title = document.createElement("span");
+      title.className = "song-suggestion__title";
+      title.textContent = track.title;
       const album = document.createElement("small");
       album.textContent = track.album || "Imagine Dragons";
       const copy = document.createElement("span");
-      copy.append(label, album);
+      copy.className = "song-suggestion__copy";
+      copy.append(title, album);
       button.append(copy);
       button.addEventListener("click", () => chooseSuggestion(track));
       suggestionBox.append(button);
@@ -321,6 +383,24 @@
     return copy;
   }
 
+  function refreshClipTimeline(isPlaying = false) {
+    const stage = clipStages[clipStageIndex] || clipStages[0];
+    const width = Math.max(0, Math.min(100, (stage.seconds / 5) * 100));
+    clipProgressbar.setAttribute("aria-valuenow", String(stage.label));
+    clipProgressbar.style.setProperty("--clip-end-width", width + "%");
+    clipProgressbar.style.setProperty("--clip-duration", stage.seconds + "s");
+    clipProgressbar.classList.remove("is-playing");
+    clipProgress.style.width = isPlaying ? "0%" : width + "%";
+    clipMarkers.forEach((marker, index) => {
+      marker.classList.toggle("active", index === clipStageIndex);
+      marker.classList.toggle("unlocked", index < clipStageIndex);
+    });
+    if (isPlaying) {
+      void clipProgressbar.offsetWidth;
+      clipProgressbar.classList.add("is-playing");
+    }
+  }
+
   function stopAudio() {
     playbackToken += 1;
     if (previewTimer) window.clearTimeout(previewTimer);
@@ -333,6 +413,7 @@
     waveform.classList.remove("playing");
     answerReveal.classList.remove("is-autoplaying");
     autoAdvanceBox.hidden = true;
+    refreshClipTimeline(false);
     playButton.disabled = !currentTrack || roundSolved;
     return playbackToken;
   }
@@ -348,9 +429,11 @@
     if (!currentTrack || !currentTrack.previewUrl || roundSolved) return;
     const token = stopAudio();
     setAudioTrack(currentTrack);
-    clipLabel.textContent = seconds === initialClipSeconds ? "YOUR FIRST CLIP" : `CLIP REVEALED · ${seconds} SECONDS`;
-    stageCaption.textContent = `Playing ${seconds} second${seconds === 1 ? "" : "s"}…`;
+    const stage = clipStages[clipStageIndex] || clipStages[0];
+    clipLabel.textContent = clipStageIndex === 0 ? "YOUR FIRST CLIP" : "CLIP REVEALED · " + stage.label + " SECONDS";
+    stageCaption.textContent = "Playing the " + stage.label + "-second clip…";
     waveform.classList.add("playing");
+    refreshClipTimeline(true);
     playButton.disabled = true;
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Playing…';
 
@@ -359,8 +442,9 @@
       if (previewTimer) window.clearTimeout(previewTimer);
       previewTimer = null;
       waveform.classList.remove("playing");
+      refreshClipTimeline(false);
       stageCaption.textContent = "This preview could not be played.";
-      setFeedback("This preview is unavailable. Try replaying or skip to reveal another second.", "error");
+      setFeedback("This preview is unavailable. Try replaying or skip to reveal another section.", "error");
       playButton.disabled = false;
       playButton.innerHTML = '<span aria-hidden="true">▶</span> Try again';
     };
@@ -374,9 +458,10 @@
         audio.pause();
         previewTimer = null;
         waveform.classList.remove("playing");
+        refreshClipTimeline(false);
         stageCaption.textContent = "Clip finished. Make your guess or listen again.";
         playButton.disabled = false;
-        playButton.innerHTML = '<span aria-hidden="true">▶</span> Replay snippet';
+        playButton.innerHTML = '<span aria-hidden="true">▶</span> Replay ' + stage.label + " second" + (stage.label === 1 ? "" : "s");
       }, seconds * 1000);
     };
 
@@ -388,18 +473,19 @@
   }
 
   function showAnswerDetails() {
+    guessForm.hidden = true;
     answerReveal.hidden = false;
     answerReveal.classList.remove("is-autoplaying");
     $("answer-title").textContent = currentTrack.title;
     $("answer-artist").textContent = currentTrack.artist || "Imagine Dragons";
-    $("answer-album").textContent = currentTrack.album ? `From ${currentTrack.album}` : "Album information unavailable";
+    $("answer-album").textContent = currentTrack.album ? "From " + currentTrack.album : "Album information unavailable";
     $("answer-store-link").href = currentTrack.storeUrl;
 
     const artwork = $("answer-artwork");
     const fallback = $("answer-artwork-fallback");
     fallback.hidden = true;
     artwork.hidden = false;
-    artwork.alt = `Cover artwork for ${currentTrack.title}`;
+    artwork.alt = "Cover artwork for " + currentTrack.title;
     artwork.onerror = () => {
       artwork.hidden = true;
       fallback.hidden = false;
@@ -427,47 +513,64 @@
     const token = stopAudio();
     setAudioTrack(currentTrack);
     autoAdvanceBox.hidden = false;
-    autoAdvanceMessage.textContent = "Playing the song for 8 seconds…";
+    autoAdvanceMessage.textContent = "Continuing from the clip for 8 seconds…";
     autoAdvanceCountdown.textContent = String(answerPlaybackSeconds).padStart(2, "0");
     autoAdvanceProgress.style.animation = "none";
     void autoAdvanceProgress.offsetWidth;
     autoAdvanceProgress.style.animation = "";
     answerReveal.classList.add("is-autoplaying");
     clipLabel.textContent = "ANSWER REVEALED";
-    stageCaption.textContent = "Enjoy a little of the song before the next round.";
+    stageCaption.textContent = "The song continues just before where your clip ended.";
     playButton.disabled = true;
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Playing answer…';
     waveform.classList.add("playing");
 
-    const endAt = Date.now() + answerPlaybackSeconds * 1000;
-    const updateCountdown = () => {
-      if (token !== playbackToken) return;
-      const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-      autoAdvanceCountdown.textContent = String(remaining).padStart(2, "0");
+    let timersStarted = false;
+    const startCountdown = () => {
+      if (timersStarted || token !== playbackToken) return;
+      timersStarted = true;
+      const endAt = Date.now() + answerPlaybackSeconds * 1000;
+      const updateCountdown = () => {
+        if (token !== playbackToken) return;
+        const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+        autoAdvanceCountdown.textContent = String(remaining).padStart(2, "0");
+      };
+      updateCountdown();
+      countdownTimer = window.setInterval(updateCountdown, 180);
+      previewTimer = window.setTimeout(() => {
+        if (token !== playbackToken) return;
+        audio.pause();
+        previewTimer = null;
+        waveform.classList.remove("playing");
+      }, answerPlaybackSeconds * 1000);
+      advanceTimer = window.setTimeout(() => {
+        if (token !== playbackToken) return;
+        advanceTimer = null;
+        nextRound();
+      }, answerPlaybackSeconds * 1000);
     };
-    updateCountdown();
-    countdownTimer = window.setInterval(updateCountdown, 180);
-    advanceTimer = window.setTimeout(() => {
-      if (token !== playbackToken) return;
-      advanceTimer = null;
-      nextRound();
-    }, answerPlaybackSeconds * 1000);
 
     const startAt = () => {
       if (token !== playbackToken || !currentTrack) return;
-      try { audio.currentTime = 0; } catch (_) {}
+      // Overlap the end of the guessing clip by 0.4 seconds so the reveal flows into the song.
+      const resumeAt = Math.max(0, clipSeconds - 0.4);
+      try { audio.currentTime = resumeAt; } catch (_) {}
       const playback = audio.play();
+      startCountdown();
       if (playback && typeof playback.catch === "function") {
         playback.catch(() => {
           if (token === playbackToken) autoAdvanceMessage.textContent = "Preview unavailable — moving to the next song shortly…";
         });
       }
     };
+
     if (audio.readyState >= 1) startAt();
     else {
       audio.addEventListener("loadedmetadata", startAt, {once: true});
       audio.addEventListener("error", () => {
-        if (token === playbackToken) autoAdvanceMessage.textContent = "Preview unavailable — moving to the next song shortly…";
+        if (token !== playbackToken) return;
+        autoAdvanceMessage.textContent = "Preview unavailable — moving to the next song shortly…";
+        startCountdown();
       }, {once: true});
     }
   }
@@ -482,24 +585,29 @@
     stopAudio();
     currentTrack = next;
     usedIds.add(next.id);
+    clipStageIndex = 0;
     clipSeconds = initialClipSeconds;
     roundSolved = false;
     answerReveal.hidden = true;
     answerReveal.classList.remove("is-autoplaying");
+    guessForm.hidden = false;
     $("artist-card").hidden = true;
-    roundChip.textContent = `ROUND ${roundIndex + 1} / ${roundsPerGame}`;
+    updateSongInputArtwork(null);
+    roundChip.textContent = "ROUND " + (roundIndex + 1) + " / " + roundsPerGame;
     clipLabel.textContent = "YOUR FIRST CLIP";
     stageCaption.textContent = "Ready when you are.";
-    attemptCount.textContent = `Clip: ${clipSeconds} seconds`;
+    attemptCount.textContent = "Clip: 1 second";
     guessInput.value = "";
     closeSuggestions();
     setAudioTrack(currentTrack);
+    refreshClipTimeline(false);
     setControls({guess: true, skip: true, play: true});
     nextButton.hidden = true;
     nextButton.textContent = "Skip to next song →";
     startButton.hidden = true;
     setFeedback("Listen to the snippet, then type your guess.");
-    playButton.innerHTML = `<span aria-hidden="true">▶</span> Play ${clipSeconds} seconds`;
+    playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 1 second';
+    skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
   }
 
   function cleanGuess(value) {
@@ -532,23 +640,23 @@
     stopAudio();
     closeSuggestions();
     setControls();
-    const points = won ? Math.max(100, 600 - (clipSeconds - initialClipSeconds) * 100) : 0;
+    const points = won ? Math.max(100, 600 - clipStageIndex * 100) : 0;
     if (won) {
       score += points;
       streak += 1;
       scoreLabel.textContent = String(score);
       streakLabel.textContent = String(streak);
-      setFeedback(`Correct — “${currentTrack.title}”! +${points} points`, "success");
+      setFeedback("Correct — “" + currentTrack.title + "”! +" + points + " points", "success");
       clipLabel.textContent = "YOU GOT IT";
       stageCaption.textContent = "Song identified. Nice ears!";
     } else {
-      setFeedback(`The song was “${currentTrack.title}”.`, "error");
+      setFeedback("The song was “" + currentTrack.title + "”.", "error");
       clipLabel.textContent = "ANSWER REVEALED";
       stageCaption.textContent = "Keep going — the next song is waiting.";
     }
     showAnswerDetails();
     nextButton.hidden = false;
-    nextButton.textContent = won && roundIndex + 1 >= roundsPerGame ? "Skip to results →" : (won ? "Skip to next song →" : "Next song →");
+    nextButton.textContent = won ? "Skip song →" : "Next song →";
     if (won) {
       playAnswerThenAdvance();
     } else {
@@ -559,16 +667,22 @@
 
   function skipSong() {
     if (!currentTrack || roundSolved) return;
-    if (clipSeconds >= maxClipSeconds) {
+    if (clipStageIndex >= clipStages.length - 1) {
       solveRound(false);
       return;
     }
-    clipSeconds += 1;
-    attemptCount.textContent = `Clip: ${clipSeconds} seconds`;
-    clipLabel.textContent = `CLIP REVEALED · ${clipSeconds} SECONDS`;
-    stageCaption.textContent = `Now you can hear ${clipSeconds} seconds.`;
-    playButton.innerHTML = `<span aria-hidden="true">▶</span> Play ${clipSeconds} seconds`;
-    setFeedback(`More audio revealed. Try to identify the song in ${clipSeconds} seconds.`);
+    clipStageIndex += 1;
+    clipSeconds = clipStages[clipStageIndex].seconds;
+    const label = clipStages[clipStageIndex].label;
+    attemptCount.textContent = "Clip: " + label + " seconds";
+    clipLabel.textContent = "CLIP REVEALED · " + label + " SECONDS";
+    stageCaption.textContent = "Now you can hear " + label + " seconds.";
+    playButton.innerHTML = '<span aria-hidden="true">▶</span> Play ' + label + " second" + (label === 1 ? "" : "s");
+    skipButton.innerHTML = clipStageIndex >= clipStages.length - 1
+      ? 'Reveal song <span aria-hidden="true">→</span>'
+      : 'Skip to ' + clipStages[clipStageIndex + 1].label + ' sec <span aria-hidden="true">→</span>';
+    refreshClipTimeline(false);
+    setFeedback("More audio revealed. Try to identify the song in " + label + " seconds.");
     stopAudio();
     setControls({guess: true, skip: true, play: true});
   }
@@ -579,11 +693,11 @@
     setControls();
     closeSuggestions();
     difficultyButtons.forEach((button) => { button.disabled = false; });
-    startButton.hidden = false;
-    startButton.textContent = "Start another game →";
+    difficultyPicker.hidden = true;
+    startButton.hidden = true;
     nextButton.hidden = true;
     roundChip.textContent = "GAME COMPLETE";
-    resultsCopy.textContent = `You scored ${score} points across ${roundsPlayed} rounds, with a final streak of ${streak}. Ready for another run?`;
+    resultsCopy.textContent = "You scored " + score + " points across " + roundsPlayed + " rounds, with a final streak of " + streak + ". Ready for another run?";
     resultsModal.hidden = false;
     $("play-again").focus();
   }
@@ -606,7 +720,7 @@
     }
     const pool = getDifficultyPool();
     if (pool.length < roundsPerGame) {
-      setFeedback(`Only ${pool.length} unique songs are available for this difficulty; choose another difficulty or try again later.`, "error");
+      setFeedback("Only " + pool.length + " unique songs are available for this difficulty; choose another difficulty or try again later.", "error");
       return;
     }
     gameStarted = true;
@@ -619,7 +733,12 @@
     scoreLabel.textContent = "0";
     streakLabel.textContent = "0";
     resultsModal.hidden = true;
+    difficultyPicker.hidden = true;
+    gameCard.dataset.difficulty = chosenDifficulty;
+    guessForm.hidden = false;
+    answerReveal.hidden = true;
     difficultyButtons.forEach((button) => { button.disabled = true; });
+    skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
     startRound();
   }
 
@@ -643,9 +762,9 @@
       const options = [...suggestionBox.querySelectorAll(".song-suggestion")];
       if (!suggestionBox.hidden && activeSuggestionIndex >= 0 && options[activeSuggestionIndex]) {
         event.preventDefault();
-        const selected = options[activeSuggestionIndex].querySelector("span");
-        if (selected) guessInput.value = selected.firstChild?.textContent || guessInput.value;
-        closeSuggestions();
+        const selectedTrack = playable.find((track) => track.id === options[activeSuggestionIndex].dataset.trackId);
+        if (selectedTrack) chooseSuggestion(selectedTrack);
+        else closeSuggestions();
       } else {
         event.preventDefault();
         checkGuess();
@@ -657,20 +776,31 @@
   });
   $("play-again").addEventListener("click", () => {
     resultsModal.hidden = true;
+    gameStarted = false;
     difficultyButtons.forEach((button) => { button.disabled = false; });
+    difficultyPicker.hidden = false;
+    gameCard.removeAttribute("data-difficulty");
     startButton.hidden = false;
-    startGame();
+    startButton.textContent = "Start game →";
+    guessForm.hidden = false;
+    answerReveal.hidden = true;
+    setControls();
+    setFeedback("Choose a difficulty, then start a new run.");
   });
   audio.addEventListener("ended", () => {
     if (previewTimer) window.clearTimeout(previewTimer);
     previewTimer = null;
     waveform.classList.remove("playing");
     if (!roundSolved) {
+      waveform.classList.remove("playing");
+      refreshClipTimeline(false);
       playButton.disabled = false;
-      playButton.innerHTML = `<span aria-hidden="true">▶</span> Replay ${clipSeconds} seconds`;
+      playButton.innerHTML = '<span aria-hidden="true">▶</span> Replay ' + clipStages[clipStageIndex].label + " second" + (clipStages[clipStageIndex].label === 1 ? "" : "s");
     }
   });
 
+  skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
+  refreshClipTimeline(false);
   loadArtistInfo();
   loadCatalog();
 })();
