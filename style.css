@@ -1625,3 +1625,44 @@ select.text-input {
   letter-spacing: 0.03em;
   text-align: center;
 }
+
+
+/* WordShift Arcade navigation */
+.arcade-strip {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:.65rem 1rem;
+  width:min(860px,100%);
+  margin:0 auto .7rem;
+  padding:.45rem .75rem .75rem;
+  font-size:.75rem;
+}
+.arcade-strip__label {
+  color:var(--muted);
+  font-size:.62rem;
+  font-weight:850;
+  letter-spacing:.12em;
+}
+.arcade-strip a {
+  color:var(--text);
+  text-decoration:none;
+  font-weight:750;
+  padding:.34rem .65rem;
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:999px;
+  transition:transform .16s ease,border-color .16s ease;
+}
+.arcade-strip a:hover { transform:translateY(-1px); border-color:var(--correct); }
+.arcade-strip a.arcade-strip__featured {
+  color:var(--text);
+  border-color:color-mix(in srgb,var(--correct) 55%,var(--border));
+  background:color-mix(in srgb,var(--correct) 12%,var(--surface));
+}
+.arcade-strip a span { color:var(--correct); margin-left:.2rem; }
+@media(max-width:420px) {
+  .arcade-strip { gap:.35rem .5rem; padding-top:.2rem; font-size:.69rem; }
+  .arcade-strip__label { width:100%; text-align:center; }
+}

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101014">
+  <meta name="description" content="Explore the games available on WordShift.">
+  <title>Games — WordShift</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101014;--panel:#19191f;--border:#303039;--text:#f5f4f8;--muted:#aaa9b5;--accent:#b7f35e;--purple:#a78bfa}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,rgba(167,139,250,.16),transparent 50%),var(--bg);color:var(--text);font:16px/1.5 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    a{color:inherit}.site-head{width:min(1080px,calc(100% - 40px));margin:auto;min-height:80px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08)}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:850;text-decoration:none}.mark{display:grid;place-items:center;width:33px;height:33px;border:1px solid var(--accent);border-radius:10px;color:var(--accent)}.back{color:var(--muted);text-decoration:none;font-size:.9rem}
+    main{width:min(960px,calc(100% - 32px));margin:auto;padding:64px 0 80px}.eyebrow{font-size:.7rem;letter-spacing:.19em;color:var(--accent);font-weight:850;margin:0 0 12px;text-transform:uppercase}
+    h1{font-size:clamp(2.8rem,8vw,4.8rem);line-height:1;letter-spacing:-.07em;margin:0;font-weight:900}.lead{color:var(--muted);font-size:1.06rem;margin:18px 0 40px;max-width:54ch}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.card{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:290px;padding:26px;border:1px solid var(--border);border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.035),transparent 60%),var(--panel);text-decoration:none;transition:transform .18s ease,border-color .18s ease}
+    .card:hover{transform:translateY(-3px);border-color:#676775}.card .icon{display:grid;place-items:center;width:54px;height:54px;border-radius:16px;background:rgba(183,243,94,.1);border:1px solid rgba(183,243,94,.32);color:var(--accent);font-size:1.7rem;margin-bottom:32px}.card:nth-child(2) .icon{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.4);color:#c4b5fd}
+    .tag{font-size:.65rem;color:var(--accent);font-weight:850;letter-spacing:.15em;text-transform:uppercase}.card h2{font-size:1.6rem;letter-spacing:-.04em;margin:7px 0}.card p{color:var(--muted);max-width:42ch;font-size:.91rem;margin:0 0 22px}.launch{margin-top:auto;font-size:.9rem;font-weight:850}.card:nth-child(2) .launch{color:#c4b5fd}
+    footer{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;padding:20px 16px 28px;border-top:1px solid rgba(255,255,255,.06);color:#858593;font-size:.72rem}footer a{text-decoration:none}
+    @media(max-width:620px){.site-head{width:calc(100% - 28px);min-height:68px}main{padding:44px 0 56px}.cards{grid-template-columns:1fr}.card{min-height:250px;padding:22px}.card .icon{margin-bottom:24px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
+  </style>
+</head>
+<body>
+  <header class="site-head"><a class="brand" href="/"><span class="mark">W</span><span>WordShift</span></a><a class="back" href="/">← Back to WordShift</a></header>
+  <main>
+    <p class="eyebrow">WordShift Arcade</p>
+    <h1>Pick your<br>next game.</h1>
+    <p class="lead">A growing collection of quick games to challenge your vocabulary, memory, and music knowledge. More games are on the way.</p>
+    <section class="cards" aria-label="Available games">
+      <a class="card" href="/" aria-label="Play WordShift daily word game">
+        <span class="icon" aria-hidden="true">▦</span><span class="tag">Game 01 · Daily puzzle</span><h2>WordShift</h2><p>Guess the daily word, use color feedback to narrow it down, and keep your stats moving.</p><span class="launch">Play WordShift ↗</span>
+      </a>
+      <a class="card" href="/dragon-tunes/" aria-label="Play Dragon Tunes Imagine Dragons song quiz">
+        <span class="icon" aria-hidden="true">♫</span><span class="tag">Game 02 · Music quiz</span><h2>Dragon Tunes</h2><p>Identify Imagine Dragons songs from tiny audio snippets. Start with one second and reveal more when you need it.</p><span class="launch">Play Dragon Tunes ↗</span>
+      </a>
+    </section>
+  </main>
+  <footer><span>© 2026 WordShift</span><span><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a></span></footer>
+</body>
+</html>
