@@ -30,6 +30,7 @@
   let currentTrack = null;
   let chosenDifficulty = "easy";
   let roundIndex = 0;
+  let roundsPlayed = 0;
   let score = 0;
   let streak = 0;
   let clipSeconds = 1;
@@ -37,9 +38,9 @@
   let gameStarted = false;
   let loadingCatalog = false;
   let previewTimer = null;
+  let playbackToken = 0;
   let roundPool = [];
   let usedIds = new Set();
-  let playbackToken = 0;
   const difficultyButtons = [...document.querySelectorAll("[data-difficulty]")];
 
   const normalize = (value) => String(value || "")
@@ -236,15 +237,9 @@
   }
 
   function startRound() {
-    if (!roundPool.length) roundPool = shuffle(getDifficultyPool());
-    let next = roundPool.find((track) => !usedIds.has(track.id));
+    const next = roundPool.find((track) => !usedIds.has(track.id));
     if (!next) {
-      usedIds.clear();
-      roundPool = shuffle(getDifficultyPool());
-      next = roundPool.find((track) => !usedIds.has(track.id));
-    }
-    if (!next) {
-      setFeedback("No more songs with playable previews were found.", "error");
+      setFeedback("There are not enough unique playable songs for ten rounds at this difficulty. Choose a different difficulty and restart.", "error");
       finishGame();
       return;
     }
@@ -284,14 +279,15 @@
       solveRound(true);
       return;
     }
-    setFeedback("Not quite. Listen again, or skip to reveal another second.", "error");
-    guessInput.select();
     streak = 0;
     streakLabel.textContent = String(streak);
+    setFeedback("Not quite. Listen again, or skip to reveal another second.", "error");
+    guessInput.select();
   }
 
   function solveRound(won) {
     roundSolved = true;
+    roundsPlayed = Math.max(roundsPlayed, roundIndex + 1);
     stopAudio();
     setControls();
     const points = won ? Math.max(100, 600 - (clipSeconds - 1) * 100) : 0;
@@ -343,15 +339,18 @@
     gameStarted = false;
     stopAudio();
     setControls();
-    startButton.hidden = true;
+    difficultyButtons.forEach((button) => { button.disabled = false; });
+    startButton.hidden = false;
+    startButton.textContent = "Start another game →";
     nextButton.hidden = true;
     roundChip.textContent = "GAME COMPLETE";
-    resultsCopy.textContent = `You scored ${score} points across ${Math.min(roundIndex + (roundSolved ? 1 : 0), roundsPerGame)} round(s), with a final streak of ${streak}. Ready for another run?`;
+    resultsCopy.textContent = `You scored ${score} points across ${roundsPlayed} round(s), with a final streak of ${streak}. Ready for another run?`;
     modal.hidden = false;
     $("play-again").focus();
   }
 
   function nextRound() {
+    if (!gameStarted) return;
     if (roundIndex + 1 >= roundsPerGame) {
       finishGame();
       return;
@@ -368,6 +367,7 @@
     }
     gameStarted = true;
     roundIndex = 0;
+    roundsPlayed = 0;
     score = 0;
     streak = 0;
     roundPool = shuffle(getDifficultyPool());
@@ -392,7 +392,6 @@
     modal.hidden = true;
     difficultyButtons.forEach((button) => { button.disabled = false; });
     startButton.hidden = false;
-    startButton.textContent = "Start another game →";
     startGame();
   });
   audio.addEventListener("ended", () => {
