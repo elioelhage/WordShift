@@ -6,9 +6,12 @@ Dragon Tunes is the Imagine Dragons song-guessing game at `/dragon-tunes/`.
 
 - Easy, Medium, and Hard song pools.
 - Ten rounds per run.
-- Playback starts at one second; each skip reveals one additional second, up to five.
+- Playback starts at two seconds; each skip reveals one additional second, up to six.
 - Score rewards earlier correct guesses.
-- Song titles and the available catalog are loaded dynamically, with a link back to Apple Music.
+- Duplicate album/single releases are grouped by normalized title; live, remix, acoustic, instrumental, remastered, and featured-artist variants are filtered out where possible.
+- A custom searchable song picker supports mouse and keyboard navigation.
+- Correct answers reveal song-cover art, album/artist details, and an artist photo when available.
+- On a correct guess, the preview plays for eight seconds, then advances automatically; the user can advance sooner.
 
 ## Important audio rights note
 
