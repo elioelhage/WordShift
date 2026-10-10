@@ -8,15 +8,15 @@ WordShift is a browser-game hub, starting with a daily word puzzle, competitive 
 
 - **WordShift** — a daily word puzzle with adaptive word lengths, feedback, hints, accounts, and leaderboards.
 - **Race mode** — create or join a private 1v1 room and race another player.
-- **Dragon Tunes** — guess Imagine Dragons songs from progressively longer audio previews. Choose Easy, Medium, or Hard and play ten rounds.
+- **Track ID** — choose an artist catalog, starting with Imagine Dragons and Kanye West, then identify songs from short audio previews.
 
-## Dragon Tunes
+## Track ID
 
-Open **https://wordshift.dev/dragon-tunes**.
+Open **https://wordshift.dev/track-id/**.
 
-Each round starts with a clip labelled one second, then reveals the 2-second, 4-second, and 5-second stages as you skip. A segmented progress bar shows how much audio is available. Choose a difficulty before starting; the game card then adopts that difficulty's accent colour. A correct answer replaces the guess form with the song cover, album details, and an artist photo when available. The answer preview continues from just before the end of the guessing clip for eight seconds, then the game advances automatically; players can skip ahead immediately. Song metadata and available previews are fetched from the Apple Music/iTunes catalog; preview availability can vary by region. The game displays attribution and a link back to Apple Music.
+Choose Imagine Dragons or Kanye West before starting, then select Easy, Medium, or Hard. Each round begins with a clip labelled one second and progresses through the 2-second, 4-second, and 5-second stages as you skip. Correct guesses earn fewer base points at later stages, with difficulty affecting the final score. The selected artist's profile photo appears in the sound orb; a correct answer reveals the song cover and album details. After a correct guess, the audio continues for eight seconds before advancing automatically, with an option to move on immediately.
 
-The music catalog is a third-party service. Song titles and recordings belong to their respective rights holders, and WordShift is not affiliated with Imagine Dragons.
+Song metadata and preview availability are fetched from the Apple Music/iTunes catalog and can vary by region. The game is a fan-made music quiz, unaffiliated with the featured artists. Audio-preview licensing still needs to be confirmed before public launch.
 
 ## WordShift Features
 
