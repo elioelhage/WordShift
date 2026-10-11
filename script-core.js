@@ -1,30 +1,15 @@
 (() => {
-  // --- AUTOMATIC CACHE WIPE (UPGRADE TO V2) ---
-  const CURRENT_VERSION = "v2.0";
-  if (localStorage.getItem("wordle-version") !== CURRENT_VERSION) {
-    // Preserve user account data and theme across version upgrades
-    const preserveKeys = {
-      "wordle-user-data-v2": localStorage.getItem("wordle-user-data-v2"),
-      "wordle-mobile-theme": localStorage.getItem("wordle-mobile-theme"),
-      "wordle-first-walkthrough-v1": localStorage.getItem("wordle-first-walkthrough-v1")
-    };
-    
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith("wordle-")) localStorage.removeItem(key);
-    });
-    
-    // Restore preserved keys
-    Object.entries(preserveKeys).forEach(([key, value]) => {
-      if (value !== null) localStorage.setItem(key, value);
-    });
-    
+  // --- LIGHTWEIGHT CACHE VERSIONING ---
+  // Keep client state intact across deployments. Clear only explicitly obsolete keys
+  // when a future migration is required; a forced full refresh on every version
+  // change can interrupt play and cause repeated navigation during rollout.
+  const CURRENT_VERSION = "v2.1";
+  try {
     localStorage.setItem("wordle-version", CURRENT_VERSION);
-    const fresh = new URL(window.location.href);
-    fresh.searchParams.set("_refresh", String(Date.now()));
-    window.location.replace(fresh.toString());
-    return;
+  } catch (error) {
+    console.warn("Could not save WordShift cache version:", error);
   }
-  // ---------------------------------------------
+  // ------------------------------------
 
   // --- SUPABASE CONFIGURATION ---
   // Keys are fetched from backend API (protected in Render environment variables)
