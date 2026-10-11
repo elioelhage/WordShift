@@ -639,16 +639,22 @@
       const resumeAt = Math.max(0, clipSeconds - 0.4);
       try { audio.currentTime = resumeAt; } catch (_) {}
       const playback = audio.play();
-      startCountdown();
-      if (playback && typeof playback.catch === "function") {
-        playback.catch(() => {
-          if (token === playbackToken) autoAdvanceMessage.textContent = "Preview unavailable — moving to the next song shortly…";
+      if (playback && typeof playback.then === "function") {
+        playback.then(() => {
+          if (token === playbackToken) startCountdown();
+        }).catch(() => {
+          if (token !== playbackToken) return;
+          autoAdvanceMessage.textContent = "Preview unavailable — moving to the next song shortly…";
+          startCountdown();
         });
+      } else {
+        startCountdown();
       }
     };
 
-    if (audio.readyState >= 1) startAt();
-    else {
+    if (audio.readyState >= 1) {
+      startAt();
+    } else {
       audio.addEventListener("loadedmetadata", startAt, {once: true});
       audio.addEventListener("error", () => {
         if (token !== playbackToken) return;
