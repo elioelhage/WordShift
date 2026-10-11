@@ -177,7 +177,8 @@
 
   function selectArtist(artistId) {
     if (gameStarted || !ARTISTS[artistId]) return;
-    if (artistId === chosenArtistId && (catalogCache.has(artistId) || catalogPromises.has(artistId))) return;
+    // Allow re-selecting the current artist to retry a failed catalog load. The old
+    // early return blocked that path and could leave Start disabled after a fetch error.
 
     // Invalidate any pending start attempt for the previously selected artist.
     startRequestToken += 1;
