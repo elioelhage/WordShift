@@ -779,12 +779,18 @@
 
   function finishGame() {
     gameStarted = false;
+    startingGame = false;
     stopAudio();
     setControls();
     closeSuggestions();
+    artistButtons.forEach((button) => { button.disabled = false; });
     difficultyButtons.forEach((button) => { button.disabled = false; });
-    difficultyPicker.hidden = true;
-    startButton.hidden = true;
+    artistPicker.hidden = false;
+    difficultyPicker.hidden = false;
+    gameCard.removeAttribute("data-difficulty");
+    startButton.hidden = false;
+    startButton.disabled = !catalogCache.has(chosenArtistId);
+    startButton.textContent = catalogCache.has(chosenArtistId) ? "Start game →" : "Retry loading songs ↻";
     nextButton.hidden = true;
     roundChip.textContent = "GAME COMPLETE";
     resultsCopy.textContent = "You scored " + score + " points across " + roundsPlayed + " rounds. Ready for another run?";
