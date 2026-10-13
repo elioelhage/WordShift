@@ -163,7 +163,8 @@
     guessInput.disabled = !guess;
     submitButton.disabled = !guess;
     skipButton.disabled = !skip;
-    playButton.disabled = !play;
+    // The Play button remains usable on a revealed wrong answer, for its 8s replay.
+    playButton.disabled = !play && !playButton.dataset.answerReplay;
   }
 
   function setDifficulty(value) {
