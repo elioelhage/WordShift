@@ -569,6 +569,8 @@
     } catch(error) {
       if(token!==state.requestToken||state.currentTrack!==track)return;
       state.loadingPreview=false;
+      state.pool=state.pool.filter((item)=>item.id!==track.id);
+      poolSummary.textContent=state.pool.length+" playable tracks left in this mix";
       setMainPlayState("Skip track","↻",false);
       skipButton.disabled=false;
       guessInput.disabled=false;
@@ -679,6 +681,8 @@
 
   function advanceClue(autoPlay=true, messagePrefix="") {
     if(!state.currentTrack||state.revealed)return;
+    state.roundActive=true;
+    state.startedOnce=true;
     stopTimers();
     if(state.stage>=CLIPS.length-1){showAnswer(false);return;}
     state.stage++;
@@ -692,6 +696,8 @@
 
   function submitGuess(value) {
     if(!state.currentTrack||state.revealed||state.loadingPreview)return;
+    state.roundActive=true;
+    state.startedOnce=true;
     const raw=String(value||guessInput.value).trim();
     if(!raw){setFeedback("Type a song title first.","error");guessInput.focus();return;}
     closeSuggestions();
