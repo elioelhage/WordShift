@@ -102,8 +102,11 @@ function normalizeTrackText(value) {
 }
 
 function normalizeTrackTitle(value) {
-  return normalizeTrackText(value)
-    .replace(/\\b(remaster(ed)?(\\s+version)?|radio edit|single version|album version|explicit version|bonus track)\\b/g, "")
+  const cleaned = String(value || "")
+    .replace(/\\s*[([]\\s*(?:\\d{4}\\s+)?(?:remaster(?:ed)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition)[^)]*[)]]\\s*$/i, "")
+    .replace(/\\s+-\\s+(?:\\d{4}\\s+)?(?:remaster(?:ed)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition).*$/i, "");
+  return normalizeTrackText(cleaned)
+    .replace(/\\b(remaster(ed)?(\\s+version)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition)\\b/g, "")
     .trim()
     .replace(/\\s+/g, " ");
 }
