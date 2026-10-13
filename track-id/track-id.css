@@ -181,3 +181,23 @@ footer a { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+
+/* Track ID setup/play hierarchy */
+.pre-game-controls { margin: 14px 0 2px; padding: 13px; border: 1px solid #30342d; border-radius: 8px; background: #141612; }
+.difficulty-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.difficulty-heading>span { color: var(--muted); font-size: .64rem; font-weight: 750; letter-spacing: .09em; }
+.difficulty-heading small { color: #858b80; font-size: .68rem; text-align: right; }
+.pre-game-controls .difficulty { margin: 0; }
+.game-card.is-playing .pre-game-controls { display: none; }
+.game-card:not(.is-playing) .stage-actions { opacity: .72; }
+.game-card.is-playing .stage-actions { opacity: 1; }
+.game-card.is-playing .stage-actions .play-button { border-color: var(--game-accent, var(--accent)); }
+.game-card #start-button { min-width: 128px; }
+.game-card.is-playing #start-button { display: none; }
+.answer-reveal:not([hidden]) ~ .game-footer #start-button { display: none; }
+@media (max-width: 560px) {
+  .pre-game-controls { padding: 10px; }
+  .difficulty-heading { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .difficulty-heading small { text-align: left; }
+}

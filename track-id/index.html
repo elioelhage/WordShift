@@ -76,17 +76,18 @@
         <div class="waveform" id="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <p class="stage-caption" id="stage-caption">Choose a difficulty and start a round.</p>
         <audio id="song-audio" preload="none"></audio>
-        <div class="stage-actions"><button id="play-button" class="play-button" type="button" disabled><span aria-hidden="true">▶</span> Play 1 second</button><button id="skip-button" class="stage-skip-button" type="button" disabled>Skip to 2 sec <span aria-hidden="true">→</span></button></div>
+        <div class="stage-actions" id="stage-actions"><button id="play-button" class="play-button" type="button" disabled><span aria-hidden="true">▶</span> Play 1 second</button><button id="skip-button" class="stage-skip-button" type="button" disabled>Skip to 2 sec <span aria-hidden="true">→</span></button></div>
         <p class="audio-note" id="audio-note">Audio previews load when you start. The sound source and its availability may vary by region.</p>
       </div>
 
+      <div class="pre-game-controls" id="pre-game-controls">
+      <div class="difficulty-heading"><span>DIFFICULTY</span><small>Choose your challenge before starting</small></div>
       <div class="difficulty" role="group" aria-label="Difficulty">
         <button type="button" data-difficulty="easy" class="difficulty-button active" aria-pressed="true">Easy<span>Big hits</span></button>
         <button type="button" data-difficulty="medium" class="difficulty-button" aria-pressed="false">Medium<span>Mixed set</span></button>
         <button type="button" data-difficulty="hard" class="difficulty-button" aria-pressed="false">Hard<span>Deep cuts</span></button>
       </div>
-
-
+      </div>
 
       <div class="guess-area">
         <div id="guess-form" class="guess-form">
