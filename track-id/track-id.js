@@ -467,7 +467,7 @@
     const mediumTarget = Math.min(playable.length, Math.max(roundsPerGame, Math.ceil(playable.length * 0.6)));
     const medium = shuffle(hits).slice(0, Math.ceil(mediumTarget / 2))
       .concat(shuffle(deeperCuts).slice(0, Math.floor(mediumTarget / 2)));
-    return medium.length >= roundsPerGame ? medium : playable;
+    return medium.length >= roundsPerGame ? medium : [];
   }
 
   function shuffle(array) {
@@ -851,7 +851,7 @@
       if (pool.length < roundsPerGame) {
         setFeedback(
           "Only " + pool.length + " playable songs are available in " + chosenDifficulty +
-          " for " + chosenArtist.name + ". Try another difficulty or artist; the game won't silently mix difficulty pools.",
+          " for " + chosenArtist.name + ". Choose another difficulty or artist; each difficulty keeps its own song pool.",
           "error"
         );
         return;
