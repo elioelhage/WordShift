@@ -128,7 +128,7 @@
     {name:"Justin Timberlake", query:"Justin Timberlake", genre:"Pop"},
     {name:"G-Dragon", query:"G-Dragon", genre:"K-Pop"}
   ];
-  const DEFAULT_ARTISTS = ["Taylor Swift","Kanye West","Imagine Dragons","Michael Jackson","Rihanna","Drake","The Weeknd","Queen","Coldplay","Billie Eilish","Bruno Mars","Eminem"];
+  const DEFAULT_ARTISTS = ["Taylor Swift","Kanye West","Imagine Dragons","Michael Jackson","Rihanna","Drake","The Weeknd","Queen","Coldplay","Billie Eilish","BTS","Metallica"];
   const GENRE_ARTISTS = {
     "Pop":["Taylor Swift","Michael Jackson","Rihanna","Justin Bieber","The Weeknd","Ariana Grande","Billie Eilish","Bruno Mars","Adele","Lady Gaga","Katy Perry","ABBA"],
     "Rock":["Imagine Dragons","Queen","Linkin Park","Coldplay","Nirvana","Metallica","The Killers","Green Day","Foo Fighters"],
@@ -235,7 +235,11 @@
     if(state.filters.artist!=="Any artist")return [state.filters.artist];
     const genre=state.filters.genre;
     const era=state.filters.era;
-    let names=genre!=="Any genre"?(GENRE_ARTISTS[genre]||DEFAULT_ARTISTS):DEFAULT_ARTISTS.slice();
+    let names=genre!=="Any genre"
+      ? (GENRE_ARTISTS[genre]||DEFAULT_ARTISTS)
+      : (era==="Any era"
+          ? shuffle(ARTISTS.filter((artist)=>artist.query).map((artist)=>artist.name)).slice(0,12)
+          : DEFAULT_ARTISTS.slice());
     if(era!=="Any era") {
       const eraNames=ERA_ARTISTS[era]||[];
       names=[...new Set([...eraNames,...names])];
@@ -302,7 +306,7 @@
     const selectedArtist=state.filters.artist!=="Any artist";
     const limit=selectedArtist?200:65;
     const terms=selectedArtist?[names[0]||state.filters.artist]:names.slice(0,12);
-    const requests=terms.map((name,index)=>searchCatalog(name,limit,index));
+    const requests=terms.map((name,index)=>searchCatalog(name,limit,index).catch(()=>[]));
     const batches=await Promise.all(requests);
     const deduped=new Map();
     batches.forEach((batch)=>{
@@ -619,8 +623,7 @@
     state.revealed=true;
     revealAndGuessMode(true);
     const track=state.currentTrack;
-    const multipliers={easy:1,medium:1.15,hard:1.35,expert:1.6,impossible:2};
-    const points=won?Math.round([1000,750,500,250,100][state.stage]*multipliers[state.difficulty]):0;
+    const points=won?[1000,800,600,400,200][state.stage]:0;
     if(won){state.score+=points;state.streak++;}
     else{state.streak=0;}
     scoreLabel.textContent=String(state.score);
