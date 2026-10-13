@@ -765,8 +765,7 @@
       playAnswerThenAdvance();
     } else {
       autoAdvanceBox.hidden = true;
-      // Wrong answers reveal the song and leave an explicit 8-second preview
-      // action in the same player, rather than silently autoplaying over the miss.
+      // Wrong answers reveal the song and offer the full preview on demand.
       playButton.disabled = false;
       playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
       stageCaption.textContent = "Hear the full 8-second preview, then continue when ready.";
