@@ -500,6 +500,7 @@
     state.currentTrack=null;
     resultActions.hidden=true;
     hideAnswerDetails();
+    guessInput.value="";
     guessInput.disabled=true;
     skipButton.disabled=true;
     revealAndGuessMode(false);
