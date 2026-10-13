@@ -324,7 +324,7 @@ function extractLatestCumulativeStreamCount(payload) {
     : Array.isArray(payload?.items) ? payload.items
     : [];
   const points = entries
-    .filter((entry) => Number.isFinite(Number(entry?.value)))
+    .filter((entry) => entry?.value !== null && entry?.value !== undefined && entry?.value !== "" && Number.isFinite(Number(entry.value)))
     .sort((a, b) => String(b?.date || "").localeCompare(String(a?.date || "")));
   if (points.length) return Math.max(0, Math.trunc(Number(points[0].value)));
   const direct = item?.spotifyStreams ?? item?.spotifyStream ?? item?.streamCount ??
