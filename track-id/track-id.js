@@ -1035,6 +1035,10 @@
     });
 
     $("reroll-button").addEventListener("click",()=>{
+      if(state.roundActive) {
+        setFeedback("Finish this round before rerolling the mix.");
+        return;
+      }
       const wasAtRunLimit=state.round>=MAX_ROUNDS;
       if(wasAtRunLimit)resetRun();
       const anyOr= (items)=>items[Math.floor(Math.random()*items.length)];
