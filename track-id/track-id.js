@@ -519,7 +519,7 @@
   }
 
   function playSnippet(seconds = clipSeconds) {
-    if (!currentTrack || !currentTrack.previewUrl || (roundSolved && !answerReveal.hidden && autoAdvanceBox.hidden && !wrongAnswerReplayAllowed())) return;
+    if (!currentTrack || !currentTrack.previewUrl || roundSolved) return;
     const token = stopAudio();
     setAudioTrack(currentTrack);
     const stage = clipStages[clipStageIndex] || clipStages[0];
@@ -565,9 +565,6 @@
     }
   }
 
-  function wrongAnswerReplayAllowed() {
-    return roundSolved && !autoAdvanceBox.hidden === false && !answerReveal.hidden;
-  }
 
   function showAnswerDetails() {
     guessForm.hidden = true;
