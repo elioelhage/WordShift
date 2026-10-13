@@ -14,6 +14,9 @@
   const guessForm = $("guess-form");
   const gameCard = $("game-card");
   const preGameControls = $("pre-game-controls");
+  const roundFocus = $("round-focus");
+  const roundFocusArtist = $("round-focus-artist");
+  const roundFocusRound = $("round-focus-round");
   const difficultyPicker = document.querySelector(".difficulty");
   const artistPicker = document.querySelector(".artist-picker");
   const artistProfileLink = $("artist-profile-link");
@@ -736,6 +739,8 @@
     gameCard.classList.add("is-playing");
     updateSongInputArtwork(null);
     roundChip.textContent = "ROUND " + (roundIndex + 1) + " / " + roundsPerGame;
+    if (roundFocusRound) roundFocusRound.textContent = "ROUND " + (roundIndex + 1) + " / " + roundsPerGame;
+    if (roundFocusArtist) roundFocusArtist.textContent = chosenArtist.name;
     clipLabel.textContent = "YOUR FIRST CLIP";
     stageCaption.textContent = "Ready when you are.";
     attemptCount.textContent = "Clip: 1 second";
@@ -876,6 +881,7 @@
     artistPicker.hidden = false;
     difficultyPicker.hidden = false;
     if (preGameControls) preGameControls.hidden = false;
+    if (roundFocus) roundFocus.hidden = true;
     gameCard.removeAttribute("data-difficulty");
     startButton.hidden = false;
     startButton.disabled = !catalogCache.has(chosenArtistId);
@@ -936,6 +942,7 @@
       artistPicker.hidden = true;
       difficultyPicker.hidden = true;
       if (preGameControls) preGameControls.hidden = true;
+      if (roundFocus) roundFocus.hidden = false;
       gameCard.classList.add("is-playing");
       gameCard.dataset.difficulty = chosenDifficulty;
       guessForm.hidden = false;
@@ -1006,6 +1013,7 @@
     difficultyButtons.forEach((button) => { button.disabled = false; });
     artistPicker.hidden = false;
     difficultyPicker.hidden = false;
+    if (roundFocus) roundFocus.hidden = true;
     gameCard.removeAttribute("data-difficulty");
     startButton.hidden = false;
     startButton.disabled = !catalogCache.has(chosenArtistId);
