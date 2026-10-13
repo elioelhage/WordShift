@@ -1,27 +1,58 @@
-# Track ID
+# WordShift
 
-Track ID is WordShift's multi-artist song-guessing game at `/track-id/`.
+WordShift is a browser-game arcade with a daily word puzzle, competitive race mode, and music-recognition challenges.
 
-## Gameplay prototype
+**Play:** https://wordshift.dev
 
-- Choose between Imagine Dragons and Kanye West before a run.
-- Ten-round runs with four colour-themed difficulties (the whole page re-tints to the selected tier):
-  - **Easy** (green): hit list, five clips (1, 2, 3, 5, 8 s), unlimited guesses, x1.
-  - **Medium** (amber): hits + deeper cuts, four clips (up to 5 s), unlimited guesses, x1.5.
-  - **Hard** (red): deeper cuts only, three clips (up to 3 s); a wrong guess burns a clip, x2.
-  - **Impossible** (purple): whole catalog, two clips (1, 2 s) taken from a random point mid-song; one wrong guess ends the round, x3.5.
-- The first clip is 1.4 seconds of audio but is labelled one second.
-- Points per clip shrink as you skip; difficulty multipliers are not disclosed on the site.
-- Hit or miss (correct guess, "Give up & hear it", running out of clips, or a fatal wrong guess), the song plays out for eight seconds before advancing. After a win, playback resumes near the end of the clip *before* the one that cracked it (1 s win resumes near the end of the 1 s clip; 3 s win resumes near the end of the 2 s clip). After a miss it continues from the end of the last clip heard.
-- Duplicate releases are grouped by normalized title; live/remix/etc. variants are filtered out where possible.
-- Searchable song picker with keyboard support; correct answers reveal cover art and album.
+## Games
 
-## Important audio rights note
+- **WordShift / Wordle** — daily word puzzle at `/wordle/`, with hints, themes, accounts, and leaderboard integration.
+- **Track ID** — music recognition game at `/track-id/`, with filters for genre, era, and dozens of artists; five difficulty tiers; and progressive audio clues.
+- **Race mode** — create or join a private 1v1 room at `/race/`.
+- **Arcade** — browse available games at `/games/`.
 
-The current prototype uses the iTunes Search API's promotional preview URLs. Apple's published terms state that preview audio is meant to promote the related music and must not be used for independent entertainment value. A standalone song-guessing game appears to be outside that permission. Do not ship this implementation publicly with Apple-provided clips unless Apple provides permission or you replace the adapter with an appropriately licensed source. Do not download, mirror, or cache preview files.
+## Track ID
 
-The rest of the game logic is separated from catalog loading so a licensed provider can be substituted without redesigning the game.
+Track ID follows a focused music-quiz flow: select a genre, era, artist, and difficulty; then identify each song from progressively longer clues (0.1, 0.5, 2, 8, and 15 seconds). A wrong guess or Skip advances to the next clue, and the final Skip reveals the track. The result displays its artwork, title, artist, and album. Playback can begin at the start or a random point; players can set the first clue length and volume. Filter/difficulty changes apply to the next track during an active round.
 
-## Local testing
+### Audio source note
 
-Serve the repository with a local web server and open `/track-id/`. The page assets live in this directory. Catalog requests and audio playback need a browser with network access. Test loading failures, tracks without previews, and browser playback behavior before launch.
+The current adapter uses the iTunes Search API for metadata and promotional preview URLs. Apple's promotional previews may not be authorized for use as the entertainment content of a standalone guessing game. Before public production launch, replace this adapter with an appropriately licensed provider or obtain permission from the provider. Do not download, mirror, or cache preview audio.
+
+## WordShift features
+
+- Daily puzzle with adaptive word lengths and color feedback.
+- Word validation, optional hints, and a light/dark presentation.
+- Accounts, persistent stats, and leaderboard support.
+- Private 1v1 races.
+- A multi-game arcade hub.
+
+## Project structure
+
+```text
+WordShift/
+├── index.html
+├── games/
+├── wordle.html
+├── wordle/
+├── style.css
+├── script.js
+├── script-core.js
+├── race/
+├── leaderboard/
+├── track-id/
+│   ├── index.html
+│   ├── track-id.css
+│   ├── track-id.js
+│   └── README.md
+├── supabase/
+└── backend/
+```
+
+## Local development
+
+Serve the repository with a local web server rather than opening pages through `file://`, as browser APIs and external requests require a web origin. The frontend is static; the backend lives in `backend/`.
+
+Never commit private backend credentials, service-role keys, or other secrets.
+
+© 2026 Elio El Hage. All rights reserved.
