@@ -47,6 +47,9 @@
   const toast = $("toast");
 
   const ITUNES_SEARCH = "https://itunes.apple.com/search";
+  const MAX_ROUNDS = 10;
+  const POINTS_PER_WIN = 10;
+  const TIMELINE_POSITIONS = [12,25,42,70,100];
   const CLIPS = [
     {label:"0.1s", seconds:0.1},
     {label:"0.5s", seconds:0.5},
@@ -211,6 +214,30 @@
 
   function durationLabel(index) { return CLIPS[Math.max(0,Math.min(CLIPS.length-1,index))].label; }
 
+  function updateCarouselProgress(container) {
+    if(!container)return;
+    const name=container.id.replace("-options","");
+    const progress=document.getElementById(name+"-progress");
+    if(!progress)return;
+    const maxScroll=Math.max(0,container.scrollWidth-container.clientWidth);
+    const thumbWidth=container.scrollWidth>0
+      ? Math.min(100,Math.max(14,container.clientWidth/container.scrollWidth*100))
+      : 100;
+    const left=maxScroll>0?(container.scrollLeft/maxScroll)*(100-thumbWidth):0;
+    progress.style.width=thumbWidth+"%";
+    progress.style.left=left+"%";
+    const root=container.closest(".filter-carousel");
+    root?.classList.toggle("is-scrollable",maxScroll>2);
+  }
+
+  function centerActiveChip(container) {
+    const active=container.querySelector(".active");
+    if(!active)return;
+    const left=active.offsetLeft-(container.clientWidth-active.offsetWidth)/2;
+    container.scrollTo({left:Math.max(0,Math.min(left,container.scrollWidth-container.clientWidth)),behavior:"smooth"});
+    window.setTimeout(()=>updateCarouselProgress(container),220);
+  }
+
   function renderChipGroup(container, options, key, dataName) {
     container.replaceChildren();
     for(const option of options) {
@@ -229,6 +256,8 @@
       });
       container.append(button);
     }
+    centerActiveChip(container);
+    updateCarouselProgress(container);
   }
 
   function artistNamesForFilters() {
@@ -370,11 +399,21 @@
     return copy;
   }
 
-  function setTimeline() {
+  function setTimeline({playing=false}={}) {
+    const target=TIMELINE_POSITIONS[state.stage]||TIMELINE_POSITIONS[0];
     clipLabels.forEach((label,index)=>label.classList.toggle("active",index===state.stage));
-    clipProgress.style.width=([1,3.5,13.5,53.5,100][state.stage]||1)+"%";
+    clipProgress.style.transition=playing
+      ? "width "+Math.max(0.12,CLIPS[state.stage].seconds)+"s linear"
+      : "width 180ms ease";
+    clipProgress.style.width=(playing?0:target)+"%";
     clipDuration.textContent=durationLabel(state.stage);
     stageCounter.textContent="CLIP "+String(state.stage+1).padStart(2,"0")+" / 05";
+    if(playing){
+      const token=state.playbackToken;
+      requestAnimationFrame(()=>{
+        if(token===state.playbackToken&&state.isPlaying)clipProgress.style.width=target+"%";
+      });
+    }
   }
 
   function closeSuggestions() {
@@ -452,6 +491,7 @@
     audio.pause();
     state.isPlaying=false;
     mainPlay.classList.remove("is-playing");
+    setTimeline();
   }
 
   function waitForTrack(track) {
@@ -631,13 +671,14 @@
     state.revealed=true;
     revealAndGuessMode(true);
     const track=state.currentTrack;
-    const points=won?[1000,800,600,400,200][state.stage]:0;
-    if(won){state.score+=points;state.streak++;}
+    const points=won?POINTS_PER_WIN:0;
+    if(won){state.score=Math.min(MAX_ROUNDS*POINTS_PER_WIN,state.score+points);state.streak++;}
     else{state.streak=0;}
+    const runComplete=state.round>=MAX_ROUNDS;
     scoreLabel.textContent=String(state.score);
     streakLabel.textContent=String(state.streak);
-    roundStatus.textContent=won?"CORRECT":"TRACK REVEALED";
-    setFeedback(won?"+"+points+" points · "+durationLabel(state.stage)+" clue":"The answer is revealed. Ready for another?",won?"success":"");
+    roundStatus.textContent=runComplete?"RUN COMPLETE":(won?"CORRECT":"TRACK REVEALED");
+    setFeedback(won?"+"+points+" points · "+durationLabel(state.stage)+" clue":(runComplete?"Run complete. Your final score is "+state.score+"/100.":"The answer is revealed. Ready for another?"),won?"success":"");
     hideAnswerDetails();
     trackArtShell.hidden=false;
     trackArt.alt="Cover artwork for "+track.title;
@@ -650,17 +691,20 @@
       trackArt.hidden=true;trackArtFallback.hidden=false;
     }
     revealKicker.hidden=false;
-    revealKicker.textContent=won?"YOU GOT IT!":"TRACK REVEALED";
+    revealKicker.textContent=runComplete?"RUN COMPLETE":(won?"YOU GOT IT!":"TRACK REVEALED");
     revealTitle.hidden=false;revealTitle.textContent=track.title;
     revealArtist.hidden=false;revealArtist.textContent=track.artist;
     revealAlbum.hidden=false;revealAlbum.textContent=track.album||"";
-    resultMessage.hidden=false;resultMessage.textContent=won?"Clean ears. Can you do it again?":"Keep the streak alive on the next one.";
+    resultMessage.hidden=false;
+    resultMessage.textContent=runComplete
+      ?"Final score: "+state.score+"/100 · Best possible: 100."
+      :(won?"Clean ears. Can you do it again?":"Keep the streak alive on the next one.");
     mainPlay.hidden=true;
     timeline.hidden=true;
     guessRow.hidden=true;
     resultActions.hidden=false;
     challengeButton.textContent="♧ Challenge your friend";
-    nextButton.textContent="Next  ▷|";
+    nextButton.textContent=runComplete?"Play again ↻":"Next  ▷|";
     guessInput.value="";
     closeSuggestions();
   }
@@ -672,6 +716,7 @@
     state.startedOnce=true;
     state.isPlaying=true;
     const token=state.playbackToken;
+    setTimeline({playing:true});
     const seconds=CLIPS[state.stage].seconds;
     const duration=Number(audio.duration)||30;
     const maximumOffset=Math.max(0,Math.min(18,duration-seconds-0.1));
@@ -690,6 +735,7 @@
       state.isPlaying=false;
       state.previewTimer=null;
       mainPlay.classList.remove("is-playing");
+      setTimeline();
       setMainPlayState("Replay "+durationLabel(state.stage),"▶",false);
       roundStatus.textContent="READY TO GUESS";
       setFeedback("Make a guess or skip for a longer clue.");
@@ -698,6 +744,7 @@
       playback.catch(()=>{
         if(token!==state.playbackToken)return;
         state.isPlaying=false;mainPlay.classList.remove("is-playing");
+        setTimeline();
         setMainPlayState("Try again","▶",false);
         roundStatus.textContent="PLAYBACK ERROR";
         setFeedback("The browser couldn't play this preview. Try again or skip.","error");
@@ -755,6 +802,28 @@
     prepareTrack({reload:true,initial:state.round===0});
   }
 
+  function resetRun() {
+    state.round=0;
+    state.score=0;
+    state.streak=0;
+    state.startedOnce=false;
+    state.used.clear();
+    scoreLabel.textContent="0";
+    streakLabel.textContent="0";
+    roundNumberLabel.textContent="01";
+  }
+
+  function nextRound() {
+    const runComplete=state.revealed&&state.round>=MAX_ROUNDS;
+    const reload=state.poolKey!==currentFilterKey();
+    if(runComplete){
+      resetRun();
+      prepareTrack({reload,initial:true});
+      return;
+    }
+    prepareTrack({reload,initial:false});
+  }
+
   function initControls() {
     document.querySelectorAll("[data-difficulty]").forEach((button)=>{
       button.addEventListener("click",()=>setDifficulty(button.dataset.difficulty));
@@ -795,6 +864,8 @@
     });
 
     $("reroll-button").addEventListener("click",()=>{
+      const wasAtRunLimit=state.round>=MAX_ROUNDS;
+      if(wasAtRunLimit)resetRun();
       const anyOr= (items)=>items[Math.floor(Math.random()*items.length)];
       state.filters.genre=anyOr(GENRES);
       state.filters.era=anyOr(ERAS);
@@ -823,7 +894,7 @@
       }
       advanceClue(true);
     });
-    nextButton.addEventListener("click",()=>prepareTrack({reload:state.poolKey!==currentFilterKey(),initial:false}));
+    nextButton.addEventListener("click",nextRound);
     challengeButton.addEventListener("click",async()=>{
       const track=state.currentTrack;
       if(!track)return;
@@ -863,6 +934,23 @@
       }
     });
     audio.addEventListener("volumechange",()=>{volumeSlider.value=String(Math.round(audio.volume*100));volumeValue.textContent=volumeSlider.value+"%";});
+
+    document.querySelectorAll("[data-carousel]").forEach((button)=>{
+      button.addEventListener("click",()=>{
+        const container=document.getElementById(button.dataset.carousel+"-options");
+        if(!container)return;
+        const direction=Number(button.dataset.direction)||1;
+        container.scrollBy({left:direction*Math.max(120,container.clientWidth*.72),behavior:"smooth"});
+        window.setTimeout(()=>updateCarouselProgress(container),220);
+      });
+    });
+    ["genre-options","era-options","artist-options"].forEach((id)=>{
+      const container=document.getElementById(id);
+      container.addEventListener("scroll",()=>updateCarouselProgress(container),{passive:true});
+    });
+    window.addEventListener("resize",()=>{
+      ["genre-options","era-options","artist-options"].forEach((id)=>updateCarouselProgress(document.getElementById(id)));
+    });
   }
 
   function renderAllControls() {
