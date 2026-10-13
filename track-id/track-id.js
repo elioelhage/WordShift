@@ -8,6 +8,7 @@
   const playButton = $("play-button");
   const skipButton = $("skip-button");
   const submitButton = $("submit-guess");
+  const giveUpButton = $("give-up-button");
   const guessInput = $("guess-input");
   const suggestionBox = $("song-suggestions");
   const guessForm = $("guess-form");
@@ -162,6 +163,7 @@
   function setControls({guess = false, skip = false, play = false} = {}) {
     guessInput.disabled = !guess;
     submitButton.disabled = !guess;
+    if (giveUpButton) giveUpButton.disabled = !guess;
     skipButton.disabled = !skip;
     // Playback remains available only during a round or when the answer preview
     // has been explicitly offered after a miss.
@@ -830,6 +832,11 @@
     }
   }
 
+  function giveUp() {
+    if (!currentTrack || roundSolved || !gameStarted) return;
+    solveRound(false);
+  }
+
   function skipSong() {
     if (!currentTrack || roundSolved) return;
     if (playButton.disabled && skipButton.disabled) {
@@ -963,6 +970,7 @@
     playButton.dataset.answerReplay === "true" ? answerPlaybackSeconds : clipSeconds
   ));
   skipButton.addEventListener("click", skipSong);
+  if (giveUpButton) giveUpButton.addEventListener("click", giveUp);
   submitButton.addEventListener("click", checkGuess);
   guessInput.addEventListener("input", renderSuggestions);
   guessInput.addEventListener("keydown", (event) => {
