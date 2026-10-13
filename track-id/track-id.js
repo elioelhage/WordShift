@@ -462,8 +462,7 @@
     if (chosenDifficulty === "easy") return hits;
     if (chosenDifficulty === "hard") return deeperCuts;
 
-    // Keep Medium distinct when the catalog is large enough: it combines some
-    // hits and some deeper cuts instead of mirroring either endpoint.
+    // Medium deliberately combines hits and deeper cuts where possible.
     const mediumTarget = Math.min(playable.length, Math.max(roundsPerGame, Math.ceil(playable.length * 0.6)));
     const medium = shuffle(hits).slice(0, Math.ceil(mediumTarget / 2))
       .concat(shuffle(deeperCuts).slice(0, Math.floor(mediumTarget / 2)));
@@ -522,12 +521,16 @@
   }
 
   function playSnippet(seconds = clipSeconds) {
-    if (!currentTrack || !currentTrack.previewUrl || roundSolved) return;
+    if (!currentTrack || !currentTrack.previewUrl) return;
+    // The sound-stage Play button remains available after a miss so players can
+    // hear the complete 8-second preview; normal guesses still use the short clip.
     const token = stopAudio();
     setAudioTrack(currentTrack);
     const stage = clipStages[clipStageIndex] || clipStages[0];
     clipLabel.textContent = clipStageIndex === 0 ? "YOUR FIRST CLIP" : "CLIP REVEALED · " + stage.label + " SECONDS";
-    stageCaption.textContent = "Playing the " + stage.label + "-second clip…";
+    stageCaption.textContent = roundSolved
+      ? "Playing the 8-second answer preview…"
+      : "Playing the " + stage.label + "-second clip…";
     waveform.classList.add("playing");
     refreshClipTimeline(true);
     playButton.disabled = true;
@@ -545,7 +548,7 @@
       playButton.innerHTML = '<span aria-hidden="true">▶</span> Try again';
     };
     const startAt = () => {
-      if (token !== playbackToken || roundSolved || !currentTrack) return;
+      if (token !== playbackToken || !currentTrack) return;
       try { audio.currentTime = 0; } catch (_) {}
       const playback = audio.play();
       if (playback && typeof playback.catch === "function") playback.catch(failPlayback);
@@ -555,10 +558,14 @@
         previewTimer = null;
         waveform.classList.remove("playing");
         refreshClipTimeline(false);
-        stageCaption.textContent = "Clip finished. Make your guess or listen again.";
+        stageCaption.textContent = roundSolved
+          ? "Preview finished. Continue to the next song when ready."
+          : "Clip finished. Make your guess or listen again.";
         playButton.disabled = false;
-        playButton.innerHTML = '<span aria-hidden="true">▶</span> Replay ' + stage.label + " second" + (stage.label === 1 ? "" : "s");
-      }, seconds * 1000);
+        playButton.innerHTML = roundSolved
+          ? '<span aria-hidden="true">▶</span> Replay 8 seconds'
+          : '<span aria-hidden="true">▶</span> Replay ' + stage.label + " second" + (stage.label === 1 ? "" : "s");
+      }, (roundSolved ? answerPlaybackSeconds : seconds) * 1000);
     };
 
     if (audio.readyState >= 1) startAt();
@@ -755,8 +762,12 @@
     if (won) {
       playAnswerThenAdvance();
     } else {
-      // Keep the eight-second answer preview available after an incorrect guess too.
-      playAnswerThenAdvance();
+      autoAdvanceBox.hidden = true;
+      // Wrong answers reveal the song and leave an explicit 8-second preview
+      // action in the same player, rather than silently autoplaying over the miss.
+      playButton.disabled = false;
+      playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
+      stageCaption.textContent = "Hear the full 8-second preview, then continue when ready.";
       nextButton.focus({preventScroll: true});
     }
   }
