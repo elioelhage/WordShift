@@ -12,6 +12,7 @@
   const suggestionBox = $("song-suggestions");
   const guessForm = $("guess-form");
   const gameCard = $("game-card");
+  const preGameControls = $("pre-game-controls");
   const difficultyPicker = document.querySelector(".difficulty");
   const artistPicker = document.querySelector(".artist-picker");
   const artistProfileLink = $("artist-profile-link");
@@ -509,7 +510,7 @@
     answerReveal.classList.remove("is-autoplaying");
     autoAdvanceBox.hidden = true;
     refreshClipTimeline(false);
-    playButton.disabled = !currentTrack || roundSolved;
+    playButton.disabled = !currentTrack;
     return playbackToken;
   }
 
@@ -691,6 +692,7 @@
     answerReveal.hidden = true;
     answerReveal.classList.remove("is-autoplaying");
     guessForm.hidden = false;
+    gameCard.classList.add("is-playing");
     updateSongInputArtwork(null);
     roundChip.textContent = "ROUND " + (roundIndex + 1) + " / " + roundsPerGame;
     clipLabel.textContent = "YOUR FIRST CLIP";
@@ -798,12 +800,14 @@
     gameStarted = false;
     startingGame = false;
     stopAudio();
+    gameCard.classList.remove("is-playing");
     setControls();
     closeSuggestions();
     artistButtons.forEach((button) => { button.disabled = false; });
     difficultyButtons.forEach((button) => { button.disabled = false; });
     artistPicker.hidden = false;
     difficultyPicker.hidden = false;
+    if (preGameControls) preGameControls.hidden = false;
     gameCard.removeAttribute("data-difficulty");
     startButton.hidden = false;
     startButton.disabled = !catalogCache.has(chosenArtistId);
@@ -861,6 +865,8 @@
       resultsModal.hidden = true;
       artistPicker.hidden = true;
       difficultyPicker.hidden = true;
+      if (preGameControls) preGameControls.hidden = true;
+      gameCard.classList.add("is-playing");
       gameCard.dataset.difficulty = chosenDifficulty;
       guessForm.hidden = false;
       answerReveal.hidden = true;
