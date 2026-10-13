@@ -523,14 +523,13 @@
 
   function playSnippet(seconds = clipSeconds) {
     if (!currentTrack || !currentTrack.previewUrl) return;
-    // The sound-stage Play button remains available after a miss so players can
-    // hear the complete 8-second preview; normal guesses still use the short clip.
+    const isAnswerReplay = roundSolved;
     const token = stopAudio();
     setAudioTrack(currentTrack);
     const stage = clipStages[clipStageIndex] || clipStages[0];
-    clipLabel.textContent = roundSolved ? "ANSWER PREVIEW" :
+    clipLabel.textContent = isAnswerReplay ? "ANSWER PREVIEW" :
       (clipStageIndex === 0 ? "YOUR FIRST CLIP" : "CLIP REVEALED · " + stage.label + " SECONDS");
-    stageCaption.textContent = roundSolved
+    stageCaption.textContent = isAnswerReplay
       ? "Playing the 8-second answer preview…"
       : "Playing the " + stage.label + "-second clip…";
     waveform.classList.add("playing");
@@ -560,14 +559,14 @@
         previewTimer = null;
         waveform.classList.remove("playing");
         refreshClipTimeline(false);
-        stageCaption.textContent = roundSolved
+        stageCaption.textContent = isAnswerReplay
           ? "Preview finished. Continue to the next song when ready."
           : "Clip finished. Make your guess or listen again.";
         playButton.disabled = false;
-        playButton.innerHTML = roundSolved
+        playButton.innerHTML = isAnswerReplay
           ? '<span aria-hidden="true">▶</span> Replay 8 seconds'
           : '<span aria-hidden="true">▶</span> Replay ' + stage.label + " second" + (stage.label === 1 ? "" : "s");
-      }, (roundSolved ? answerPlaybackSeconds : seconds) * 1000);
+      }, (isAnswerReplay ? answerPlaybackSeconds : seconds) * 1000);
     };
 
     if (audio.readyState >= 1) startAt();
