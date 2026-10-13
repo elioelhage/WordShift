@@ -687,8 +687,9 @@
 
     const startAt = () => {
       if (token !== playbackToken || !currentTrack) return;
-      // Overlap the end of the guessing clip by 0.4 seconds so the reveal flows into the song.
-      const resumeAt = Math.max(0, clipSeconds - 0.4);
+      // Restart the preview from the beginning so revealing a song gives listeners
+      // a real chance to hear its hook even if they gave up on the first second.
+      const resumeAt = 0;
       try { audio.currentTime = resumeAt; } catch (_) {}
       const playback = audio.play();
       if (playback && typeof playback.then === "function") {
