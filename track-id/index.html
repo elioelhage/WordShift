@@ -10,9 +10,9 @@
   <link rel="stylesheet" href="/track-id/track-id.css">
   <script defer src="/track-id/track-id.js"></script>
 </head>
-<body>
+<body data-tier="easy">
   <header class="site-head">
-    <a class="wordshift-mark" href="/" aria-label="Back to WordShift home"><span class="mark-icon">W</span><span>WordShift</span></a>
+    <a class="wordshift-mark" href="/games/" aria-label="Back to WordShift Arcade"><span class="mark-icon">W</span><span>WordShift</span></a>
     <a class="back-link" href="/games/">← All games</a>
   </header>
 
@@ -27,7 +27,7 @@
       <div class="artist-picker-heading">
         <div>
           <h2 id="artist-picker-title">Choose an artist</h2>
-          <p>Each artist has a separate song list.</p>
+          <p>Choose your sound.</p>
         </div>
         <a id="artist-profile-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer">Artist profile ↗</a>
       </div>
@@ -53,6 +53,11 @@
 
       
 
+      <div class="round-focus" id="round-focus" hidden>
+        <span class="round-focus-art" id="round-focus-art" aria-hidden="true">♫</span>
+        <div class="round-focus-copy"><small>NOW PLAYING</small><strong id="round-focus-artist">Imagine Dragons</strong></div>
+        <span class="round-focus-round" id="round-focus-round">ROUND 1 / 10</span>
+      </div>
       <div class="sound-stage">
         <a class="sound-orb" id="artist-orb-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer" aria-label="Open Imagine Dragons profile on Spotify">
           <img id="artist-orb-image" src="https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc" alt="Imagine Dragons artist profile" loading="lazy">
@@ -81,11 +86,12 @@
       </div>
 
       <div class="pre-game-controls" id="pre-game-controls">
-      <div class="difficulty-heading"><span>DIFFICULTY</span><small>Choose your challenge before starting</small></div>
+      <div class="difficulty-heading"><span>DIFFICULTY</span></div>
       <div class="difficulty" role="group" aria-label="Difficulty">
-        <button type="button" data-difficulty="easy" class="difficulty-button active" aria-pressed="true">Easy<span>Big hits</span></button>
-        <button type="button" data-difficulty="medium" class="difficulty-button" aria-pressed="false">Medium<span>Mixed set</span></button>
-        <button type="button" data-difficulty="hard" class="difficulty-button" aria-pressed="false">Hard<span>Deep cuts</span></button>
+        <button type="button" data-difficulty="easy" class="difficulty-button active" aria-pressed="true">Easy</button>
+        <button type="button" data-difficulty="medium" class="difficulty-button" aria-pressed="false">Medium</button>
+        <button type="button" data-difficulty="hard" class="difficulty-button" aria-pressed="false">Hard</button>
+        <button type="button" data-difficulty="impossible" class="difficulty-button" aria-pressed="false">Impossible</button>
       </div>
       </div>
 
@@ -102,6 +108,7 @@
         </div>
         <div class="guess-actions">
           <span id="attempt-count">Clip: 1 second</span>
+          <button id="give-up-button" class="ghost-button" type="button" disabled>Give up &amp; hear it</button>
         </div>
         <p id="feedback" class="feedback" aria-live="polite">Choose an artist and difficulty, then start the game.</p>
         </div>

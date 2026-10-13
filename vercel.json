@@ -8,11 +8,37 @@
     }
   ],
   "routes": [
-    { "src": "/race/?$", "dest": "/race.html" },
-    { "src": "/leaderboard/?$", "dest": "/leaderboard.html" },
-    { "src": "/games/?$", "dest": "/games/index.html" },
-    { "src": "/track-id/?$", "dest": "/track-id/index.html" },
-    { "src": "/dragon-tunes/?$", "dest": "/track-id/index.html" },
-    { "src": "/(.*)", "dest": "/$1" }
+    {
+      "src": "/?$",
+      "dest": "/games/index.html"
+    },
+    {
+      "src": "/wordle/?$",
+      "dest": "/wordle.html"
+    },
+    {
+      "src": "/race/?$",
+      "dest": "/race.html"
+    },
+    {
+      "src": "/leaderboard/?$",
+      "dest": "/leaderboard.html"
+    },
+    {
+      "src": "/games/?$",
+      "dest": "/games/index.html"
+    },
+    {
+      "src": "/track-id/?$",
+      "dest": "/track-id/index.html"
+    },
+    {
+      "src": "/dragon-tunes/?$",
+      "dest": "/track-id/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
   ]
 }

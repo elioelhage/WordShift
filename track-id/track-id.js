@@ -8,11 +8,15 @@
   const playButton = $("play-button");
   const skipButton = $("skip-button");
   const submitButton = $("submit-guess");
+  const giveUpButton = $("give-up-button");
   const guessInput = $("guess-input");
   const suggestionBox = $("song-suggestions");
   const guessForm = $("guess-form");
   const gameCard = $("game-card");
   const preGameControls = $("pre-game-controls");
+  const roundFocus = $("round-focus");
+  const roundFocusArtist = $("round-focus-artist");
+  const roundFocusRound = $("round-focus-round");
   const difficultyPicker = document.querySelector(".difficulty");
   const artistPicker = document.querySelector(".artist-picker");
   const artistProfileLink = $("artist-profile-link");
@@ -162,6 +166,7 @@
   function setControls({guess = false, skip = false, play = false} = {}) {
     guessInput.disabled = !guess;
     submitButton.disabled = !guess;
+    if (giveUpButton) giveUpButton.disabled = !guess;
     skipButton.disabled = !skip;
     // Playback remains available only during a round or when the answer preview
     // has been explicitly offered after a miss.
@@ -458,18 +463,8 @@
   }
 
   function getDifficultyPool() {
-    const easyTitles = new Set(chosenArtist.easyTitles.map(normalize));
-    const hits = playable.filter((track) => easyTitles.has(normalize(track.title)));
-    const deeperCuts = playable.filter((track) => !easyTitles.has(normalize(track.title)));
-
-    if (chosenDifficulty === "easy") return hits;
-    if (chosenDifficulty === "hard") return deeperCuts;
-
-    // Medium deliberately combines hits and deeper cuts where possible.
-    const mediumTarget = Math.min(playable.length, Math.max(roundsPerGame, Math.ceil(playable.length * 0.6)));
-    const medium = shuffle(hits).slice(0, Math.ceil(mediumTarget / 2))
-      .concat(shuffle(deeperCuts).slice(0, Math.floor(mediumTarget / 2)));
-    return medium.length >= roundsPerGame ? medium : playable;
+    // Difficulty is intentionally a visual placeholder for now.
+    return playable;
   }
 
   function shuffle(array) {
@@ -513,7 +508,7 @@
     answerReveal.classList.remove("is-autoplaying");
     autoAdvanceBox.hidden = true;
     refreshClipTimeline(false);
-    playButton.disabled = !currentTrack;
+    playButton.disabled = !currentTrack || !currentTrack.previewUrl;
     if (wasAnswerReplay && roundSolved) {
       playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
       playButton.dataset.answerReplay = "true";
@@ -522,14 +517,49 @@
   }
 
   function setAudioTrack(track) {
+    if (!track || !track.previewUrl) return;
     if (audio.src !== track.previewUrl) {
       audio.src = track.previewUrl;
       audio.load();
     }
   }
 
+  // Keep the play action unavailable until the selected preview has metadata.
+  function waitForPlayablePreview(track) {
+    return new Promise((resolve, reject) => {
+      if (!track || !track.previewUrl) {
+        reject(new Error("No playable preview is available for this song."));
+        return;
+      }
+      setAudioTrack(track);
+      if (audio.readyState >= 1 && audio.duration > 0) {
+        resolve();
+        return;
+      }
+      const cleanUp = () => {
+        audio.removeEventListener("loadedmetadata", onReady);
+        audio.removeEventListener("canplay", onReady);
+        audio.removeEventListener("error", onError);
+      };
+      const onReady = () => {
+        if (audio.duration > 0) {
+          cleanUp();
+          resolve();
+        }
+      };
+      const onError = () => {
+        cleanUp();
+        reject(new Error("This preview could not be loaded. Try the next song."));
+      };
+      audio.addEventListener("loadedmetadata", onReady);
+      audio.addEventListener("canplay", onReady);
+      audio.addEventListener("error", onError);
+      audio.load();
+    });
+  }
+
   function playSnippet(seconds = clipSeconds) {
-    if (!currentTrack || !currentTrack.previewUrl) return;
+    if (!currentTrack || !currentTrack.previewUrl || playButton.disabled) return;
     const isAnswerReplay = roundSolved;
     const playbackSeconds = isAnswerReplay ? answerPlaybackSeconds : seconds;
     const token = stopAudio();
@@ -660,8 +690,9 @@
 
     const startAt = () => {
       if (token !== playbackToken || !currentTrack) return;
-      // Overlap the end of the guessing clip by 0.4 seconds so the reveal flows into the song.
-      const resumeAt = Math.max(0, clipSeconds - 0.4);
+      // Restart the preview from the beginning so revealing a song gives listeners
+      // a real chance to hear its hook even if they gave up on the first second.
+      const resumeAt = 0;
       try { audio.currentTime = resumeAt; } catch (_) {}
       const playback = audio.play();
       if (playback && typeof playback.then === "function") {
@@ -708,6 +739,8 @@
     gameCard.classList.add("is-playing");
     updateSongInputArtwork(null);
     roundChip.textContent = "ROUND " + (roundIndex + 1) + " / " + roundsPerGame;
+    if (roundFocusRound) roundFocusRound.textContent = "ROUND " + (roundIndex + 1) + " / " + roundsPerGame;
+    if (roundFocusArtist) roundFocusArtist.textContent = chosenArtist.name;
     clipLabel.textContent = "YOUR FIRST CLIP";
     stageCaption.textContent = "Ready when you are.";
     attemptCount.textContent = "Clip: 1 second";
@@ -715,14 +748,35 @@
     closeSuggestions();
     setAudioTrack(currentTrack);
     refreshClipTimeline(false);
-    setControls({guess: true, skip: true, play: true});
+    setControls({guess: false, skip: false, play: false});
+    stageCaption.textContent = "Loading preview…";
+    clipLabel.textContent = "LOADING TRACK";
+    playButton.disabled = true;
+    playButton.innerHTML = '<span aria-hidden="true">◌</span> Loading…';
+    audioNote.textContent = "Loading the selected track preview…";
     nextButton.hidden = true;
     nextButton.textContent = "Skip to next song →";
     startButton.hidden = true;
-    setFeedback("Listen to the snippet, then type your guess.");
-    playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 1 second';
     playButton.dataset.answerReplay = "false";
     skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
+    waitForPlayablePreview(currentTrack).then(() => {
+      if (!gameStarted || roundSolved || currentTrack !== next) return;
+      stageCaption.textContent = "Preview ready. Press play when you're ready.";
+      clipLabel.textContent = "YOUR FIRST CLIP";
+      playButton.disabled = false;
+      playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 1 second';
+      setControls({guess: true, skip: true, play: true});
+      setFeedback("Listen to the snippet, then type your guess.");
+    }).catch((error) => {
+      if (!gameStarted || roundSolved || currentTrack !== next) return;
+      stageCaption.textContent = "Preview unavailable.";
+      clipLabel.textContent = "TRACK UNAVAILABLE";
+      setControls();
+      setFeedback(error.message || "This preview could not be loaded. Move to the next song.", "error");
+      nextButton.hidden = false;
+      nextButton.textContent = "Skip this song →";
+      nextButton.focus({preventScroll: true});
+    });
   }
 
   function cleanGuess(value) {
@@ -756,7 +810,7 @@
     closeSuggestions();
     setControls();
     const basePoints = [100, 60, 40, 20][clipStageIndex] || 20;
-    const difficultyMultiplier = {easy: 1, medium: 1.5, hard: 2}[chosenDifficulty];
+    const difficultyMultiplier = {easy: 1, medium: 1, hard: 1, impossible: 1}[chosenDifficulty] || 1;
     const points = won ? Math.round(basePoints * difficultyMultiplier) : 0;
     if (won) {
       score += points;
@@ -778,18 +832,23 @@
       playButton.dataset.answerReplay = "false";
       playAnswerThenAdvance();
     } else {
-      autoAdvanceBox.hidden = true;
-      // Wrong answers reveal the song and offer the full preview on demand.
-      playButton.disabled = false;
-      playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
-      playButton.dataset.answerReplay = "true";
-      stageCaption.textContent = "Hear the full 8-second preview, then continue when ready.";
-      nextButton.focus({preventScroll: true});
+      // A missed song is still played automatically, just like a correct answer.
+      playButton.dataset.answerReplay = "false";
+      playAnswerThenAdvance();
     }
+  }
+
+  function giveUp() {
+    if (!currentTrack || roundSolved || !gameStarted) return;
+    solveRound(false);
   }
 
   function skipSong() {
     if (!currentTrack || roundSolved) return;
+    if (playButton.disabled && skipButton.disabled) {
+      nextRound();
+      return;
+    }
     if (clipStageIndex >= clipStages.length - 1) {
       solveRound(false);
       return;
@@ -822,6 +881,7 @@
     artistPicker.hidden = false;
     difficultyPicker.hidden = false;
     if (preGameControls) preGameControls.hidden = false;
+    if (roundFocus) roundFocus.hidden = true;
     gameCard.removeAttribute("data-difficulty");
     startButton.hidden = false;
     startButton.disabled = !catalogCache.has(chosenArtistId);
@@ -857,6 +917,8 @@
       catalog = songs;
       playable = songs;
 
+      // Difficulties are presentation-only placeholders for this update. Keep
+      // the existing Easy-style pool so all four selections remain playable.
       const pool = getDifficultyPool();
       if (pool.length < roundsPerGame) {
         setFeedback(
@@ -880,6 +942,7 @@
       artistPicker.hidden = true;
       difficultyPicker.hidden = true;
       if (preGameControls) preGameControls.hidden = true;
+      if (roundFocus) roundFocus.hidden = false;
       gameCard.classList.add("is-playing");
       gameCard.dataset.difficulty = chosenDifficulty;
       guessForm.hidden = false;
@@ -915,6 +978,7 @@
     playButton.dataset.answerReplay === "true" ? answerPlaybackSeconds : clipSeconds
   ));
   skipButton.addEventListener("click", skipSong);
+  if (giveUpButton) giveUpButton.addEventListener("click", giveUp);
   submitButton.addEventListener("click", checkGuess);
   guessInput.addEventListener("input", renderSuggestions);
   guessInput.addEventListener("keydown", (event) => {
@@ -949,6 +1013,7 @@
     difficultyButtons.forEach((button) => { button.disabled = false; });
     artistPicker.hidden = false;
     difficultyPicker.hidden = false;
+    if (roundFocus) roundFocus.hidden = true;
     gameCard.removeAttribute("data-difficulty");
     startButton.hidden = false;
     startButton.disabled = !catalogCache.has(chosenArtistId);
