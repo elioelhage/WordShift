@@ -756,6 +756,11 @@
     playButton.disabled = true;
     playButton.innerHTML = '<span aria-hidden="true">◌</span> Loading…';
     audioNote.textContent = "Loading the selected track preview…";
+    nextButton.hidden = true;
+    nextButton.textContent = "Skip to next song →";
+    startButton.hidden = true;
+    playButton.dataset.answerReplay = "false";
+    skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
     waitForPlayablePreview(currentTrack).then(() => {
       if (!gameStarted || roundSolved || currentTrack !== next) return;
       stageCaption.textContent = "Preview ready. Press play when you're ready.";
@@ -774,13 +779,6 @@
       nextButton.textContent = "Skip this song →";
       nextButton.focus({preventScroll: true});
     });
-    nextButton.hidden = true;
-    nextButton.textContent = "Skip to next song →";
-    startButton.hidden = true;
-    setFeedback("Listen to the snippet, then type your guess.");
-    playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 1 second';
-    playButton.dataset.answerReplay = "false";
-    skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
   }
 
   function cleanGuess(value) {
