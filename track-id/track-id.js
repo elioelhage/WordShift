@@ -499,6 +499,9 @@
     state.loadingPreview=false;
     state.currentTrack=null;
     resultActions.hidden=true;
+    hideAnswerDetails();
+    guessInput.disabled=true;
+    skipButton.disabled=true;
     revealAndGuessMode(false);
     setMainPlayState("Finding tracks…","◌",true);
     roundStatus.textContent="BUILDING MIX";
