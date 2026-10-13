@@ -295,6 +295,27 @@ async function fetchApplePreviews(artistName) {
   }));
 }
 
+async function fetchApplePreviewForTrack(track, artistName) {
+  const url = new URL("https://itunes.apple.com/search");
+  url.searchParams.set("term", track.title + " " + artistName);
+  url.searchParams.set("entity", "song");
+  url.searchParams.set("country", "ca");
+  url.searchParams.set("limit", "12");
+  const response = await fetch(url.toString());
+  if (!response.ok) return null;
+  const data = await response.json().catch(() => ({}));
+  const candidates = (data.results || []).filter((item) =>
+    item.trackName && item.artistName && item.previewUrl
+  ).map((item) => ({
+    title: item.trackName,
+    artist: item.artistName,
+    previewUrl: item.previewUrl,
+    appleTrackId: String(item.trackId || ""),
+    artworkUrl: item.artworkUrl100 || ""
+  }));
+  return matchApplePreview(track, candidates);
+}
+
 function matchApplePreview(track, previews) {
   const targetTitle = normalizeTrackTitle(track.title);
   const targetArtist = normalizeTrackText(track.artist);
@@ -397,8 +418,30 @@ async function buildImagineDragonsCatalog() {
   }
 
   const previews = await fetchApplePreviews(artist.displayName);
-  const matchedTracks = spotifyTracks.map((track) => {
+  const previewByTrackId = new Map();
+  const withoutBroadPreview = [];
+  for (const track of spotifyTracks) {
     const preview = matchApplePreview(track, previews);
+    if (preview) previewByTrackId.set(track.id, preview);
+    else withoutBroadPreview.push(track);
+  }
+
+  // The broad artist lookup is efficient but often repeats popular album/single
+  // versions. Do targeted title lookups for a capped batch of missing Spotify
+  // tracks to make the playable catalog deeper without hammering the preview API.
+  const targetedCandidates = withoutBroadPreview.slice(0, 120);
+  await mapWithConcurrency(targetedCandidates, 5, async (track) => {
+    try {
+      const preview = await fetchApplePreviewForTrack(track, artist.displayName);
+      if (preview) previewByTrackId.set(track.id, preview);
+    } catch (error) {
+      console.warn("Targeted preview lookup failed:", track.title, error.message);
+    }
+    return null;
+  });
+
+  const matchedTracks = spotifyTracks.map((track) => {
+    const preview = previewByTrackId.get(track.id);
     return {
       ...track,
       previewUrl: preview?.previewUrl || "",
