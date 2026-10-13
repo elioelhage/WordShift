@@ -231,32 +231,6 @@
     }
   }
 
-  function renderAllControls() {
-    difficultyContainer.querySelectorAll("[data-difficulty]").forEach((button)=>{
-      const active=button.dataset.difficulty===state.difficulty;
-      button.classList.toggle("active",active);
-      button.setAttribute("aria-pressed",String(active));
-    });
-    renderChipGroup(genreContainer,GENRES,"genre","genre");
-    renderChipGroup(eraContainer,ERAS,"era","era");
-    renderChipGroup(artistContainer,ARTISTS,"artist","artist");
-    startStageOptions.forEach((button)=>{
-      const active=Number(button.dataset.startStage)===state.startStage;
-      button.classList.toggle("active",active);
-      button.setAttribute("aria-pressed",String(active));
-    });
-    document.body.dataset.difficulty=state.difficulty;
-    mixSummary.textContent=state.filters.genre+" · "+state.filters.era+" · "+state.filters.artist;
-    roundNumberLabel.textContent=String(Math.max(1,state.round)).padStart(2,"0");
-    scoreLabel.textContent=String(state.score);
-    streakLabel.textContent=String(state.streak);
-    stageCounter.textContent="CLIP "+String(state.stage+1).padStart(2,"0")+" / "+String(CLIPS.length).padStart(2,"0");
-    clipDuration.textContent=durationLabel(state.stage);
-    clipLabels.forEach((label,index)=>label.classList.toggle("active",index===state.stage));
-    const pct=[1,3.5,13.5,53.5,100][state.stage]||1;
-    clipProgress.style.width=pct+"%";
-  }
-
   function artistNamesForFilters() {
     if(state.filters.artist!=="Any artist")return [state.filters.artist];
     const genre=state.filters.genre;
@@ -524,7 +498,6 @@
     state.loadingPool=true;
     state.loadingPreview=false;
     state.currentTrack=null;
-    state.used.add("__loading__");
     resultActions.hidden=true;
     revealAndGuessMode(false);
     setMainPlayState("Finding tracks…","◌",true);
@@ -779,7 +752,7 @@
       button.addEventListener("click",()=>{
         state.startStage=Number(button.dataset.startStage);
         renderAllControls();
-        if(state.roundActive&&!state.revealed){setFeedback("Starting clue changes will apply to the next track.");return;}
+        if(state.roundActive){setFeedback("Starting clue changes will apply to the next track.");return;}
         state.stage=state.startStage;
         setTimeline();
         if(state.currentTrack){
