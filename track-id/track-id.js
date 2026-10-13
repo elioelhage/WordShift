@@ -458,18 +458,8 @@
   }
 
   function getDifficultyPool() {
-    const easyTitles = new Set(chosenArtist.easyTitles.map(normalize));
-    const hits = playable.filter((track) => easyTitles.has(normalize(track.title)));
-    const deeperCuts = playable.filter((track) => !easyTitles.has(normalize(track.title)));
-
-    if (chosenDifficulty === "easy") return hits;
-    if (chosenDifficulty === "hard") return deeperCuts;
-
-    // Medium deliberately combines hits and deeper cuts where possible.
-    const mediumTarget = Math.min(playable.length, Math.max(roundsPerGame, Math.ceil(playable.length * 0.6)));
-    const medium = shuffle(hits).slice(0, Math.ceil(mediumTarget / 2))
-      .concat(shuffle(deeperCuts).slice(0, Math.floor(mediumTarget / 2)));
-    return medium.length >= roundsPerGame ? medium : playable;
+    // Difficulty is intentionally a visual placeholder for now.
+    return playable;
   }
 
   function shuffle(array) {
@@ -915,7 +905,7 @@
 
       // Difficulties are presentation-only placeholders for this update. Keep
       // the existing Easy-style pool so all four selections remain playable.
-      const pool = playable;
+      const pool = getDifficultyPool();
       if (pool.length < roundsPerGame) {
         setFeedback(
           "Only " + pool.length + " playable songs are available in " + chosenDifficulty +
