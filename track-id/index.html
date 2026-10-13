@@ -67,6 +67,14 @@
           </div>
         </div>
 
+        <div id="center-difficulty-options" class="center-difficulty-options" role="group" aria-label="Difficulty">
+          <button type="button" data-difficulty="easy">Easy</button>
+          <button type="button" data-difficulty="medium">Medium</button>
+          <button type="button" data-difficulty="hard">Hard</button>
+          <button type="button" data-difficulty="expert">Expert</button>
+          <button type="button" data-difficulty="impossible" class="active" aria-pressed="true">Impossible</button>
+        </div>
+
         <div id="round-area" class="round-area">
           <div id="track-art-shell" class="track-art-shell" hidden>
             <img id="track-art" alt="" src="">
@@ -78,17 +86,17 @@
           <p id="reveal-album" class="reveal-album" hidden></p>
           <p id="result-message" class="result-message" hidden></p>
 
-          <button id="main-play" class="main-play" type="button" aria-label="Play song preview" disabled>
-            <span id="main-play-icon" aria-hidden="true">▶</span>
-          </button>
-          <div class="play-caption"><strong id="play-caption">Preparing track</strong><span id="clip-duration">0.1s</span></div>
-
           <div id="clip-timeline" class="clip-timeline" aria-label="Progressive audio clue">
             <div class="clip-track"><span id="clip-progress"></span></div>
             <div class="clip-labels">
               <span data-stage="0">0.1s</span><span data-stage="1">0.5s</span><span data-stage="2">2s</span><span data-stage="3">8s</span><span data-stage="4">15s</span>
             </div>
           </div>
+
+          <button id="main-play" class="main-play" type="button" aria-label="Play song preview" disabled>
+            <span id="main-play-icon" aria-hidden="true">▶</span>
+          </button>
+          <div class="play-caption"><strong id="play-caption">Preparing track</strong><span id="clip-duration">0.1s</span></div>
 
           <div id="guess-row" class="guess-row">
             <div class="song-search">
