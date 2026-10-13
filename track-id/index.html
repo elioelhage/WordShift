@@ -33,7 +33,6 @@
           <button type="button" data-difficulty="easy">Easy</button>
           <button type="button" data-difficulty="medium">Medium</button>
           <button type="button" data-difficulty="hard">Hard</button>
-          <button type="button" data-difficulty="expert">Expert</button>
           <button type="button" data-difficulty="impossible" class="active" aria-pressed="true">Impossible</button>
         </div>
         <button id="reroll-button" class="reroll-button" type="button"><span aria-hidden="true">⟳</span> Reroll all</button>
@@ -88,7 +87,6 @@
           <button type="button" data-difficulty="easy">Easy</button>
           <button type="button" data-difficulty="medium">Medium</button>
           <button type="button" data-difficulty="hard">Hard</button>
-          <button type="button" data-difficulty="expert">Expert</button>
           <button type="button" data-difficulty="impossible" class="active" aria-pressed="true">Impossible</button>
         </div>
 
@@ -121,11 +119,13 @@
               <input id="guess-input" type="text" role="combobox" aria-autocomplete="list" aria-controls="song-suggestions" aria-expanded="false" autocomplete="off" placeholder="Name that track" disabled>
               <div id="song-suggestions" class="song-suggestions" role="listbox" aria-label="Song suggestions" hidden></div>
             </div>
-            <button id="skip-button" class="skip-button" type="button" disabled><span aria-hidden="true">Ⅱ</span> Skip</button>
+            <button id="skip-button" class="skip-button" type="button" aria-label="Skip this song and reveal the answer" disabled>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5.5v13l10-6.5-10-6.5Z" fill="currentColor"/><path d="M17 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+              <span>Skip song</span>
+            </button>
           </div>
 
           <div id="result-actions" class="result-actions" hidden>
-            <button id="challenge-button" class="challenge-button" type="button"><span aria-hidden="true">♧</span> Challenge your friend</button>
             <button id="next-button" class="next-button" type="button">Next <span aria-hidden="true">▶|</span></button>
           </div>
           <div id="feedback" class="feedback" aria-live="polite">Getting the music ready…</div>
