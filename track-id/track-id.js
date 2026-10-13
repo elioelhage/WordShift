@@ -455,16 +455,19 @@
   }
 
   function getDifficultyPool() {
-    // Easy is the artist's known hits. Medium is the broader catalog excluding
-    // that hit list; Hard draws from the least familiar end of the available pool.
-    // Never silently fall back to the full catalog: that makes Easy and Hard identical.
     const easyTitles = new Set(chosenArtist.easyTitles.map(normalize));
-    const easy = playable.filter((track) => easyTitles.has(normalize(track.title)));
+    const hits = playable.filter((track) => easyTitles.has(normalize(track.title)));
     const deeperCuts = playable.filter((track) => !easyTitles.has(normalize(track.title)));
-    if (chosenDifficulty === "easy") return easy;
+
+    if (chosenDifficulty === "easy") return hits;
     if (chosenDifficulty === "hard") return deeperCuts;
-    // Medium deliberately uses the full catalog, giving it overlap with both tiers.
-    return playable;
+
+    // Keep Medium distinct when the catalog is large enough: it combines some
+    // hits and some deeper cuts instead of mirroring either endpoint.
+    const mediumTarget = Math.min(playable.length, Math.max(roundsPerGame, Math.ceil(playable.length * 0.6)));
+    const medium = shuffle(hits).slice(0, Math.ceil(mediumTarget / 2))
+      .concat(shuffle(deeperCuts).slice(0, Math.floor(mediumTarget / 2)));
+    return medium.length >= roundsPerGame ? medium : playable;
   }
 
   function shuffle(array) {
