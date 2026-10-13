@@ -1,38 +1,48 @@
 # WordShift Backend
 
-This folder contains backend code that should NOT be deployed to GitHub or GitHub Pages.
+Express backend deployed on Render. It serves the existing Supabase configuration and a server-side music catalogue endpoint for Track ID.
 
-## Security Warning ⚠️
+## Environment variables
 
-Your Supabase credentials are stored here (`config.js`). 
+Configure these in the Render dashboard. Keep all real credentials in Render only; never commit them to the repository.
 
-**NEVER commit this folder to public GitHub repos.**
+| Variable | Purpose |
+|---|---|
+| `SUPABASE_URL` | Existing WordShift Supabase project URL |
+| `SUPABASE_KEY` | Existing Supabase public client key served to the current frontend |
+| `SPOTIFY_CLIENT_ID` | Spotify Developer app client ID |
+| `SPOTIFY_CLIENT_SECRET` | Spotify Developer app client secret |
+| `SOUNDCHARTS_CLIENT_ID` | Soundcharts API client ID |
+| `SOUNDCHARTS_CLIENT_SECRET` | Soundcharts API client secret |
+| `SOUNDCHARTS_TEAM_ID` | Optional Soundcharts team name/ID when your account requires it |
 
-## Files in this folder:
+A blank template is in `.env.example`. Do not replace those blank values with real credentials in GitHub.
 
-1. **config.js** - Your Supabase URL and API key (SERVER ONLY)
-2. **api.js** - Template for your Express backend server
+## Track ID catalogue endpoint
 
-## Deployment to Render
+`GET /api/track-id/catalog?artist=Imagine%20Dragons`
 
-1. Create a new Web Service on Render.com
-2. Connect your GitHub repo
-3. Set the build and start commands to run your backend
-4. Upload `config.js` as an environment variable on Render
-5. The frontend will call your backend API instead of using keys directly
+The first stream-tier integration is deliberately allowlisted to Imagine Dragons for testing.
 
-## Current Status
+1. Uses Spotify's Web API to paginate the artist's albums, singles and compilations and gather catalogue track metadata.
+2. Matches Spotify song titles with Canadian iTunes Search results to obtain playable preview URLs. Spotify's Web API no longer provides a dependable preview URL; the iTunes preview remains a separate audio-source adapter.
+3. Uses Soundcharts song audience data to enrich playable tracks with cumulative Spotify stream counts.
+4. Caches the enriched artist catalogue in process memory for 12 hours to limit external API calls. Missing stream counts remain `null` and are not treated as zero.
 
-Your frontend files currently have Supabase keys exposed:
-- `script.js` - Has direct key access
-- `race.js` - Has direct key access  
-- `leaderboard.html` - Has direct key access
+Difficulty bands used by the frontend:
+- Easy: at least 250,000,000 cumulative Spotify streams.
+- Medium: 75,000,000 to 249,999,999.
+- Hard: 10,000,000 to 74,999,999.
+- Impossible: fewer than 10,000,000.
 
-## Next Steps
+Tracks with unknown stream counts are excluded from all four bands. These bands are initial, configurable cutoffs for testing Imagine Dragons, not universal music-industry definitions.
 
-1. Move all Supabase calls to the backend
-2. Have frontend call `/api/...` endpoints instead
-3. Deploy backend to Render
-4. Update frontend to use `https://your-render-backend.onrender.com/api/...`
+The endpoint returns an actionable error if Spotify configuration is missing. Soundcharts plan/permission failures appear as unavailable stream data; the frontend does not fabricate stream counts.
 
-This way, your keys stay safe on the server and never reach the browser.
+## Spotify developer requirements
+
+Spotify Developer Mode access is subject to Spotify's current account and endpoint eligibility rules. Verify that the app owner has the required Premium account and that the necessary catalogue endpoints are available to the app. Spotify credentials must only be used on this server, not from browser JavaScript.
+
+## Local development
+
+Run `npm start` with the environment variables above set. The existing server still requires Supabase environment values at startup. External catalogue calls require outbound network access and valid Spotify/Soundcharts API permissions.
