@@ -814,7 +814,7 @@
     closeSuggestions();
     setControls();
     const basePoints = [100, 60, 40, 20][clipStageIndex] || 20;
-    const difficultyMultiplier = {easy: 1, medium: 1.5, hard: 2}[chosenDifficulty];
+    const difficultyMultiplier = {easy: 1, medium: 1, hard: 1, impossible: 1}[chosenDifficulty] || 1;
     const points = won ? Math.round(basePoints * difficultyMultiplier) : 0;
     if (won) {
       score += points;
@@ -836,13 +836,9 @@
       playButton.dataset.answerReplay = "false";
       playAnswerThenAdvance();
     } else {
-      autoAdvanceBox.hidden = true;
-      // Wrong answers reveal the song and offer the full preview on demand.
-      playButton.disabled = false;
-      playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
-      playButton.dataset.answerReplay = "true";
-      stageCaption.textContent = "Hear the full 8-second preview, then continue when ready.";
-      nextButton.focus({preventScroll: true});
+      // A missed song is still played automatically, just like a correct answer.
+      playButton.dataset.answerReplay = "false";
+      playAnswerThenAdvance();
     }
   }
 
@@ -915,7 +911,9 @@
       catalog = songs;
       playable = songs;
 
-      const pool = getDifficultyPool();
+      // Difficulties are presentation-only placeholders for this update. Keep
+      // the existing Easy-style pool so all four selections remain playable.
+      const pool = playable;
       if (pool.length < roundsPerGame) {
         setFeedback(
           "Only " + pool.length + " playable songs are available in " + chosenDifficulty +
