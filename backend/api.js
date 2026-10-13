@@ -82,6 +82,7 @@ const TRACK_ID_CACHE_MS = 12 * 60 * 60 * 1000;
 const spotifyTokens = { token: "", expiresAt: 0 };
 const soundchartsTokens = { token: "", expiresAt: 0 };
 const trackCatalogCache = new Map();
+let activeImagineDragonsBuild = null;
 
 function trackIdError(status, code, message) {
   const error = new Error(message);
@@ -268,7 +269,7 @@ async function fetchAlbumTracks(album) {
         duration: Number(track.duration_ms) || 0,
         spotifyUrl: track.external_urls?.spotify || ("https://open.spotify.com/track/" + track.id),
         isrc: "",
-        genre: "Rock",
+        genre: catalogueGenre,
         previewUrl: ""
       });
     }
@@ -390,6 +391,16 @@ async function buildImagineDragonsCatalog() {
   }
 
   const artist = TRACK_ID_ARTISTS["imagine dragons"];
+  let artistGenres = [];
+  try {
+    const metadata = await spotifyGet("/artists/" + encodeURIComponent(artist.spotifyId));
+    artistGenres = Array.isArray(metadata.genres) ? metadata.genres : [];
+  } catch (error) {
+    // Spotify sometimes omits or restricts artist genre metadata; catalogue retrieval
+    // should still work, but the UI will use the generic rock tag in that case.
+    console.warn("Spotify artist genres unavailable:", error.message);
+  }
+  const catalogueGenre = artistGenres.join(", ") || "Rock";
   const albums = await fetchSpotifyAlbums(artist.spotifyId);
   if (!albums.length) {
     throw trackIdError(502, "SPOTIFY_EMPTY_CATALOG", "Spotify returned no Imagine Dragons releases for Canada.");
@@ -507,7 +518,10 @@ app.get('/api/track-id/catalog', async (req, res) => {
   }
 
   try {
-    const payload = await buildImagineDragonsCatalog();
+    if (!activeImagineDragonsBuild) {
+      activeImagineDragonsBuild = buildImagineDragonsCatalog();
+    }
+    const payload = await activeImagineDragonsBuild;
     trackCatalogCache.set(cacheKey, { payload, expiresAt: Date.now() + TRACK_ID_CACHE_MS });
     return res.json({ ...payload, cached: false });
   } catch (error) {
@@ -516,6 +530,8 @@ app.get('/api/track-id/catalog', async (req, res) => {
       error: error.code || "TRACK_ID_CATALOG_FAILED",
       message: error.message || "The Spotify/Soundcharts catalogue could not be loaded."
     });
+  } finally {
+    activeImagineDragonsBuild = null;
   }
 });
 
