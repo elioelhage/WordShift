@@ -492,18 +492,17 @@
   }
 
   function setTimeline({playing=false}={}) {
-    const target=TIMELINE_POSITIONS[state.stage]||TIMELINE_POSITIONS[0];
     clipLabels.forEach((label,index)=>label.classList.toggle("active",index===state.stage));
     clipProgress.style.transition=playing
-      ? "width "+Math.max(0.12,CLIPS[state.stage].seconds)+"s linear"
-      : "width 180ms ease";
-    clipProgress.style.width=(playing?0:target)+"%";
+      ? "width "+Math.max(0.1,CLIPS[state.stage].seconds)+"s linear"
+      : "none";
+    clipProgress.style.width="0%";
     clipDuration.textContent=durationLabel(state.stage);
     stageCounter.textContent="CLIP "+String(state.stage+1).padStart(2,"0")+" / 05";
     if(playing){
       const token=state.playbackToken;
       requestAnimationFrame(()=>{
-        if(token===state.playbackToken&&state.isPlaying)clipProgress.style.width=target+"%";
+        if(token===state.playbackToken&&state.isPlaying)clipProgress.style.width="100%";
       });
     }
   }
@@ -579,7 +578,11 @@
   function stopTimers() {
     state.playbackToken++;
     if(state.previewTimer)window.clearTimeout(state.previewTimer);
+    if(state.answerTimer)window.clearTimeout(state.answerTimer);
+    if(state.transitionTimer)window.clearTimeout(state.transitionTimer);
     state.previewTimer=null;
+    state.answerTimer=null;
+    state.transitionTimer=null;
     audio.pause();
     state.isPlaying=false;
     mainPlay.classList.remove("is-playing");
@@ -667,14 +670,29 @@
         state.loadingPool=false;
         state.currentTrack=null;
         roundStatus.textContent="NO TRACKS";
-        poolSummary.textContent="No playable songs match these filters.";
         setMainPlayState("No tracks found","!",true);
         guessInput.disabled=true;
         skipButton.disabled=true;
-        setFeedback("No previewable tracks match this mix. Try a different genre, era, or artist.","error");
+        if(state.catalogSource==="spotify+soundcharts") {
+          if(!state.catalogInfo || Number(state.catalogInfo.tracksWithStreamCounts||0)===0) {
+            poolSummary.textContent="Stream data unavailable";
+            setFeedback("Soundcharts did not return Spotify stream counts for this catalogue. Check API credentials and plan access; unknown counts are not assigned a difficulty.", "error");
+          } else {
+            poolSummary.textContent="No tracks in this stream range";
+            setFeedback("No playable tracks fall inside the selected stream-count range. Try another difficulty.", "error");
+          }
+        } else {
+          poolSummary.textContent="Fallback catalogue";
+          setFeedback(state.catalogNotice || "No playable songs match these filters. Try a different artist, genre, or era.", "error");
+        }
         return;
       }
-      poolSummary.textContent=state.pool.length+" playable tracks";
+      const trackedCount=state.catalog.filter((track)=>Number.isFinite(track.streamCount)).length;
+      if(state.catalogSource==="spotify+soundcharts") {
+        poolSummary.textContent=state.pool.length+" tracks in this stream tier · "+trackedCount+" with stream data";
+      } else {
+        poolSummary.textContent=state.pool.length+" playable tracks"+(state.catalogNotice?" · fallback source":"");
+      }
       state.loadingPool=false;
       await assignTrack(token,initial);
     } catch(error) {
@@ -725,7 +743,7 @@
       skipButton.disabled=false;
       setMainPlayState("Ready","▶",false);
       roundStatus.textContent="READY";
-      setFeedback("Listen closely. The first clue is "+durationLabel(state.stage)+".");
+      setFeedback(state.catalogNotice || ("Listen closely. The clip is "+durationLabel(state.stage)+"."));
     } catch(error) {
       if(token!==state.requestToken||state.currentTrack!==track)return;
       state.loadingPreview=false;
