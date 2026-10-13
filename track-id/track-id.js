@@ -499,6 +499,7 @@
   }
 
   function stopAudio() {
+    const wasAnswerReplay = playButton.dataset.answerReplay === "true";
     playbackToken += 1;
     if (previewTimer) window.clearTimeout(previewTimer);
     if (advanceTimer) window.clearTimeout(advanceTimer);
@@ -512,6 +513,10 @@
     autoAdvanceBox.hidden = true;
     refreshClipTimeline(false);
     playButton.disabled = !currentTrack;
+    if (wasAnswerReplay && roundSolved) {
+      playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
+      playButton.dataset.answerReplay = "true";
+    }
     return playbackToken;
   }
 
