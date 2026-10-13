@@ -743,7 +743,6 @@
     streakLabel.textContent = String(streak);
     setFeedback("Not quite. Listen again, or skip to reveal another second.", "error");
     guessInput.select();
-    // A wrong guess should not interrupt or disable the audio preview.
   }
 
   function solveRound(won) {
@@ -855,7 +854,7 @@
       catalog = songs;
       playable = songs;
 
-        const pool = getDifficultyPool();
+      const pool = getDifficultyPool();
       if (pool.length < roundsPerGame) {
         setFeedback(
           "Only " + pool.length + " playable songs are available in " + chosenDifficulty +
