@@ -745,7 +745,7 @@
   }
 
   function initControls() {
-    difficultyContainer.querySelectorAll("[data-difficulty]").forEach((button)=>{
+    document.querySelectorAll("[data-difficulty]").forEach((button)=>{
       button.addEventListener("click",()=>setDifficulty(button.dataset.difficulty));
     });
     renderChipGroup(genreContainer,GENRES,"genre","genre");
@@ -855,7 +855,7 @@
   }
 
   function renderAllControls() {
-    difficultyContainer.querySelectorAll("[data-difficulty]").forEach((button)=>{
+    document.querySelectorAll("[data-difficulty]").forEach((button)=>{
       const active=button.dataset.difficulty===state.difficulty;
       button.classList.toggle("active",active);
       button.setAttribute("aria-pressed",String(active));
