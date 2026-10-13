@@ -409,7 +409,7 @@
         rank: index,
         queryIndex: 0,
         duration: Number(track.duration || 0),
-        streamCount: Number.isFinite(Number(track.streamCount)) ? Number(track.streamCount) : null
+        streamCount: track.streamCount !== null && track.streamCount !== undefined && track.streamCount !== "" && Number.isFinite(Number(track.streamCount)) ? Number(track.streamCount) : null
       })).filter((track) => track.id && track.title && track.previewUrl);
 
       return tracks.filter((track) => genreMatches(track) && eraMatches(track) && artistMatches(track));
@@ -814,6 +814,7 @@
     guessRow.hidden=true;
     resultActions.hidden=false;
     nextButton.textContent=runComplete?"Play again ↻":"Next  ▷|";
+    nextButton.disabled=true;
     guessInput.value="";
     closeSuggestions();
     playAnswerPreviewAndAutoAdvance();
@@ -853,6 +854,7 @@
         revealKicker.textContent="RUN COMPLETE";
         resultMessage.textContent="Final score: "+state.score+"/100 · Best possible: 100.";
         nextButton.textContent="Play again ↻";
+        nextButton.disabled=false;
         setFeedback("Run complete — "+state.score+" / 100 points.","success");
         mainStage.classList.add("round-finale");
         return;
