@@ -573,6 +573,7 @@
         playButton.innerHTML = isAnswerReplay
           ? '<span aria-hidden="true">▶</span> Replay 8 seconds'
           : '<span aria-hidden="true">▶</span> Replay ' + stage.label + " second" + (stage.label === 1 ? "" : "s");
+        playButton.dataset.answerReplay = isAnswerReplay ? "true" : "false";
       }, (isAnswerReplay ? answerPlaybackSeconds : seconds) * 1000);
     };
 
