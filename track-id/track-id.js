@@ -780,6 +780,8 @@
   function showAnswer(won) {
     if(state.revealed||!state.currentTrack)return;
     stopTimers();
+    state.roundActive=true;
+    state.startedOnce=true;
     state.revealed=true;
     revealAndGuessMode(true);
     const track=state.currentTrack;
