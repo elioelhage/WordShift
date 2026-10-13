@@ -531,6 +531,7 @@
   function playSnippet(seconds = clipSeconds) {
     if (!currentTrack || !currentTrack.previewUrl) return;
     const isAnswerReplay = roundSolved;
+    const playbackSeconds = isAnswerReplay ? answerPlaybackSeconds : seconds;
     const token = stopAudio();
     setAudioTrack(currentTrack);
     const stage = clipStages[clipStageIndex] || clipStages[0];
@@ -562,7 +563,7 @@
       try { audio.currentTime = 0; } catch (_) {}
       const playback = audio.play();
       if (playback && typeof playback.catch === "function") playback.catch(failPlayback);
-      previewTimer = window.setTimeout(() => {
+      const stopAtPreviewEnd = () => {
         if (token !== playbackToken) return;
         audio.pause();
         previewTimer = null;
@@ -576,7 +577,8 @@
           ? '<span aria-hidden="true">▶</span> Replay 8 seconds'
           : '<span aria-hidden="true">▶</span> Replay ' + stage.label + " second" + (stage.label === 1 ? "" : "s");
         playButton.dataset.answerReplay = isAnswerReplay ? "true" : "false";
-      }, (isAnswerReplay ? answerPlaybackSeconds : seconds) * 1000);
+      };
+      previewTimer = window.setTimeout(stopAtPreviewEnd, playbackSeconds * 1000);
     };
 
     if (audio.readyState >= 1) startAt();
