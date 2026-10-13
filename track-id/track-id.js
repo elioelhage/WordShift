@@ -619,6 +619,7 @@
     stageCaption.textContent = "The song continues just before where your clip ended.";
     playButton.disabled = true;
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Playing answer…';
+    playButton.dataset.answerReplay = "false";
     waveform.classList.add("playing");
 
     let timersStarted = false;
@@ -764,6 +765,7 @@
     nextButton.hidden = false;
     nextButton.textContent = won ? "Skip song →" : "Next song →";
     if (won) {
+      playButton.dataset.answerReplay = "false";
       playAnswerThenAdvance();
     } else {
       autoAdvanceBox.hidden = true;
