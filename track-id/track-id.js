@@ -802,18 +802,22 @@
     prepareTrack({reload:true,initial:state.round===0});
   }
 
+  function resetRun() {
+    state.round=0;
+    state.score=0;
+    state.streak=0;
+    state.startedOnce=false;
+    state.used.clear();
+    scoreLabel.textContent="0";
+    streakLabel.textContent="0";
+    roundNumberLabel.textContent="01";
+  }
+
   function nextRound() {
     const runComplete=state.revealed&&state.round>=MAX_ROUNDS;
     const reload=state.poolKey!==currentFilterKey();
     if(runComplete){
-      state.round=0;
-      state.score=0;
-      state.streak=0;
-      state.startedOnce=false;
-      state.used.clear();
-      scoreLabel.textContent="0";
-      streakLabel.textContent="0";
-      roundNumberLabel.textContent="01";
+      resetRun();
       prepareTrack({reload,initial:true});
       return;
     }
@@ -860,6 +864,8 @@
     });
 
     $("reroll-button").addEventListener("click",()=>{
+      const wasAtRunLimit=state.round>=MAX_ROUNDS;
+      if(wasAtRunLimit)resetRun();
       const anyOr= (items)=>items[Math.floor(Math.random()*items.length)];
       state.filters.genre=anyOr(GENRES);
       state.filters.era=anyOr(ERAS);
