@@ -519,9 +519,7 @@
   }
 
   function playSnippet(seconds = clipSeconds) {
-    if (!currentTrack || !currentTrack.previewUrl) return;
-    // Once the answer has been revealed, keep the clip player available for misses.
-    if (roundSolved && autoAdvanceBox.hidden) return;
+    if (!currentTrack || !currentTrack.previewUrl || roundSolved) return;
     const token = stopAudio();
     setAudioTrack(currentTrack);
     const stage = clipStages[clipStageIndex] || clipStages[0];
