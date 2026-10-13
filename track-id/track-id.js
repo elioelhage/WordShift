@@ -528,7 +528,8 @@
     const token = stopAudio();
     setAudioTrack(currentTrack);
     const stage = clipStages[clipStageIndex] || clipStages[0];
-    clipLabel.textContent = clipStageIndex === 0 ? "YOUR FIRST CLIP" : "CLIP REVEALED · " + stage.label + " SECONDS";
+    clipLabel.textContent = roundSolved ? "ANSWER PREVIEW" :
+      (clipStageIndex === 0 ? "YOUR FIRST CLIP" : "CLIP REVEALED · " + stage.label + " SECONDS");
     stageCaption.textContent = roundSolved
       ? "Playing the 8-second answer preview…"
       : "Playing the " + stage.label + "-second clip…";
