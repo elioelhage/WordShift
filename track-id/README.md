@@ -1,26 +1,26 @@
 # Track ID
 
-Track ID is WordShift's multi-artist song-guessing game at `/track-id/`.
+Track ID is WordShift's browser-based music recognition game at `/track-id/`.
 
-## Gameplay prototype
+## Current interface and gameplay
 
-- Choose between Imagine Dragons and Kanye West before a run.
-- Ten-round runs with distinct Easy hit-list and Hard deeper-cut pools; Medium mixes both pools. If a tier lacks ten playable songs, it reports that rather than silently borrowing from another tier.
-- The first clip is 1.4 seconds of audio but is labelled one second; later stages reveal 2.5, 4, and 5 seconds.
-- Each stage has a different base score; difficulty affects the score awarded. The site does not disclose the multipliers.
-- Duplicate album/single releases are grouped by normalized title; live, remix, acoustic, instrumental, remastered, and featured-artist variants are filtered out where possible.
-- A custom searchable song picker supports mouse and keyboard navigation.
-- The selected artist's profile image appears in the sound orb; correct answers reveal song-cover art and album details.
-- On a correct guess, playback resumes about 0.4 seconds before the end of the guessing clip and continues for eight seconds before advancing automatically; the in-panel button can advance sooner.
-- On an incorrect guess, the answer is revealed and a separate button lets the player hear the full eight-second preview before manually advancing.
-- Artist and difficulty choices are grouped as pre-game setup and hidden during a run.
+- Three-column desktop layout that collapses to a mobile-friendly stacked layout.
+- Filter the next track by genre, era, and artist. The artist picker includes a broad featured list and an "Any artist" option.
+- Five difficulty tiers (Easy, Medium, Hard, Expert, Impossible) each have a distinct accent theme and use a different ranking band from the filtered catalog.
+- Progressive clue durations: 0.1, 0.5, 2, 8, and 15 seconds. A miss or Skip unlocks the next duration; Skip at the 15-second stage reveals the track.
+- Search suggestions are scoped to the current difficulty pool. A correct answer or final reveal shows artwork, title, artist, album, score, and a Next action.
+- Playback can begin at the start or a random point, the starting clue duration is selectable, and volume is adjustable.
+- Track filters and difficulty changes made during a round apply to the next track. Reroll all generates a new mix.
+- The original WordShift Wordle page has been restored at `/wordle/` from the pre-Track ID homepage implementation.
 
-## Important audio rights note
+## Catalog and audio source
 
-The current prototype uses the iTunes Search API's promotional preview URLs. Apple's published terms state that preview audio is meant to promote the related music and must not be used for independent entertainment value. A standalone song-guessing game appears to be outside that permission. Do not ship this implementation publicly with Apple-provided clips unless Apple provides permission or you replace the adapter with an appropriately licensed source. Do not download, mirror, or cache preview files.
+The current adapter queries the iTunes Search API for metadata and promotional preview URLs. The repository's earlier notes flag a licensing concern: Apple promotional previews may not be authorized for use as the entertainment content of a standalone guessing game. Before public production launch, replace this adapter with an appropriately licensed audio/catalog provider or confirm permission from the provider. Do not download, mirror, or cache preview audio.
 
-The rest of the game logic is separated from catalog loading so a licensed provider can be substituted without redesigning the game.
+## Testing
 
-## Local testing
-
-Serve the repository with a local web server and open `/track-id/`. The page assets live in this directory. Catalog requests and audio playback need a browser with network access. Test loading failures, tracks without previews, and browser playback behavior before launch.
+The game is static HTML/CSS/JS. Run it through a local web server and verify:
+- Catalog behavior with artist, genre, and era combinations.
+- Preview loading/error states and browser playback permissions.
+- Guess suggestions, clue progression, score behavior, and Next/Reroll flows.
+- Desktop and mobile layouts, especially the horizontal filter reels.

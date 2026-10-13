@@ -2,158 +2,148 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#101014">
-  <meta name="description" content="Track ID — choose an artist and identify songs from short audio clips.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08070c">
+  <meta name="description" content="Track ID — a fast music recognition challenge from WordShift.">
   <title>Track ID — WordShift</title>
   <link rel="canonical" href="https://wordshift.dev/track-id/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/track-id/track-id.css">
   <script defer src="/track-id/track-id.js"></script>
 </head>
-<body data-tier="easy">
+<body data-difficulty="impossible">
   <header class="site-head">
-    <a class="wordshift-mark" href="/games/" aria-label="Back to WordShift Arcade"><span class="mark-icon">W</span><span>WordShift</span></a>
-    <a class="back-link" href="/games/">← All games</a>
+    <a class="brand" href="/games/" aria-label="WordShift Arcade">
+      <span class="brand-mark">W</span><span>WordShift</span><span class="brand-divider">/</span><strong>Track ID</strong>
+    </a>
+    <nav class="top-nav" aria-label="Main navigation">
+      <a class="nav-active" href="/track-id/">Play</a>
+      <a href="/games/">All games <span aria-hidden="true">↗</span></a>
+    </nav>
   </header>
 
-  <main class="page-shell">
-    <section class="intro">
-      <p class="eyebrow">WORDSHIFT ARCADE · MUSIC QUIZ</p>
-      <h1>Track <span>ID</span></h1>
-      <p class="intro-copy">Pick an artist. Hear a short clip. Name the song.</p>
-    </section>
-
-<section class="artist-picker" aria-labelledby="artist-picker-title">
-      <div class="artist-picker-heading">
-        <div>
-          <h2 id="artist-picker-title">Choose an artist</h2>
-          <p>Choose your sound.</p>
+  <main class="app-layout">
+    <aside class="side-panel left-panel" aria-label="Challenge settings">
+      <section class="settings-block">
+        <div class="side-heading"><span>DIFFICULTY</span></div>
+        <div id="difficulty-options" class="difficulty-options" role="group" aria-label="Difficulty">
+          <button type="button" data-difficulty="easy">Easy</button>
+          <button type="button" data-difficulty="medium">Medium</button>
+          <button type="button" data-difficulty="hard">Hard</button>
+          <button type="button" data-difficulty="expert">Expert</button>
+          <button type="button" data-difficulty="impossible" class="active" aria-pressed="true">Impossible</button>
         </div>
-        <a id="artist-profile-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer">Artist profile ↗</a>
-      </div>
-      <div class="artist-options" role="group" aria-label="Artist">
-        <button type="button" class="artist-option active" data-artist="imagine-dragons" aria-pressed="true">
-          <img src="https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc" alt="" loading="lazy">
-          <span class="artist-option-copy"><strong>Imagine Dragons</strong><small>Alternative rock</small></span>
-          <span class="artist-option-status" aria-hidden="true">Selected</span>
-        </button>
-        <button type="button" class="artist-option" data-artist="kanye-west" aria-pressed="false">
-          <img src="https://i.scdn.co/image/a12d8543e28d71d9f1e7f5f363c1a6c73316f9e6" alt="" loading="lazy">
-          <span class="artist-option-copy"><strong>Kanye West</strong><small>Hip-hop</small></span>
-          <span class="artist-option-status" aria-hidden="true">Select</span>
-        </button>
-      </div>
-    </section>
+        <button id="reroll-button" class="reroll-button" type="button"><span aria-hidden="true">⟳</span> Reroll all</button>
+      </section>
+      <section class="mini-stat" aria-live="polite">
+        <span>ROUND</span><strong id="round-number">01</strong>
+        <div class="mini-stat-row"><span>Score</span><b id="score">0</b></div>
+        <div class="mini-stat-row"><span>Streak</span><b id="streak">0</b></div>
+      </section>
+    </aside>
 
-    <section id="game-card" class="game-card" aria-labelledby="game-title">
-      <div class="game-topline">
-        <div><p class="eyebrow" id="artist-label">IMAGINE DRAGONS</p><h2 id="game-title">Name that song</h2></div>
-        <div class="round-chip" id="round-chip">ROUND 1 / 10</div>
-      </div>
+    <section class="game-column" aria-label="Track ID game">
+      <div class="stage-shell" id="stage-shell">
+        <div class="stage-brand-watermark" aria-hidden="true">TRACK ID</div>
+        <div class="stage-topline">
+          <span class="live-pill"><i></i><span id="round-status">READY</span></span>
+          <span id="stage-counter" class="stage-counter">CLIP 01 / 05</span>
+        </div>
 
-      
-
-      <div class="round-focus" id="round-focus" hidden>
-        <span class="round-focus-art" id="round-focus-art" aria-hidden="true">♫</span>
-        <div class="round-focus-copy"><small>NOW PLAYING</small><strong id="round-focus-artist">Imagine Dragons</strong></div>
-        <span class="round-focus-round" id="round-focus-round">ROUND 1 / 10</span>
-      </div>
-      <div class="sound-stage">
-        <a class="sound-orb" id="artist-orb-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer" aria-label="Open Imagine Dragons profile on Spotify">
-          <img id="artist-orb-image" src="https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc" alt="Imagine Dragons artist profile" loading="lazy">
-          <span id="artist-orb-fallback" hidden aria-hidden="true">♪</span>
-        </a>
-        <p class="clip-label" id="clip-label">YOUR FIRST CLIP</p>
-        <div class="clip-timeline" aria-label="Clip length progress">
-          <div class="clip-timeline__track" role="progressbar" aria-label="Preview length revealed" aria-valuemin="0" aria-valuemax="5" aria-valuenow="1" id="clip-progressbar">
-            <span id="clip-progress"></span>
-            <i class="clip-tick clip-tick--one" aria-hidden="true"></i>
-            <i class="clip-tick clip-tick--two" aria-hidden="true"></i>
-            <i class="clip-tick clip-tick--four" aria-hidden="true"></i>
+        <div id="filter-reels" class="filter-reels" aria-label="Music filters">
+          <div class="filter-row">
+            <span class="filter-label">GENRES</span>
+            <div id="genre-options" class="filter-options" role="group" aria-label="Genre"></div>
           </div>
-          <div class="clip-timeline__markers" aria-hidden="true">
-            <span data-stage="0" class="active">1 sec</span>
-            <span data-stage="1">2 sec</span>
-            <span data-stage="2">4 sec</span>
-            <span data-stage="3">5 sec</span>
+          <div class="filter-row">
+            <span class="filter-label">ERAS</span>
+            <div id="era-options" class="filter-options" role="group" aria-label="Era"></div>
+          </div>
+          <div class="filter-row">
+            <span class="filter-label">ARTISTS</span>
+            <div id="artist-options" class="filter-options" role="group" aria-label="Artist"></div>
           </div>
         </div>
-        <div class="waveform" id="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <p class="stage-caption" id="stage-caption">Choose a difficulty and start a round.</p>
-        <audio id="song-audio" preload="none"></audio>
-        <div class="stage-actions" id="stage-actions"><button id="play-button" class="play-button" type="button" disabled><span aria-hidden="true">▶</span> Play 1 second</button><button id="skip-button" class="stage-skip-button" type="button" disabled>Skip to 2 sec <span aria-hidden="true">→</span></button></div>
-        <p class="audio-note" id="audio-note">Audio previews load when you start. The sound source and its availability may vary by region.</p>
-      </div>
 
-      <div class="pre-game-controls" id="pre-game-controls">
-      <div class="difficulty-heading"><span>DIFFICULTY</span></div>
-      <div class="difficulty" role="group" aria-label="Difficulty">
-        <button type="button" data-difficulty="easy" class="difficulty-button active" aria-pressed="true">Easy</button>
-        <button type="button" data-difficulty="medium" class="difficulty-button" aria-pressed="false">Medium</button>
-        <button type="button" data-difficulty="hard" class="difficulty-button" aria-pressed="false">Hard</button>
-        <button type="button" data-difficulty="impossible" class="difficulty-button" aria-pressed="false">Impossible</button>
-      </div>
-      </div>
+        <div id="center-difficulty-options" class="center-difficulty-options" role="group" aria-label="Difficulty">
+          <button type="button" data-difficulty="easy">Easy</button>
+          <button type="button" data-difficulty="medium">Medium</button>
+          <button type="button" data-difficulty="hard">Hard</button>
+          <button type="button" data-difficulty="expert">Expert</button>
+          <button type="button" data-difficulty="impossible" class="active" aria-pressed="true">Impossible</button>
+        </div>
 
-      <div class="guess-area">
-        <div id="guess-form" class="guess-form">
-        <label for="guess-input">What song is this?</label>
-        <div class="guess-row">
-          <div class="song-picker">
-            <div id="song-input-art" class="song-input-art" hidden aria-hidden="true"><img id="song-input-art-img" alt=""></div>
-            <input id="guess-input" type="text" role="combobox" aria-autocomplete="list" aria-controls="song-suggestions" aria-expanded="false" autocomplete="off" placeholder="Type a song title…" disabled>
-            <div id="song-suggestions" class="song-suggestions" role="listbox" aria-label="Matching song titles" hidden></div>
+        <div id="round-area" class="round-area">
+          <div id="track-art-shell" class="track-art-shell" hidden>
+            <img id="track-art" alt="" src="">
+            <span id="track-art-fallback" hidden aria-hidden="true">♫</span>
           </div>
-          <button id="submit-guess" class="primary-button" type="button" disabled>Guess</button>
-        </div>
-        <div class="guess-actions">
-          <span id="attempt-count">Clip: 1 second</span>
-          <button id="give-up-button" class="ghost-button" type="button" disabled>Give up &amp; hear it</button>
-        </div>
-        <p id="feedback" class="feedback" aria-live="polite">Choose an artist and difficulty, then start the game.</p>
-        </div>
-      <section id="answer-reveal" class="answer-reveal" aria-live="polite" hidden>
-        <div class="answer-cover-wrap">
-          <img id="answer-artwork" class="answer-artwork" alt="Song cover artwork" loading="eager">
-          <div id="answer-artwork-fallback" class="answer-artwork-fallback" hidden aria-hidden="true">♫</div>
-        </div>
-        <div class="answer-main">
-          <p class="eyebrow">SONG REVEALED</p>
-          <h3 id="answer-title">Song title</h3>
-          <p id="answer-artist" class="answer-artist">Imagine Dragons</p>
-          <p id="answer-album" class="answer-album">Album</p>
-          <a id="answer-store-link" class="answer-store-link" target="_blank" rel="noopener noreferrer">Open song in Apple Music ↗</a>
-        </div>
-        <div id="auto-advance" class="auto-advance" hidden>
-          <div class="auto-advance-copy"><span id="auto-advance-message">Playing the song for 8 seconds…</span><strong id="auto-advance-countdown">08</strong></div>
-          <div class="auto-advance-track"><span id="auto-advance-progress"></span></div>
-        </div>
-              <button id="next-button" class="primary-button answer-next-button" type="button" hidden>Skip to next song →</button>
-</section>
-      </div>
+          <p id="reveal-kicker" class="reveal-kicker" hidden>YOU GOT IT!</p>
+          <h1 id="reveal-title" class="reveal-title" hidden></h1>
+          <p id="reveal-artist" class="reveal-artist" hidden></p>
+          <p id="reveal-album" class="reveal-album" hidden></p>
+          <p id="result-message" class="result-message" hidden></p>
 
-      <div class="game-footer">
-        <div><span class="stat-label">SCORE</span><strong id="score">0</strong></div>
-        <div><span class="stat-label">STREAK</span><strong id="streak">0</strong></div>
-        <button id="start-button" class="primary-button" type="button">Start game →</button>
+          <div id="clip-timeline" class="clip-timeline" aria-label="Progressive audio clue">
+            <div class="clip-track"><span id="clip-progress"></span></div>
+            <div class="clip-labels">
+              <span data-stage="0">0.1s</span><span data-stage="1">0.5s</span><span data-stage="2">2s</span><span data-stage="3">8s</span><span data-stage="4">15s</span>
+            </div>
+          </div>
+
+          <button id="main-play" class="main-play" type="button" aria-label="Play song preview" disabled>
+            <span id="main-play-icon" aria-hidden="true">▶</span>
+          </button>
+          <div class="play-caption"><strong id="play-caption">Preparing track</strong><span id="clip-duration">0.1s</span></div>
+
+          <div id="guess-row" class="guess-row">
+            <div class="song-search">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="guess-input" type="text" role="combobox" aria-autocomplete="list" aria-controls="song-suggestions" aria-expanded="false" autocomplete="off" placeholder="Name that track" disabled>
+              <div id="song-suggestions" class="song-suggestions" role="listbox" aria-label="Song suggestions" hidden></div>
+            </div>
+            <button id="skip-button" class="skip-button" type="button" disabled><span aria-hidden="true">Ⅱ</span> Skip</button>
+          </div>
+
+          <div id="result-actions" class="result-actions" hidden>
+            <button id="challenge-button" class="challenge-button" type="button"><span aria-hidden="true">♧</span> Challenge your friend</button>
+            <button id="next-button" class="next-button" type="button">Next <span aria-hidden="true">▶|</span></button>
+          </div>
+          <div id="feedback" class="feedback" aria-live="polite">Getting the music ready…</div>
+        </div>
       </div>
     </section>
 
-    <section class="how-to">
-      <h2>How to play</h2>
-      <div class="rules-grid">
-        <article><span>01</span><h3>Listen</h3><p>Every round starts with a short clip. Listen again as often as you need.</p></article>
-        <article><span>02</span><h3>Guess or skip</h3><p>Each skip reveals a longer clip and lowers the base points for a correct answer.</p></article>
-        <article><span>03</span><h3>Score points</h3><p>Identify the song as early as you can. Choose a tougher difficulty for a bigger challenge.</p></article>
-      </div>
-      <p class="fine-print">Track ID is an independent WordShift game and is not affiliated with the featured artists. Song titles, artist photos, and recordings belong to their respective rights holders. Audio previews are supplied by a third-party catalog and may be unavailable in some regions.</p>
-    </section>
+    <aside class="side-panel right-panel" aria-label="Playback settings">
+      <section class="settings-block">
+        <div class="side-heading"><span>PLAYBACK</span></div>
+        <button id="playback-start" class="setting-action" type="button" aria-pressed="true"><span aria-hidden="true">▷</span><span id="playback-start-label">From the start</span></button>
+      </section>
+      <section class="settings-block guess-after-block">
+        <div class="side-heading"><span>GUESS AFTER</span></div>
+        <div id="start-stage-options" class="guess-after-options" role="group" aria-label="Initial clue duration">
+          <button type="button" data-start-stage="0">0.1s</button>
+          <button type="button" data-start-stage="1">0.5s</button>
+          <button type="button" data-start-stage="2">2s</button>
+          <button type="button" data-start-stage="3">8s</button>
+          <button type="button" data-start-stage="4">15s</button>
+        </div>
+      </section>
+      <section class="settings-block volume-block">
+        <div class="side-heading"><span>VOLUME</span><output id="volume-value" for="volume-slider">70%</output></div>
+        <input id="volume-slider" type="range" min="0" max="100" value="70" aria-label="Volume">
+      </section>
+      <section class="settings-block filters-summary">
+        <div class="side-heading"><span>YOUR MIX</span></div>
+        <p id="mix-summary">Any genre · Any era · Any artist</p>
+        <p id="pool-summary" class="pool-summary">Loading available tracks…</p>
+      </section>
+    </aside>
   </main>
 
-  <footer><span>© 2026 WordShift</span><span><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a></span></footer>
-
-  <div id="results-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="results-title">
-    <div class="modal-card"><p class="eyebrow">ROUND COMPLETE</p><h2 id="results-title">Nice run.</h2><p id="results-copy"></p><button id="play-again" class="primary-button" type="button">Play again ↻</button><a class="modal-back" href="/">Back to WordShift</a></div>
-  </div>
+  <audio id="song-audio" preload="auto"></audio>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </body>
 </html>
