@@ -1,193 +1,147 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="description" content="WordShift: A fast-paced, competitive daily word puzzle with global leaderboards and 1v1 online racing modes." />
-  <meta name="theme-color" content="#121213" />
-  <script>
-    (function () {
-      try {
-        var key = "wordle-mobile-theme";
-        var saved = localStorage.getItem(key);
-        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-        var theme = saved || (prefersDark ? "dark" : "light");
-        document.documentElement.setAttribute("data-theme", theme);
-        var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
-      } catch (_) {}
-    })();
-  </script>
-  <title>WordShift</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236aaa64' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M3 9h18'/%3E%3Cpath d='M9 21V9'/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0b10">
+  <meta name="description" content="Track ID — choose an artist and identify songs from short audio clips.">
+  <title>Track ID — WordShift</title>
+  <link rel="canonical" href="https://wordshift.dev/track-id/">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/track-id/track-id.css">
+  <script defer src="/track-id/track-id.js"></script>
 </head>
-<body>
-  <div id="app-loader" class="app-loader" role="status" aria-live="polite" aria-label="Loading WordShift">
-    <div class="loader-card">
-      <div class="loader-grid" aria-hidden="true">
-        <span class="loader-tile">W</span><span class="loader-tile">O</span><span class="loader-tile">R</span>
-        <span class="loader-tile">D</span><span class="loader-tile">L</span><span class="loader-tile">E</span>
-      </div>
-      <p class="loader-text">Loading WordShift…</p>
-    </div>
-  </div>
+<body data-tier="easy">
+  <header class="site-head">
+    <a class="wordshift-mark" href="/" aria-label="Back to WordShift home"><span class="mark-icon">W</span><span>WordShift</span></a>
+    <a class="back-link" href="/games/">← All games</a>
+  </header>
 
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="topbar__left">
-        <p class="eyebrow">Daily Word</p>
-        <div class="title-wrap">
-          <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path>
-          </svg>
-          <h1>WordShift</h1>
+  <main class="page-shell">
+    <section class="intro">
+      <p class="eyebrow">WORDSHIFT ARCADE · MUSIC QUIZ</p>
+      <h1>Track <span>ID</span></h1>
+      <p class="intro-copy">Pick an artist. Hear a short clip. Name the song.</p>
+    </section>
+
+<section class="artist-picker" aria-labelledby="artist-picker-title">
+      <div class="artist-picker-heading">
+        <div>
+          <h2 id="artist-picker-title">Choose an artist</h2>
+          <p>Each artist has a separate song list.</p>
         </div>
-        <p class="author-credit">Made by Elio El Hage</p>
+        <a id="artist-profile-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer">Artist profile ↗</a>
       </div>
-      <div class="topbar__right">
-        <a id="race-lobby-button" class="icon-button" href="/race" aria-label="Open race lobby" title="Race lobby">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline><line x1="13" y1="19" x2="19" y2="13"></line><line x1="16" y1="16" x2="21" y2="21"></line><line x1="19" y1="21" x2="21" y2="19"></line><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline><line x1="5" y1="14" x2="9" y2="18"></line><line x1="7" y1="17" x2="4" y2="20"></line><line x1="3" y1="19" x2="5" y2="21"></line>
-          </svg>
-        </a>
-        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards" title="Leaderboards">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+      <div class="artist-options" role="group" aria-label="Artist">
+        <button type="button" class="artist-option active" data-artist="imagine-dragons" aria-pressed="true">
+          <img src="https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc" alt="" loading="lazy">
+          <span class="artist-option-copy"><strong>Imagine Dragons</strong><small>Alternative rock</small></span>
+          <span class="artist-option-status" aria-hidden="true">Selected</span>
         </button>
-        <button id="hint-button" class="icon-button hint-button" type="button" aria-label="Hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path></svg><span id="hint-badge" class="hint-badge">2</span></button>
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode"><svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
-        <div class="account-menu-wrap">
-          <button id="account-menu-button" class="icon-button account-button signed-out" type="button" aria-label="Account" title="Account" aria-expanded="false" aria-controls="account-menu-panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 1 0-16 0"></path><circle cx="12" cy="8" r="4"></circle></svg><span id="account-menu-label" class="account-menu-label">Sign in</span></button>
-          <div id="account-menu-panel" class="account-menu-panel hidden" role="menu" aria-label="Account actions"><div id="account-summary" class="account-summary hidden" role="presentation"></div><button id="account-action-btn" class="account-menu-item" type="button" role="menuitem">Sign in / Sign up</button><button id="give-up-btn" class="account-menu-item" type="button" role="menuitem">Reveal word</button></div>
-        </div>
+        <button type="button" class="artist-option" data-artist="kanye-west" aria-pressed="false">
+          <img src="https://i.scdn.co/image/a12d8543e28d71d9f1e7f5f363c1a6c73316f9e6" alt="" loading="lazy">
+          <span class="artist-option-copy"><strong>Kanye West</strong><small>Hip-hop</small></span>
+          <span class="artist-option-status" aria-hidden="true">Select</span>
+        </button>
       </div>
-    </header>
+    </section>
 
-    <nav class="arcade-strip" aria-label="WordShift game collection">
-      <span class="arcade-strip__label">WORDSHIFT ARCADE</span>
-      <a href="/games/">Browse games <span aria-hidden="true">↗</span></a>
-      <a class="arcade-strip__featured" href="/track-id/">Track ID <span aria-hidden="true">♫</span></a>
-    </nav>
+    <section id="game-card" class="game-card" aria-labelledby="game-title">
+      <div class="game-topline">
+        <div><p class="eyebrow" id="artist-label">IMAGINE DRAGONS</p><h2 id="game-title">Name that song</h2></div>
+        <div class="round-chip" id="round-chip">ROUND 1 / 10</div>
+      </div>
 
-    <main class="game" id="game">
-      <p id="meta-line" class="meta-line"></p>
-      <section class="board-wrap" aria-label="Word board"><div id="board" class="board" aria-live="polite"></div></section>
-      <div class="message-wrap"><p id="message" class="message" aria-live="polite"></p><div id="word-loading" class="input-loader hidden" aria-label="Validating word"><div class="bar"></div></div></div>
-      <section class="keyboard-wrap" aria-label="On-screen keyboard"><div id="keyboard" class="keyboard"></div></section>
-    </main>
+      
+
+      <div class="sound-stage">
+        <a class="sound-orb" id="artist-orb-link" href="https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q" target="_blank" rel="noopener noreferrer" aria-label="Open Imagine Dragons profile on Spotify">
+          <img id="artist-orb-image" src="https://i.scdn.co/image/01b36ca0f45f2f15117022a2754287a6ca1acdcc" alt="Imagine Dragons artist profile" loading="lazy">
+          <span id="artist-orb-fallback" hidden aria-hidden="true">♪</span>
+        </a>
+        <p class="clip-label" id="clip-label">YOUR FIRST CLIP</p>
+        <div class="clip-timeline" aria-label="Clip length progress">
+          <div class="clip-timeline__track" role="progressbar" aria-label="Preview length revealed" aria-valuemin="0" aria-valuemax="8" aria-valuenow="1" id="clip-progressbar">
+            <span id="clip-progress"></span>
+          </div>
+          <div class="clip-timeline__markers" id="clip-markers" aria-hidden="true"></div>
+        </div>
+        <div class="waveform" id="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <p class="stage-caption" id="stage-caption">Choose a difficulty and start a round.</p>
+        <audio id="song-audio" preload="none"></audio>
+        <div class="stage-actions" id="stage-actions"><button id="play-button" class="play-button" type="button" disabled><span aria-hidden="true">▶</span> Play 1 second</button><button id="skip-button" class="stage-skip-button" type="button" disabled>Skip to 2 sec <span aria-hidden="true">→</span></button></div>
+        <p class="audio-note" id="audio-note">Audio previews load when you start. The sound source and its availability may vary by region.</p>
+      </div>
+
+      <div class="pre-game-controls" id="pre-game-controls">
+      <div class="difficulty-heading"><span>DIFFICULTY</span><small id="difficulty-summary">Choose your challenge before starting</small></div>
+      <div class="difficulty" role="group" aria-label="Difficulty">
+        <button type="button" data-difficulty="easy" class="difficulty-button active" aria-pressed="true"><b>Easy</b><em>Big hits</em><span class="diff-meta">5 clips · up to 8s<br>Unlimited guesses · ×1</span><i class="diff-dots" aria-hidden="true"></i></button>
+        <button type="button" data-difficulty="medium" class="difficulty-button" aria-pressed="false"><b>Medium</b><em>Hits + deeper cuts</em><span class="diff-meta">4 clips · up to 5s<br>Unlimited guesses · ×1.5</span><i class="diff-dots" aria-hidden="true"></i></button>
+        <button type="button" data-difficulty="hard" class="difficulty-button" aria-pressed="false"><b>Hard</b><em>Deep cuts only</em><span class="diff-meta">3 clips · up to 3s<br>Wrong guess burns a clip · ×2</span><i class="diff-dots" aria-hidden="true"></i></button>
+        <button type="button" data-difficulty="impossible" class="difficulty-button" aria-pressed="false"><b>Impossible</b><em>Whole catalog, mid-song</em><span class="diff-meta">2 clips · up to 2s · random spot<br>One wrong guess ends it · ×3.5</span><i class="diff-dots" aria-hidden="true"></i></button>
+      </div>
+      </div>
+
+      <div class="guess-area">
+        <div id="guess-form" class="guess-form">
+        <label for="guess-input">What song is this?</label>
+        <div class="guess-row">
+          <div class="song-picker">
+            <div id="song-input-art" class="song-input-art" hidden aria-hidden="true"><img id="song-input-art-img" alt=""></div>
+            <input id="guess-input" type="text" role="combobox" aria-autocomplete="list" aria-controls="song-suggestions" aria-expanded="false" autocomplete="off" placeholder="Type a song title…" disabled>
+            <div id="song-suggestions" class="song-suggestions" role="listbox" aria-label="Matching song titles" hidden></div>
+          </div>
+          <button id="submit-guess" class="primary-button" type="button" disabled>Guess</button>
+        </div>
+        <div class="guess-actions">
+          <span id="attempt-count">Clip: 1 second</span>
+          <button id="give-up-button" class="ghost-button" type="button" disabled>Give up &amp; hear it</button>
+        </div>
+        <p id="feedback" class="feedback" aria-live="polite">Choose an artist and difficulty, then start the game.</p>
+        </div>
+      <section id="answer-reveal" class="answer-reveal" aria-live="polite" hidden>
+        <div class="answer-cover-wrap">
+          <img id="answer-artwork" class="answer-artwork" alt="Song cover artwork" loading="eager">
+          <div id="answer-artwork-fallback" class="answer-artwork-fallback" hidden aria-hidden="true">♫</div>
+        </div>
+        <div class="answer-main">
+          <p class="eyebrow">SONG REVEALED</p>
+          <h3 id="answer-title">Song title</h3>
+          <p id="answer-artist" class="answer-artist">Imagine Dragons</p>
+          <p id="answer-album" class="answer-album">Album</p>
+          <a id="answer-store-link" class="answer-store-link" target="_blank" rel="noopener noreferrer">Open song in Apple Music ↗</a>
+        </div>
+        <div id="auto-advance" class="auto-advance" hidden>
+          <div class="auto-advance-copy"><span id="auto-advance-message">Playing the song for 8 seconds…</span><strong id="auto-advance-countdown">08</strong></div>
+          <div class="auto-advance-track"><span id="auto-advance-progress"></span></div>
+        </div>
+              <button id="next-button" class="primary-button answer-next-button" type="button" hidden>Skip to next song →</button>
+</section>
+      </div>
+
+      <div class="game-footer">
+        <div><span class="stat-label">SCORE</span><strong id="score">0</strong></div>
+        <div><span class="stat-label">STREAK</span><strong id="streak">0</strong></div>
+        <button id="start-button" class="primary-button" type="button">Start game →</button>
+      </div>
+    </section>
+
+    <section class="how-to">
+      <h2>How to play</h2>
+      <div class="rules-grid">
+        <article><span>01</span><h3>Listen</h3><p>Every round starts with a short clip. Listen again as often as you need.</p></article>
+        <article><span>02</span><h3>Guess or skip</h3><p>Each skip reveals a longer clip, up to 8 seconds on Easy, and lowers the points on offer.</p></article>
+        <article><span>03</span><h3>Score points</h3><p>Identify the song as early as you can. Tougher difficulties change the rules and pay more. Hit or miss, the song plays out after the round.</p></article>
+      </div>
+      <p class="fine-print">Track ID is an independent WordShift game and is not affiliated with the featured artists. Song titles, artist photos, and recordings belong to their respective rights holders. Audio previews are supplied by a third-party catalog and may be unavailable in some regions.</p>
+    </section>
+  </main>
+
+  <footer><span>© 2026 WordShift</span><span><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a></span></footer>
+
+  <div id="results-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="results-title">
+    <div class="modal-card"><p class="eyebrow">ROUND COMPLETE</p><h2 id="results-title">Nice run.</h2><p id="results-copy"></p><button id="play-again" class="primary-button" type="button">Play again ↻</button><a class="modal-back" href="/">Back to WordShift</a></div>
   </div>
-  <footer class="site-footer" aria-label="Copyright">
-    <span>© 2026 Elio El Hage. All rights reserved.</span>
-    <span class="site-footer__links"><a href="/terms/">Terms of Use</a><span aria-hidden="true">·</span><a href="/privacy/">Privacy Policy</a></span>
-  </footer>
-
-  <div id="end-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="end-title"><div class="modal__card"><p id="end-kicker" class="modal__kicker">Round complete</p><h2 id="end-title" class="modal__title">Nice work.</h2><p id="countdown" class="modal__countdown"></p><button id="close-modal" class="primary-button" type="button">Continue</button></div></div>
-
-  <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal__card leaderboard-card"><button id="close-leaderboard" class="close-top-right" aria-label="Close leaderboard" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg></button><div id="username-view" class="hidden"><div class="join-auth-shell"><p class="join-auth-kicker">Sync your progress</p><h2 class="modal__title">Join the Leaderboard</h2><p class="modal__countdown">Create an account or log in to keep your stats, race access, and rankings across devices.</p><div class="join-auth-form"><input type="text" id="username-input" class="text-input" placeholder="Choose username" maxlength="15" /><input type="password" id="password-input" class="text-input" placeholder="Password (min 8 characters)" /><p class="join-auth-note">Usernames are case-insensitive.</p><p id="username-error" class="error-message hidden"></p><button id="save-username-btn" class="primary-button">Login / Register</button></div></div></div><div id="stats-view" class="hidden"><div class="lb-header"><h2 class="modal__title">Leaderboards</h2></div><p class="lb-subtitle">Rankings are based on average guesses.</p><div class="tab-content"><div id="lb-loading" class="lb-loading">Loading...</div><ul id="lb-list" class="lb-list hidden"></ul></div></div></div></div>
-
-  <div id="player-sheet" class="player-sheet" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title"><div class="player-sheet-card"><h2 id="player-sheet-title" class="player-sheet-title">Player details</h2><ul class="player-sheet-list"><li><strong>Name:</strong> <span id="player-sheet-name">—</span></li><li><strong>Joined:</strong> <span id="player-sheet-joined">—</span></li><li><strong>Last played:</strong> <span id="player-sheet-last-play">—</span></li><li><strong>Raw avg guesses:</strong> <span id="player-sheet-avg">—</span></li><li><strong>Total games played:</strong> <span id="player-sheet-games">—</span></li></ul><button id="player-sheet-close" class="player-sheet-close" type="button">Close</button></div></div>
-
-  <div id="give-up-confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="give-up-confirm-title"><div class="modal__card"><p class="modal__kicker">Are you sure?</p><h2 id="give-up-confirm-title" class="modal__title">Giving up reveals the word.</h2><p class="modal__countdown">Your game will end immediately. The result will not count on the leaderboard.</p><div class="confirm-actions"><button id="give-up-confirm-cancel" class="secondary-button" type="button">Cancel</button><button id="give-up-confirm-yes" class="primary-button" type="button">Reveal word</button></div></div></div>
-
-  <div id="walkthrough-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="walkthrough-title"><div class="modal__card walkthrough-card"><p class="modal__kicker">First-time guide</p><h2 id="walkthrough-title" class="modal__title">Welcome to WordShift</h2><p id="walkthrough-text" class="modal__countdown"></p><div id="walkthrough-demo" class="walkthrough-demo" aria-hidden="true"><div class="walkthrough-row"><span class="walkthrough-tile w-demo-letter">W</span><span class="walkthrough-tile w-demo-letter">O</span><span class="walkthrough-tile w-demo-letter">R</span><span class="walkthrough-tile w-demo-letter">D</span><span class="walkthrough-tile w-demo-letter">S</span></div><div class="walkthrough-legend"><span class="walkthrough-badge correct">Green = right spot</span><span class="walkthrough-badge present">Yellow = right letter, wrong spot</span></div></div><div class="walkthrough-progress"><span id="walkthrough-step-indicator">1 / 5</span></div><div class="walkthrough-actions"><button id="walkthrough-skip" class="primary-button walkthrough-skip" type="button">Skip</button><button id="walkthrough-prev" class="primary-button walkthrough-prev" type="button">Back</button><button id="walkthrough-next" class="primary-button" type="button">Next</button><button id="walkthrough-account" class="primary-button walkthrough-account hidden" type="button">Play with account</button></div></div></div>
-
-  <script>
-    (function () {
-      const nativeFetch = window.fetch.bind(window);
-      const dictionaryPrefix = "https://api.dictionaryapi.dev/api/v2/entries/en/";
-      window.fetch = async function (input, init) {
-        const url = typeof input === "string" ? input : input?.url;
-        if (!url || !url.startsWith(dictionaryPrefix)) return nativeFetch(input, init);
-        const word = decodeURIComponent(url.slice(dictionaryPrefix.length)).toLowerCase();
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), 5000);
-        try {
-          const response = await nativeFetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&max=10`, { ...(init || {}), signal: controller.signal, cache: "no-store" });
-          if (!response.ok) return new Response("", { status: 503 });
-          const results = await response.json();
-          const valid = Array.isArray(results) && results.some(entry => typeof entry?.word === "string" && entry.word.toLowerCase() === word);
-          return new Response("", { status: valid ? 200 : 404 });
-        } catch (error) {
-          console.error("Word validation service failed:", error);
-          return new Response("", { status: 503 });
-        } finally { clearTimeout(timeoutId); }
-      };
-    })();
-  </script>
-
-  <script src="script.js"></script>
-
-  <script>
-    (() => {
-      const revealModal = document.getElementById("give-up-confirm-modal");
-      const revealCancel = document.getElementById("give-up-confirm-cancel");
-      const revealYes = document.getElementById("give-up-confirm-yes");
-      const giveUpButton = document.getElementById("give-up-btn");
-      const endModal = document.getElementById("end-modal");
-      const endTitle = document.getElementById("end-title");
-      const endKicker = document.getElementById("end-kicker");
-      const countdown = document.getElementById("countdown");
-      const message = document.getElementById("message");
-      const keyboard = document.getElementById("keyboard");
-      const board = document.getElementById("board");
-      const modalClose = document.getElementById("close-modal");
-      const originalConfirm = window.confirm;
-      let revealComplete = false;
-
-      function openRevealModal() {
-        if (revealComplete) return;
-        revealYes.disabled = false;
-        revealYes.textContent = "Reveal word";
-        document.getElementById("give-up-confirm-title").textContent = "Giving up reveals the word.";
-        revealModal.querySelector(".modal__countdown").textContent = "Your game will end immediately. The result will not count on the leaderboard.";
-        revealModal.classList.remove("hidden");
-        revealYes.focus();
-      }
-
-      window.confirm = (text) => {
-        if (String(text || "").toLowerCase().includes("give up")) {
-          openRevealModal();
-          return false;
-        }
-        return originalConfirm(text);
-      };
-
-      giveUpButton?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        openRevealModal();
-      }, true);
-
-      revealCancel?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        revealModal.classList.add("hidden");
-      }, true);
-
-      revealYes?.addEventListener("click", async (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (revealComplete) return;
-        const word = String(window.__wordshiftSolution || "").trim().toUpperCase();
-        if (!word) {
-          revealYes.textContent = "Try again";
-          return;
-        }
-        revealComplete = true;
-        window.__wordshiftRevealed = true;
-        revealModal.classList.add("hidden");
-        if (keyboard) { keyboard.style.pointerEvents = "none"; keyboard.style.opacity = "0.45"; }
-        if (board) board.setAttribute("aria-disabled", "true");
-        endKicker.textContent = "Game over";
-        endTitle.textContent = `The word was ${word}`;
-        countdown.textContent = "You revealed today's word. No leaderboard result was submitted.";
-        endModal.classList.remove("hidden");
-      }, true);
-
-      modalClose?.addEventListener("click", () => endModal.classList.add("hidden"));
-      revealModal?.addEventListener("click", (event) => { if (event.target === revealModal && !revealComplete) revealModal.classList.add("hidden"); });
-    })();
-  </script>
 </body>
 </html>
