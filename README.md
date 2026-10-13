@@ -7,17 +7,28 @@ WordShift is a browser-game arcade with a daily word puzzle, competitive race mo
 ## Games
 
 - **WordShift / Wordle** — daily word puzzle at `/wordle/`, with hints, themes, accounts, and leaderboard integration.
-- **Track ID** — music recognition game at `/track-id/`, with filters for genre, era, and dozens of artists; five difficulty tiers; and progressive audio clues.
+- **Track ID** — music recognition game at `/track-id/`, with genre/era/artist filters and four difficulty tiers.
 - **Race mode** — create or join a private 1v1 room at `/race/`.
 - **Arcade** — browse available games at `/games/`.
 
 ## Track ID
 
-Track ID follows a focused music-quiz flow: select a genre, era, artist, and difficulty; then identify each song from progressively longer clues (0.1, 0.5, 2, 8, and 15 seconds). A wrong guess or Skip advances to the next clue, and the final Skip reveals the track. The result displays its artwork, title, artist, and album. Playback can begin at the start or a random point; players can set the first clue length and volume. Filter/difficulty changes apply to the next track during an active round.
+Track ID uses ten rounds, ten points per correct song, and a maximum score of 100. The chosen clue length controls how many seconds of audio to play; an incorrect guess unlocks the next clue, while Skip reveals the answer. A correct answer or Skip plays the answer preview for about seven seconds before the next round. The result view shows artwork, title, artist, and album, along with a source link.
+
+For Imagine Dragons, the new catalogue path builds song metadata from the Spotify Web API and enriches it with Soundcharts cumulative Spotify stream counts. The current stream-based bands are:
+
+- **Easy:** 250 million streams or more.
+- **Medium:** 75 million to under 250 million.
+- **Hard:** 10 million to under 75 million.
+- **Impossible:** under 10 million.
+
+Songs without an available stream count are excluded from these bands; unknown counts are never treated as zero. This stream-count integration is currently scoped to Imagine Dragons for testing. Other artist selections still use the legacy catalogue until their Spotify/Soundcharts mapping is added.
+
+The backend caches the enriched Imagine Dragons catalogue for 12 hours. The frontend needs the existing WordShift Render backend, with Spotify and Soundcharts credentials configured server-side. See [backend/README.md](backend/README.md) and [backend/.env.example](backend/.env.example).
 
 ### Audio source note
 
-The current adapter uses the iTunes Search API for metadata and promotional preview URLs. Apple's promotional previews may not be authorized for use as the entertainment content of a standalone guessing game. Before public production launch, replace this adapter with an appropriately licensed provider or obtain permission from the provider. Do not download, mirror, or cache preview audio.
+Spotify's Web API supplies metadata but is not used to extract preview audio. WordShift currently matches Spotify tracks with iTunes Search API promotional preview URLs. Apple's previews may not be authorized for a standalone song-guessing game, so confirm permission or replace the preview adapter with an appropriately licensed provider before public production. Do not download, mirror, or cache preview audio.
 
 ## WordShift features
 
@@ -41,12 +52,11 @@ WordShift/
 ├── race/
 ├── leaderboard/
 ├── track-id/
-│   ├── index.html
-│   ├── track-id.css
-│   ├── track-id.js
-│   └── README.md
-├── supabase/
-└── backend/
+├── backend/
+│   ├── api.js
+│   ├── README.md
+│   └── .env.example
+└── supabase/
 ```
 
 ## Local development
