@@ -469,7 +469,7 @@
     const mediumTarget = Math.min(playable.length, Math.max(roundsPerGame, Math.ceil(playable.length * 0.6)));
     const medium = shuffle(hits).slice(0, Math.ceil(mediumTarget / 2))
       .concat(shuffle(deeperCuts).slice(0, Math.floor(mediumTarget / 2)));
-    return medium.length >= roundsPerGame ? medium : [];
+    return medium.length >= roundsPerGame ? medium : playable;
   }
 
   function shuffle(array) {
