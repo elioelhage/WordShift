@@ -564,7 +564,7 @@
   }
 
   function playSnippet(seconds = clipSeconds) {
-    if (!currentTrack || !currentTrack.previewUrl) return;
+    if (!currentTrack || !currentTrack.previewUrl || playButton.disabled) return;
     const isAnswerReplay = roundSolved;
     const playbackSeconds = isAnswerReplay ? answerPlaybackSeconds : seconds;
     const token = stopAudio();
@@ -844,6 +844,10 @@
 
   function skipSong() {
     if (!currentTrack || roundSolved) return;
+    if (playButton.disabled && skipButton.disabled) {
+      nextRound();
+      return;
+    }
     if (clipStageIndex >= clipStages.length - 1) {
       solveRound(false);
       return;
