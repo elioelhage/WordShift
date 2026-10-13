@@ -29,6 +29,7 @@
   const revealTitle = $("reveal-title");
   const revealArtist = $("reveal-artist");
   const revealAlbum = $("reveal-album");
+  const trackSourceLink = $("track-source-link");
   const resultMessage = $("result-message");
   const resultActions = $("result-actions");
   const mainStage = $("stage-shell");
@@ -763,6 +764,7 @@
     revealTitle.hidden=true;
     revealArtist.hidden=true;
     revealAlbum.hidden=true;
+    trackSourceLink.hidden=true;
     resultMessage.hidden=true;
     trackArtShell.hidden=true;
     mainPlay.hidden=false;
@@ -805,6 +807,11 @@
     revealTitle.hidden=false;revealTitle.textContent=track.title;
     revealArtist.hidden=false;revealArtist.textContent=track.artist;
     revealAlbum.hidden=false;revealAlbum.textContent=track.album||"";
+    if(track.storeUrl) {
+      trackSourceLink.href=track.storeUrl;
+      trackSourceLink.textContent=state.catalogSource==="spotify+soundcharts"?"Open on Spotify ↗":"Open song listing ↗";
+      trackSourceLink.hidden=false;
+    }
     resultMessage.hidden=false;
     resultMessage.textContent=runComplete
       ?"Final score: "+state.score+"/100 · Best possible: 100."
