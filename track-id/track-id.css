@@ -173,3 +173,10 @@ button,input{font:inherit}button{color:inherit}button:focus-visible,a:focus-visi
  .guess-after-options button{padding:10px 6px;font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.stage-shell.round-exit,.stage-shell.round-enter{animation:none!important;filter:none!important;opacity:1!important;transform:none!important}}
+
+.track-source-link{display:inline-flex;align-items:center;gap:6px;margin-top:7px;color:#8dceaa;font-size:9px;font-weight:750;text-decoration:none;transition:color .15s,transform .15s}
+.track-source-link:hover{color:#b6f0cf;transform:translateY(-1px)}
+.song-search{min-height:44px}
+.song-search input{line-height:1.35}
+.skip-button{align-self:stretch;min-height:44px}
+@media(min-width:1200px){.track-source-link{font-size:11px;margin-top:9px}.song-search{min-height:56px}.skip-button{min-height:56px}}
