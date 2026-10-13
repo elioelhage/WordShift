@@ -813,10 +813,60 @@
     timeline.hidden=true;
     guessRow.hidden=true;
     resultActions.hidden=false;
-    challengeButton.textContent="♧ Challenge your friend";
     nextButton.textContent=runComplete?"Play again ↻":"Next  ▷|";
     guessInput.value="";
     closeSuggestions();
+    playAnswerPreviewAndAutoAdvance();
+  }
+
+  function playAnswerPreviewAndAutoAdvance() {
+    const track=state.currentTrack;
+    const token=state.playbackToken;
+    resultMessage.textContent="Playing the answer for 7 seconds…";
+    roundStatus.textContent=state.round>=MAX_ROUNDS?"RUN COMPLETE":"ANSWER PLAYING";
+    if(track && track.previewUrl) {
+      try {
+        audio.currentTime=0;
+        audio.volume=Number(volumeSlider.value)/100;
+        state.isPlaying=true;
+        const playback=audio.play();
+        if(playback&&typeof playback.catch==="function") {
+          playback.catch(()=>{
+            if(token!==state.playbackToken)return;
+            state.isPlaying=false;
+            setFeedback("Answer revealed, but this preview could not be played. Moving on shortly.","error");
+          });
+        }
+      } catch(error) {
+        state.isPlaying=false;
+      }
+    } else {
+      state.isPlaying=false;
+    }
+
+    state.answerTimer=window.setTimeout(()=>{
+      state.answerTimer=null;
+      audio.pause();
+      state.isPlaying=false;
+      if(state.round>=MAX_ROUNDS) {
+        roundStatus.textContent="RUN COMPLETE";
+        revealKicker.textContent="RUN COMPLETE";
+        resultMessage.textContent="Final score: "+state.score+"/100 · Best possible: 100.";
+        nextButton.textContent="Play again ↻";
+        setFeedback("Run complete — "+state.score+" / 100 points.","success");
+        mainStage.classList.add("round-finale");
+        return;
+      }
+      mainStage.classList.remove("round-enter","round-finale");
+      mainStage.classList.add("round-exit");
+      state.transitionTimer=window.setTimeout(()=>{
+        state.transitionTimer=null;
+        mainStage.classList.remove("round-exit");
+        mainStage.classList.add("round-enter");
+        nextRound();
+        window.setTimeout(()=>mainStage.classList.remove("round-enter"),520);
+      },320);
+    },ANSWER_PREVIEW_MS);
   }
 
   function playSnippet() {
@@ -848,7 +898,7 @@
       setTimeline();
       setMainPlayState("Replay "+durationLabel(state.stage),"▶",false);
       roundStatus.textContent="READY TO GUESS";
-      setFeedback("Make a guess or skip for a longer clue.");
+      setFeedback("Make a guess or skip this song.");
     };
     if(playback&&typeof playback.catch==="function"){
       playback.catch(()=>{
@@ -904,7 +954,7 @@
   }
 
   function setDifficulty(value) {
-    if(!["easy","medium","hard","expert","impossible"].includes(value))return;
+    if(!["easy","medium","hard","impossible"].includes(value))return;
     if(state.difficulty===value)return;
     state.difficulty=value;
     renderAllControls();
@@ -980,7 +1030,7 @@
       state.filters.genre=anyOr(GENRES);
       state.filters.era=anyOr(ERAS);
       state.filters.artist=anyOr(ARTISTS).name;
-      state.difficulty=anyOr(["easy","medium","hard","expert","impossible"]);
+      state.difficulty=anyOr(["easy","medium","hard","impossible"]);
       renderAllControls();
       showToast("Your mix has been rerolled");
       prepareTrack({reload:true,initial:state.round===0});
@@ -1002,21 +1052,9 @@
         prepareTrack({reload:state.poolKey!==currentFilterKey(),initial:false});
         return;
       }
-      advanceClue(true);
+      showAnswer(false);
     });
     nextButton.addEventListener("click",nextRound);
-    challengeButton.addEventListener("click",async()=>{
-      const track=state.currentTrack;
-      if(!track)return;
-      const challenge="I just guessed "+track.title+" by "+track.artist+" on WordShift Track ID. Can you beat me? "+window.location.origin+"/track-id/";
-      try{
-        await navigator.clipboard.writeText(challenge);
-        showToast("Challenge copied — send it to a friend");
-      }catch(_){
-        showToast(challenge);
-      }
-    });
-
     guessInput.addEventListener("input",renderSuggestions);
     guessInput.addEventListener("keydown",(event)=>{
       if(event.key==="ArrowDown"){event.preventDefault();moveSuggestionSelection(1);}
@@ -1035,6 +1073,7 @@
       if(!event.target.closest(".song-search"))closeSuggestions();
     });
     audio.addEventListener("ended",()=>{
+      if(state.revealed)return;
       if(state.previewTimer)window.clearTimeout(state.previewTimer);
       state.previewTimer=null;
       if(state.isPlaying){
