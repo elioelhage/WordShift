@@ -36,7 +36,6 @@
   const timeline = $("clip-timeline");
   const guessRow = $("guess-row");
   const nextButton = $("next-button");
-  const challengeButton = $("challenge-button");
   const playbackStartButton = $("playback-start");
   const playbackStartLabel = $("playback-start-label");
   const startStageOptions = [...document.querySelectorAll("[data-start-stage]")];
@@ -47,9 +46,15 @@
   const toast = $("toast");
 
   const ITUNES_SEARCH = "https://itunes.apple.com/search";
+  const WORDSHIFT_API = "https://wordshift-api.onrender.com";
   const MAX_ROUNDS = 10;
   const POINTS_PER_WIN = 10;
-  const TIMELINE_POSITIONS = [12,25,42,70,100];
+  const ANSWER_PREVIEW_MS = 7000;
+  const STREAM_THRESHOLDS = {
+    easyMin: 250000000,
+    mediumMin: 75000000,
+    hardMin: 10000000
+  };
   const CLIPS = [
     {label:"0.1s", seconds:0.1},
     {label:"0.5s", seconds:0.5},
@@ -189,7 +194,12 @@
     startedOnce:false,
     previewTimer:null,
     suggestionIndex:-1,
-    currentOffset:0
+    currentOffset:0,
+    catalogSource:"legacy",
+    catalogNotice:"",
+    catalogInfo:null,
+    answerTimer:null,
+    transitionTimer:null
   };
 
   const normalize = (value) => String(value || "")
@@ -330,7 +340,7 @@
     return String(url||"").replace(/\b100x100bb\b/i,"600x600bb").replace(/\b100x100\b/i,"600x600");
   }
 
-  async function fetchCatalogForFilters() {
+  async function fetchLegacyCatalogForFilters() {
     const names=artistNamesForFilters();
     const selectedArtist=state.filters.artist!=="Any artist";
     const limit=selectedArtist?200:65;
@@ -362,6 +372,66 @@
     return filtered;
   }
 
+  async function fetchCatalogForFilters() {
+    const isImagineDragons = normalizeTrackTextForClient(state.filters.artist) === "imagine dragons";
+    if (!isImagineDragons) {
+      state.catalogSource = "legacy";
+      state.catalogInfo = null;
+      state.catalogNotice = "";
+      return fetchLegacyCatalogForFilters();
+    }
+
+    try {
+      const url = new URL(WORDSHIFT_API + "/api/track-id/catalog");
+      url.searchParams.set("artist", "Imagine Dragons");
+      const response = await fetch(url.toString(), { headers: { "Accept": "application/json" } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.message || "Spotify/Soundcharts catalogue is unavailable.");
+        error.code = payload.error || "TRACK_ID_CATALOG_FAILED";
+        throw error;
+      }
+
+      state.catalogSource = payload.source || "spotify+soundcharts";
+      state.catalogInfo = payload;
+      state.catalogNotice = "";
+      const tracks = (Array.isArray(payload.tracks) ? payload.tracks : []).map((track, index) => ({
+        ...track,
+        id: String(track.id || ""),
+        title: String(track.title || "").trim(),
+        artist: String(track.artist || "Imagine Dragons").trim(),
+        album: String(track.album || "").trim(),
+        genre: String(track.genre || "Rock"),
+        releaseDate: String(track.releaseDate || ""),
+        previewUrl: String(track.previewUrl || ""),
+        artworkUrl: String(track.artworkUrl || ""),
+        storeUrl: String(track.spotifyUrl || ""),
+        rank: index,
+        queryIndex: 0,
+        duration: Number(track.duration || 0),
+        streamCount: Number.isFinite(Number(track.streamCount)) ? Number(track.streamCount) : null
+      })).filter((track) => track.id && track.title && track.previewUrl);
+
+      return tracks.filter((track) => genreMatches(track) && eraMatches(track) && artistMatches(track));
+    } catch (error) {
+      state.catalogSource = "itunes-fallback";
+      state.catalogInfo = null;
+      state.catalogNotice = "Spotify stream catalogue unavailable: " + (error.message || "using fallback results");
+      console.warn("Track ID streaming catalogue fallback:", error);
+      return fetchLegacyCatalogForFilters();
+    }
+  }
+
+  function normalizeTrackTextForClient(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()
+      .replace(/\\s+/g, " ");
+  }
+
   function knownHit(track) {
     const cfg=getArtist(state.filters.artist);
     if(!cfg||!cfg.hits)return false;
@@ -370,24 +440,46 @@
   }
 
   function difficultyPool(catalog) {
-    const tracks=catalog.slice().sort((a,b)=>a.rank-b.rank||a.queryIndex-b.queryIndex);
-    const n=tracks.length;
-    if(!n)return [];
-    let selected;
-    if(state.difficulty==="easy") {
-      const hits=tracks.filter(knownHit);
-      selected=hits.length>=8?hits:tracks.slice(0,Math.max(8,Math.ceil(n*.4)));
-    } else if(state.difficulty==="medium") {
-      selected=tracks.slice(0,Math.max(10,Math.ceil(n*.68)));
-    } else if(state.difficulty==="hard") {
-      selected=tracks.slice(Math.floor(n*.22),Math.max(Math.floor(n*.22)+8,Math.ceil(n*.82)));
-    } else if(state.difficulty==="expert") {
-      selected=tracks.slice(Math.floor(n*.42));
-    } else {
-      selected=tracks.slice(Math.floor(n*.62));
+    const tracks = catalog.slice();
+    if (!tracks.length) return [];
+
+    if (state.catalogSource === "spotify+soundcharts" &&
+        normalizeTrackTextForClient(state.filters.artist) === "imagine dragons") {
+      // These are explicit cumulative Spotify-stream bands, not search-rank bands.
+      // Missing counts are excluded instead of being silently treated as zero.
+      const withMetrics = tracks.filter((track) => Number.isFinite(track.streamCount));
+      let selected = [];
+      if (state.difficulty === "easy") {
+        selected = withMetrics.filter((track) => track.streamCount >= STREAM_THRESHOLDS.easyMin);
+      } else if (state.difficulty === "medium") {
+        selected = withMetrics.filter((track) =>
+          track.streamCount >= STREAM_THRESHOLDS.mediumMin &&
+          track.streamCount < STREAM_THRESHOLDS.easyMin);
+      } else if (state.difficulty === "hard") {
+        selected = withMetrics.filter((track) =>
+          track.streamCount >= STREAM_THRESHOLDS.hardMin &&
+          track.streamCount < STREAM_THRESHOLDS.mediumMin);
+      } else {
+        selected = withMetrics.filter((track) => track.streamCount < STREAM_THRESHOLDS.hardMin);
+      }
+      return shuffle([...new Map(selected.map((track) => [track.id, track])).values()]);
     }
-    if(selected.length<8) selected=tracks;
-    return shuffle([...new Map(selected.map((track)=>[track.id,track])).values()]);
+
+    const ranked = tracks.sort((a,b) => (a.rank || 0) - (b.rank || 0) || (a.queryIndex || 0) - (b.queryIndex || 0));
+    const n = ranked.length;
+    let selected;
+    if (state.difficulty === "easy") {
+      const hits = ranked.filter(knownHit);
+      selected = hits.length >= 8 ? hits : ranked.slice(0, Math.max(8, Math.ceil(n * .4)));
+    } else if (state.difficulty === "medium") {
+      selected = ranked.slice(0, Math.max(10, Math.ceil(n * .68)));
+    } else if (state.difficulty === "hard") {
+      selected = ranked.slice(Math.floor(n * .22), Math.max(Math.floor(n * .22) + 8, Math.ceil(n * .82)));
+    } else {
+      selected = ranked.slice(Math.floor(n * .62));
+    }
+    if (selected.length < 8) selected = ranked;
+    return shuffle([...new Map(selected.map((track) => [track.id, track])).values()]);
   }
 
   function shuffle(array) {
