@@ -455,15 +455,15 @@
   }
 
   function getDifficultyPool() {
+    // Easy is the artist's known hits. Medium is the broader catalog excluding
+    // that hit list; Hard draws from the least familiar end of the available pool.
+    // Never silently fall back to the full catalog: that makes Easy and Hard identical.
     const easyTitles = new Set(chosenArtist.easyTitles.map(normalize));
-    if (chosenDifficulty === "easy") {
-      const hits = playable.filter((track) => easyTitles.has(normalize(track.title)));
-      return hits.length >= roundsPerGame ? hits : playable;
-    }
-    if (chosenDifficulty === "hard") {
-      const deeperCuts = playable.filter((track) => !easyTitles.has(normalize(track.title)));
-      return deeperCuts.length >= roundsPerGame ? deeperCuts : playable;
-    }
+    const easy = playable.filter((track) => easyTitles.has(normalize(track.title)));
+    const deeperCuts = playable.filter((track) => !easyTitles.has(normalize(track.title)));
+    if (chosenDifficulty === "easy") return easy;
+    if (chosenDifficulty === "hard") return deeperCuts;
+    // Medium deliberately uses the full catalog, giving it overlap with both tiers.
     return playable;
   }
 
@@ -519,7 +519,7 @@
   }
 
   function playSnippet(seconds = clipSeconds) {
-    if (!currentTrack || !currentTrack.previewUrl || roundSolved) return;
+    if (!currentTrack || !currentTrack.previewUrl || (roundSolved && !answerReveal.hidden && autoAdvanceBox.hidden && !wrongAnswerReplayAllowed())) return;
     const token = stopAudio();
     setAudioTrack(currentTrack);
     const stage = clipStages[clipStageIndex] || clipStages[0];
@@ -563,6 +563,10 @@
       audio.addEventListener("loadedmetadata", startAt, {once: true});
       audio.addEventListener("error", failPlayback, {once: true});
     }
+  }
+
+  function wrongAnswerReplayAllowed() {
+    return roundSolved && !autoAdvanceBox.hidden === false && !answerReveal.hidden;
   }
 
   function showAnswerDetails() {
@@ -719,6 +723,7 @@
     streakLabel.textContent = String(streak);
     setFeedback("Not quite. Listen again, or skip to reveal another second.", "error");
     guessInput.select();
+    // A wrong guess should not interrupt or disable the audio preview.
   }
 
   function solveRound(won) {
@@ -750,7 +755,8 @@
     if (won) {
       playAnswerThenAdvance();
     } else {
-      autoAdvanceBox.hidden = true;
+      // Keep the eight-second answer preview available after an incorrect guess too.
+      playAnswerThenAdvance();
       nextButton.focus({preventScroll: true});
     }
   }
@@ -822,9 +828,13 @@
       catalog = songs;
       playable = songs;
 
-      const pool = getDifficultyPool();
+        const pool = getDifficultyPool();
       if (pool.length < roundsPerGame) {
-        setFeedback("Only " + pool.length + " songs are available for this difficulty. Try another difficulty or artist.", "error");
+        setFeedback(
+          "Only " + pool.length + " playable songs are available in " + chosenDifficulty +
+          " for " + chosenArtist.name + ". Try another difficulty or artist; the game won't silently mix difficulty pools.",
+          "error"
+        );
         return;
       }
 
