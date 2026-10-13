@@ -163,8 +163,9 @@
     guessInput.disabled = !guess;
     submitButton.disabled = !guess;
     skipButton.disabled = !skip;
-    // The Play button remains usable on a revealed wrong answer, for its 8s replay.
-    playButton.disabled = !play && !playButton.dataset.answerReplay;
+    // Playback remains available only during a round or when the answer preview
+    // has been explicitly offered after a miss.
+    playButton.disabled = !play && !(roundSolved && playButton.dataset.answerReplay === "true");
   }
 
   function setDifficulty(value) {
