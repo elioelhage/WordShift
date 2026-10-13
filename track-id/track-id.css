@@ -54,3 +54,12 @@ footer{position:relative;z-index:1;width:min(1120px,calc(100% - 40px));margin:0 
 @media(max-width:540px){.site-head{width:calc(100% - 28px);min-height:67px}.page-shell{width:calc(100% - 24px);padding:24px 0 48px}.intro{margin-bottom:20px}.intro h1{font-size:clamp(2.65rem,14vw,3.7rem)}.intro-copy{font-size:.9rem}.artist-picker{padding:14px;border-radius:18px}.artist-picker-heading{align-items:start}.artist-options{grid-template-columns:1fr;gap:8px}.artist-option{padding:10px;gap:11px}.artist-option img{width:44px;height:44px;flex-basis:44px}.artist-option-status{font-size:.63rem}.game-card{padding:13px;border-radius:19px}.game-topline{align-items:start;gap:8px}.game-topline h2{font-size:1.15rem}.round-chip{padding:5px 7px;font-size:.6rem}.sound-orb{width:72px;height:72px;border-radius:21px}.difficulty{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.difficulty-button{min-height:49px}.guess-row{gap:8px}.guess-row .primary-button{padding:10px 13px}.song-picker input{padding:12px 10px;font-size:.8rem}.guess-actions{align-items:start}.ghost-button{font-size:.68rem;padding:7px 9px}.answer-reveal{grid-template-columns:72px minmax(0,1fr);gap:12px;padding:12px}.answer-cover-wrap{width:72px;height:72px;border-radius:10px}.answer-main h3{font-size:1.15rem}.game-footer{gap:16px}.game-footer strong{font-size:1.35rem}.game-footer .primary-button{padding:10px 12px;font-size:.75rem}.how-to{margin-top:30px}.bottom-note{font-size:.7rem}footer{width:calc(100% - 28px);font-size:.7rem}}
 @media(max-width:350px){.artist-picker-heading{flex-direction:column}.artist-picker-heading a{align-self:flex-start}.game-topline{flex-direction:column}.round-chip{order:-1}.guess-actions{flex-direction:column}.game-footer{flex-wrap:wrap}.game-footer .primary-button{margin-left:auto}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+
+/* Setup-only view: once a round begins, keep the focus on the sound and guess. */
+.game-card.is-playing .game-topline,
+.game-card.is-playing .game-footer,
+.game-card.is-playing + .how-to { transition: opacity .2s ease; }
+.game-card.is-playing .game-topline { margin-bottom: 12px; }
+.game-card.is-playing .game-footer { display: none; }
+.game-card:not(.is-playing) .guess-area { opacity: .93; }
