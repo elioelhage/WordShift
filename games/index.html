@@ -2,50 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#11120f">
-  <meta name="description" content="Explore the games available on WordShift.">
-  <title>Games — WordShift</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0b12">
+  <meta name="description" content="WordShift Arcade — quick games for your brain, ears, and competitive streak.">
+  <title>WordShift — Play Something Different</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{color-scheme:dark;--bg:#11120f;--panel:#191b17;--border:#353a31;--text:#f2f2eb;--muted:#aeb2a7;--accent:#c5d9b4;--purple:#aeb2a7}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,rgba(167,139,250,.16),transparent 50%),var(--bg);color:var(--text);font:16px/1.5 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    a{color:inherit}.site-head{width:min(1080px,calc(100% - 40px));margin:auto;min-height:80px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08)}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:850;text-decoration:none}.mark{display:grid;place-items:center;width:33px;height:33px;border:1px solid var(--accent);border-radius:10px;color:var(--accent)}.back{color:var(--muted);text-decoration:none;font-size:.9rem}
-    main{width:min(960px,calc(100% - 32px));margin:auto;padding:64px 0 80px}.eyebrow{font-size:.7rem;letter-spacing:.19em;color:var(--accent);font-weight:850;margin:0 0 12px;text-transform:uppercase}
-    h1{font-size:clamp(2.8rem,8vw,4.8rem);line-height:1;letter-spacing:-.07em;margin:0;font-weight:900}.lead{color:var(--muted);font-size:1.06rem;margin:18px 0 40px;max-width:54ch}
-    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.card{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:290px;padding:26px;border:1px solid var(--border);border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.035),transparent 60%),var(--panel);text-decoration:none;transition:transform .18s ease,border-color .18s ease}
-    .card:hover{transform:translateY(-3px);border-color:#676775}.card .icon{display:grid;place-items:center;width:54px;height:54px;border-radius:16px;background:rgba(183,243,94,.1);border:1px solid rgba(183,243,94,.32);color:var(--accent);font-size:1.7rem;margin-bottom:32px}.card:nth-child(2) .icon{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.4);color:#c4b5fd}
-    .tag{font-size:.65rem;color:var(--accent);font-weight:850;letter-spacing:.15em;text-transform:uppercase}.card h2{font-size:1.6rem;letter-spacing:-.04em;margin:7px 0}.card p{color:var(--muted);max-width:42ch;font-size:.91rem;margin:0 0 22px}.launch{margin-top:auto;font-size:.9rem;font-weight:850}.card:nth-child(2) .launch{color:#c4b5fd}
-    footer{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;padding:20px 16px 28px;border-top:1px solid rgba(255,255,255,.06);color:#858593;font-size:.72rem}footer a{text-decoration:none}
-    @media(max-width:620px){.site-head{width:calc(100% - 28px);min-height:68px}main{padding:44px 0 56px}.cards{grid-template-columns:1fr}.card{min-height:250px;padding:22px}.card .icon{margin-bottom:24px}}
-    @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
-    /* Keep the hub understated; let game names do the work. */
-    body{background:var(--bg)}
-    .mark{border-radius:6px}
-    main{padding-top:48px}
-    .eyebrow{letter-spacing:.09em;font-weight:700}
-    h1{font-weight:760;letter-spacing:-.045em}
-    .cards{gap:12px}
-    .card{min-height:250px;padding:22px;border-radius:10px;background:var(--panel);box-shadow:none;transition:border-color .12s}
-    .card:hover{transform:none;border-color:#6c7265}
-    .card .icon,.card:nth-child(2) .icon{width:46px;height:46px;border-radius:8px;background:#22251f;border:1px solid #3b4136;color:var(--accent);margin-bottom:24px}
-    .card h2{font-weight:700;letter-spacing:-.025em}
-    .card:nth-child(2) .launch{color:var(--accent)}
+    :root{color-scheme:dark;--bg:#0b0b12;--panel:#13131e;--line:rgba(255,255,255,.11);--ink:#f7f5ff;--muted:#a5a2b7;--lime:#c4f06a;--violet:#a78bfa;--cyan:#6ee7f9;--pink:#fb8acb}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.5 "DM Sans",system-ui,sans-serif;background:radial-gradient(ellipse at 18% 0,rgba(167,139,250,.17),transparent 36rem),radial-gradient(ellipse at 92% 28%,rgba(110,231,249,.1),transparent 30rem),var(--bg);overflow-x:hidden}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;background-image:radial-gradient(rgba(255,255,255,.45) .6px,transparent .6px);background-size:6px 6px;mask-image:linear-gradient(black,transparent 85%)}
+    a{color:inherit}.site-head{position:relative;z-index:1;width:min(1200px,calc(100% - 48px));margin:auto;min-height:82px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.09)}
+    .brand{display:flex;align-items:center;gap:11px;text-decoration:none;font-weight:800;letter-spacing:-.03em}.mark{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(145deg,var(--lime),#8cd7b7);color:#15151d;font:700 1rem "Space Grotesk";box-shadow:0 5px 28px rgba(196,240,106,.22)}
+    .brand span:last-child{font:700 1.12rem "Space Grotesk"}.nav-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.82rem}.status-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--line);border-radius:99px;background:rgba(255,255,255,.035)}.status-dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px rgba(196,240,106,.65)}
+    main{position:relative;z-index:1;width:min(1120px,calc(100% - 48px));margin:auto;padding:74px 0 84px}.hero{max-width:770px;margin:0 auto 47px;text-align:center}.eyebrow{display:inline-flex;align-items:center;gap:8px;margin:0 0 19px;color:var(--lime);font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.eyebrow:before{content:"";width:20px;height:1px;background:currentColor}.eyebrow:after{content:"";width:20px;height:1px;background:currentColor}
+    h1{margin:0;font:700 clamp(3rem,7.8vw,6.3rem)/.98 "Space Grotesk",sans-serif;letter-spacing:-.075em}h1 .shine{background:linear-gradient(100deg,var(--lime),#92e3df 45%,#b7a1ff 90%);-webkit-background-clip:text;background-clip:text;color:transparent}.hero-copy{max-width:590px;margin:22px auto 0;color:var(--muted);font-size:clamp(1rem,2vw,1.12rem)}
+    .section-heading{display:flex;justify-content:space-between;align-items:end;gap:18px;margin:0 0 17px}.section-heading h2{margin:0;font:600 1.2rem "Space Grotesk";letter-spacing:-.04em}.section-heading p{margin:0;color:var(--muted);font-size:.78rem}
+    .games-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.game-card{--accent:var(--lime);position:relative;isolation:isolate;min-height:246px;padding:23px;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:23px;background:linear-gradient(150deg,rgba(255,255,255,.055),rgba(255,255,255,.012) 54%),var(--panel);text-decoration:none;transition:transform .2s ease,border-color .2s ease,background .2s ease}
+    .game-card:before{content:"";position:absolute;z-index:-1;width:200px;height:200px;right:-95px;top:-105px;border-radius:50%;background:var(--accent);opacity:.14;filter:blur(2px);transition:transform .3s ease,opacity .3s ease}
+    .game-card:hover{transform:translateY(-5px);border-color:color-mix(in srgb,var(--accent) 65%,white 8%);background:linear-gradient(150deg,rgba(255,255,255,.075),rgba(255,255,255,.015) 60%),var(--panel)}.game-card:hover:before{transform:scale(1.25);opacity:.23}.game-card:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+    .game-card.wordle{--accent:var(--lime)}.game-card.track{--accent:var(--violet)}.game-card.soon:nth-of-type(3n){--accent:var(--cyan)}.game-card.soon:nth-of-type(3n + 1){--accent:var(--pink)}
+    .card-top{display:flex;justify-content:space-between;align-items:start;gap:12px}.game-icon{width:48px;height:48px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:15px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);font-size:1.45rem}.number{color:#737086;font:600 .73rem "Space Grotesk";letter-spacing:.08em}.game-status{align-self:start;padding:5px 8px;border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);border-radius:99px;background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--accent);font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+    .game-card h3{margin:24px 0 6px;font:600 1.35rem "Space Grotesk";letter-spacing:-.05em}.game-card p{max-width:34ch;margin:0;color:var(--muted);font-size:.86rem}.card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:23px;color:var(--accent);font-size:.82rem;font-weight:700}.arrow{font-size:1.1rem;transition:transform .2s}.game-card:hover .arrow{transform:translateX(4px)}.soon{cursor:default}.soon:hover{transform:none;border-color:var(--line);background:linear-gradient(150deg,rgba(255,255,255,.055),rgba(255,255,255,.012) 54%),var(--panel)}.soon:hover:before{transform:none;opacity:.14}.soon h3{color:#dedbed}
+    .bottom-note{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:30px;color:#77748d;font-size:.76rem}.bottom-note:before,.bottom-note:after{content:"";height:1px;width:min(90px,12vw);background:var(--line)}
+    footer{position:relative;z-index:1;display:flex;justify-content:center;gap:16px;flex-wrap:wrap;padding:22px 18px 30px;border-top:1px solid rgba(255,255,255,.07);color:#79768c;font-size:.74rem}footer a{text-decoration:none}footer a:hover{color:var(--ink)}
+    @media(max-width:900px){main{padding-top:58px}.games-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.game-card{min-height:225px}}
+    @media(max-width:580px){.site-head{width:calc(100% - 30px);min-height:68px}.nav-right .nav-label{display:none}main{width:calc(100% - 30px);padding:48px 0 58px}.hero{margin-bottom:36px}h1{font-size:clamp(3.2rem,15vw,4.6rem)}.hero-copy{margin-top:17px}.section-heading{align-items:start;flex-direction:column;gap:4px}.games-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.game-card{min-height:210px;padding:14px;border-radius:18px}.game-icon{width:39px;height:39px;border-radius:12px;font-size:1.15rem}.number{font-size:.62rem}.game-card h3{margin:19px 0 6px;font-size:1.06rem}.game-card p{font-size:.75rem;line-height:1.45}.game-status{font-size:.52rem;padding:4px 6px}.card-bottom{padding-top:18px;font-size:.72rem}.bottom-note{margin-top:24px;text-align:center}}
+    @media(max-width:360px){.games-grid{grid-template-columns:1fr}.game-card{min-height:190px;padding:19px}.game-card h3{font-size:1.2rem}.game-card p{font-size:.82rem}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
   </style>
 </head>
 <body>
-  <header class="site-head"><a class="brand" href="/"><span class="mark">W</span><span>WordShift</span></a><a class="back" href="/">← Back to WordShift</a></header>
+  <header class="site-head">
+    <a class="brand" href="/games/" aria-label="WordShift Arcade home"><span class="mark">W</span><span>WordShift</span></a>
+    <div class="nav-right"><span class="status-pill"><i class="status-dot"></i><span class="nav-label">THE ARCADE IS OPEN</span></span></div>
+  </header>
   <main>
-    <p class="eyebrow">WordShift Arcade</p>
-    <h1>Pick your<br>next game.</h1>
-    <p class="lead">A growing collection of quick games to challenge your vocabulary, memory, and music knowledge. More games are on the way.</p>
-    <section class="cards" aria-label="Available games">
-      <a class="card" href="/" aria-label="Play WordShift daily word game">
-        <span class="icon" aria-hidden="true">▦</span><span class="tag">Game 01 · Daily puzzle</span><h2>WordShift</h2><p>Guess the daily word, use color feedback to narrow it down, and keep your stats moving.</p><span class="launch">Play WordShift ↗</span>
-      </a>
-      <a class="card" href="/track-id/" aria-label="Play Track ID music quiz">
-        <span class="icon" aria-hidden="true">♫</span><span class="tag">Game 02 · Music quiz</span><h2>Track ID</h2><p>Choose Imagine Dragons or Kanye West, then identify songs from short audio clips.</p><span class="launch">Play Track ID ↗</span>
-      </a>
+    <section class="hero">
+      <p class="eyebrow">Your next obsession starts here</p>
+      <h1>One place.<br><span class="shine">More ways to play.</span></h1>
+      <p class="hero-copy">Word puzzles, music quizzes, and new challenges — all in one little corner of the internet. Pick a game and jump straight in.</p>
+    </section>
+    <section aria-labelledby="games-heading">
+      <div class="section-heading"><h2 id="games-heading">The game library</h2><p>02 available · 07 coming soon</p></div>
+      <div class="games-grid">
+        <a class="game-card wordle" href="/wordle/" aria-label="Play WordShift Wordle">
+          <div class="card-top"><span class="game-icon" aria-hidden="true">▦</span><span class="number">01 / 09</span></div>
+          <h3>WordShift</h3><p>The daily word puzzle. Read the clues, make your guesses, and find the hidden word.</p><div class="card-bottom"><span>Play Wordle</span><span class="arrow" aria-hidden="true">↗</span></div>
+        </a>
+        <a class="game-card track" href="/track-id/" aria-label="Play Track ID">
+          <div class="card-top"><span class="game-icon" aria-hidden="true">♫</span><span class="number">02 / 09</span></div>
+          <h3>Track ID</h3><p>A quick music challenge. Recognize the track before the clip gives too much away.</p><div class="card-bottom"><span>Play Track ID</span><span class="arrow" aria-hidden="true">↗</span></div>
+        </a>
+        <article class="game-card soon" aria-label="Game 03, coming soon"><div class="card-top"><span class="game-icon" aria-hidden="true">✦</span><span class="number">03 / 09</span><span class="game-status">Coming soon</span></div><h3>Coming Soon</h3><p>A new challenge is taking shape. Check back for the next addition to the arcade.</p><div class="card-bottom"><span>In the works</span><span aria-hidden="true">✧</span></div></article><article class="game-card soon" aria-label="Game 04, coming soon"><div class="card-top"><span class="game-icon" aria-hidden="true">◈</span><span class="number">04 / 09</span><span class="game-status">Coming soon</span></div><h3>Coming Soon</h3><p>A new challenge is taking shape. Check back for the next addition to the arcade.</p><div class="card-bottom"><span>In the works</span><span aria-hidden="true">✧</span></div></article><article class="game-card soon" aria-label="Game 05, coming soon"><div class="card-top"><span class="game-icon" aria-hidden="true">◎</span><span class="number">05 / 09</span><span class="game-status">Coming soon</span></div><h3>Coming Soon</h3><p>A new challenge is taking shape. Check back for the next addition to the arcade.</p><div class="card-bottom"><span>In the works</span><span aria-hidden="true">✧</span></div></article><article class="game-card soon" aria-label="Game 06, coming soon"><div class="card-top"><span class="game-icon" aria-hidden="true">⌘</span><span class="number">06 / 09</span><span class="game-status">Coming soon</span></div><h3>Coming Soon</h3><p>A new challenge is taking shape. Check back for the next addition to the arcade.</p><div class="card-bottom"><span>In the works</span><span aria-hidden="true">✧</span></div></article><article class="game-card soon" aria-label="Game 07, coming soon"><div class="card-top"><span class="game-icon" aria-hidden="true">✳</span><span class="number">07 / 09</span><span class="game-status">Coming soon</span></div><h3>Coming Soon</h3><p>A new challenge is taking shape. Check back for the next addition to the arcade.</p><div class="card-bottom"><span>In the works</span><span aria-hidden="true">✧</span></div></article><article class="game-card soon" aria-label="Game 08, coming soon"><div class="card-top"><span class="game-icon" aria-hidden="true">◌</span><span class="number">08 / 09</span><span class="game-status">Coming soon</span></div><h3>Coming Soon</h3><p>A new challenge is taking shape. Check back for the next addition to the arcade.</p><div class="card-bottom"><span>In the works</span><span aria-hidden="true">✧</span></div></article><article class="game-card soon" aria-label="Game 09, coming soon"><div class="card-top"><span class="game-icon" aria-hidden="true">◇</span><span class="number">09 / 09</span><span class="game-status">Coming soon</span></div><h3>Coming Soon</h3><p>A new challenge is taking shape. Check back for the next addition to the arcade.</p><div class="card-bottom"><span>In the works</span><span aria-hidden="true">✧</span></div></article>
+      </div>
+      <p class="bottom-note">More games. More ways to challenge yourself.</p>
     </section>
   </main>
   <footer><span>© 2026 WordShift</span><span><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a></span></footer>
