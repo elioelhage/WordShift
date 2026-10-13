@@ -2,8 +2,7 @@
 :root{color-scheme:dark;--bg:#07070c;--panel:#101019;--ink:#f5f2ff;--muted:#a09bb3;--muted-2:#706b82;--line:rgba(255,255,255,.1);--accent:#a45bff;--accent-rgb:164,91,255;--accent-ink:#170d24}
 body[data-difficulty="easy"]{--accent:#5ae6a5;--accent-rgb:90,230,165;--accent-ink:#091e15}
 body[data-difficulty="medium"]{--accent:#ffca61;--accent-rgb:255,202,97;--accent-ink:#241907}
-body[data-difficulty="hard"]{--accent:#ff8b3d;--accent-rgb:255,139,61;--accent-ink:#2a1207}
-body[data-difficulty="expert"]{--accent:#ff435a;--accent-rgb:255,67,90;--accent-ink:#2b080d}
+body[data-difficulty="hard"]{--accent:#ff435a;--accent-rgb:255,67,90;--accent-ink:#2b080d}
 body[data-difficulty="impossible"]{--accent:#a45bff;--accent-rgb:164,91,255;--accent-ink:#170d24}
 *{box-sizing:border-box} [hidden]{display:none!important}
 html{min-height:100%;background:var(--bg)}
@@ -46,8 +45,7 @@ button,input{font:inherit}button{color:inherit}button:focus-visible,a:focus-visi
 .center-difficulty-options button{--tier-color:#a45bff;display:inline-flex;align-items:center;justify-content:center;min-width:48px;padding:5px 10px;border:1px solid transparent;border-radius:999px;background:rgba(255,255,255,.045);color:var(--tier-color);font-size:8px;font-weight:850;line-height:1.2;cursor:pointer;transition:transform .15s,background .15s,border-color .15s,color .15s}
 .center-difficulty-options button[data-difficulty="easy"]{--tier-color:#5ae6a5}
 .center-difficulty-options button[data-difficulty="medium"]{--tier-color:#ffca61}
-.center-difficulty-options button[data-difficulty="hard"]{--tier-color:#ff8b3d}
-.center-difficulty-options button[data-difficulty="expert"]{--tier-color:#ff435a}
+.center-difficulty-options button[data-difficulty="hard"]{--tier-color:#ff435a}
 .center-difficulty-options button[data-difficulty="impossible"]{--tier-color:#a45bff}
 .center-difficulty-options button:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--tier-color) 45%,transparent);background:color-mix(in srgb,var(--tier-color) 10%,transparent)}
 .center-difficulty-options button.active{border-color:var(--tier-color);background:var(--tier-color);color:#130f18;box-shadow:0 4px 16px color-mix(in srgb,var(--tier-color) 22%,transparent)}
@@ -133,3 +131,52 @@ button,input{font:inherit}button{color:inherit}button:focus-visible,a:focus-visi
  .max-score-label strong{font-size:17px}
  .mini-stat-row .score-value small{font-size:8px}
 }
+
+
+/* Track ID usability polish: answer reveal, skip control and larger desktop scale. */
+.skip-button svg{display:block;width:13px;height:13px;flex:0 0 13px}
+.skip-button span{display:inline-block}
+.stage-shell.round-exit{animation:trackRoundExit .32s cubic-bezier(.2,.75,.3,1) forwards;pointer-events:none}
+.stage-shell.round-enter{animation:trackRoundEnter .52s cubic-bezier(.2,.85,.25,1) both}
+.stage-shell.round-finale{border-color:rgba(var(--accent-rgb),.34);box-shadow:0 0 42px rgba(var(--accent-rgb),.1)}
+@keyframes trackRoundExit{0%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}100%{opacity:0;transform:translateY(-18px) scale(.975);filter:blur(5px)}}
+@keyframes trackRoundEnter{0%{opacity:0;transform:translateY(25px) scale(.965);filter:blur(5px)}70%{opacity:1;transform:translateY(-3px) scale(1.005);filter:blur(0)}100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@media(min-width:1200px){
+ body{font-size:16px}
+ .app-layout{width:min(1640px,calc(100% - 48px));grid-template-columns:minmax(260px,300px) minmax(700px,900px) minmax(250px,300px);gap:clamp(32px,3vw,46px);padding-top:48px}
+ .game-column{min-height:820px}
+ .stage-shell{padding:32px 32px 29px;border-radius:26px}
+ .stage-topline{margin-bottom:28px}
+ .filter-row{grid-template-columns:82px minmax(0,1fr);min-height:53px}
+ .filter-label{font-size:10px}
+ .filter-options button{font-size:11px;padding:8px 11px}
+ .filter-carousel{grid-template-columns:30px minmax(0,1fr) 30px;grid-template-rows:auto 4px;gap:5px 9px}
+ .carousel-arrow{width:30px;height:40px;font-size:24px}
+ .filter-reels{margin-bottom:30px}
+ .center-difficulty-options{margin-bottom:27px;gap:10px}
+ .center-difficulty-options button{font-size:12px;min-width:73px;padding:9px 15px}
+ .main-play{width:112px;height:112px;font-size:34px}
+ .track-art-shell{width:148px;height:148px}
+ .play-caption{font-size:12px;margin:15px 0 22px}
+ .clip-timeline{width:min(100%,650px);margin-bottom:30px}
+ .clip-track{height:10px}
+ .clip-labels{font-size:12px}
+ .guess-row{width:min(100%,660px);gap:12px}
+ .song-search input{font-size:14px;padding:18px 15px}
+ .search-icon{padding-left:16px;font-size:26px}
+ .skip-button{min-width:110px;padding:14px 17px;font-size:13px}
+ .feedback{font-size:12px;margin-top:15px}
+ .difficulty-options button{min-height:46px;font-size:13px;padding:12px 15px}
+ .side-heading{font-size:11px}
+ .reroll-button{font-size:13px;padding:14px}
+ .setting-action{padding:15px 16px;font-size:13px}
+ .guess-after-options button{padding:10px 6px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.stage-shell.round-exit,.stage-shell.round-enter{animation:none!important;filter:none!important;opacity:1!important;transform:none!important}}
+
+.track-source-link{display:inline-flex;align-items:center;gap:6px;margin-top:7px;color:#8dceaa;font-size:9px;font-weight:750;text-decoration:none;transition:color .15s,transform .15s}
+.track-source-link:hover{color:#b6f0cf;transform:translateY(-1px)}
+.song-search{min-height:44px}
+.song-search input{line-height:1.35}
+.skip-button{align-self:stretch;min-height:44px}
+@media(min-width:1200px){.track-source-link{font-size:11px;margin-top:9px}.song-search{min-height:56px}.skip-button{min-height:56px}}

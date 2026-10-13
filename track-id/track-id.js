@@ -29,6 +29,7 @@
   const revealTitle = $("reveal-title");
   const revealArtist = $("reveal-artist");
   const revealAlbum = $("reveal-album");
+  const trackSourceLink = $("track-source-link");
   const resultMessage = $("result-message");
   const resultActions = $("result-actions");
   const mainStage = $("stage-shell");
@@ -36,7 +37,6 @@
   const timeline = $("clip-timeline");
   const guessRow = $("guess-row");
   const nextButton = $("next-button");
-  const challengeButton = $("challenge-button");
   const playbackStartButton = $("playback-start");
   const playbackStartLabel = $("playback-start-label");
   const startStageOptions = [...document.querySelectorAll("[data-start-stage]")];
@@ -47,9 +47,15 @@
   const toast = $("toast");
 
   const ITUNES_SEARCH = "https://itunes.apple.com/search";
+  const WORDSHIFT_API = "https://wordshift-api.onrender.com";
   const MAX_ROUNDS = 10;
   const POINTS_PER_WIN = 10;
-  const TIMELINE_POSITIONS = [12,25,42,70,100];
+  const ANSWER_PREVIEW_MS = 7000;
+  const STREAM_THRESHOLDS = {
+    easyMin: 250000000,
+    mediumMin: 75000000,
+    hardMin: 10000000
+  };
   const CLIPS = [
     {label:"0.1s", seconds:0.1},
     {label:"0.5s", seconds:0.5},
@@ -189,7 +195,12 @@
     startedOnce:false,
     previewTimer:null,
     suggestionIndex:-1,
-    currentOffset:0
+    currentOffset:0,
+    catalogSource:"legacy",
+    catalogNotice:"",
+    catalogInfo:null,
+    answerTimer:null,
+    transitionTimer:null
   };
 
   const normalize = (value) => String(value || "")
@@ -330,7 +341,7 @@
     return String(url||"").replace(/\b100x100bb\b/i,"600x600bb").replace(/\b100x100\b/i,"600x600");
   }
 
-  async function fetchCatalogForFilters() {
+  async function fetchLegacyCatalogForFilters() {
     const names=artistNamesForFilters();
     const selectedArtist=state.filters.artist!=="Any artist";
     const limit=selectedArtist?200:65;
@@ -362,6 +373,66 @@
     return filtered;
   }
 
+  async function fetchCatalogForFilters() {
+    const isImagineDragons = normalizeTrackTextForClient(state.filters.artist) === "imagine dragons";
+    if (!isImagineDragons) {
+      state.catalogSource = "legacy";
+      state.catalogInfo = null;
+      state.catalogNotice = "";
+      return fetchLegacyCatalogForFilters();
+    }
+
+    try {
+      const url = new URL(WORDSHIFT_API + "/api/track-id/catalog");
+      url.searchParams.set("artist", "Imagine Dragons");
+      const response = await fetch(url.toString(), { headers: { "Accept": "application/json" } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.message || "Spotify/Soundcharts catalogue is unavailable.");
+        error.code = payload.error || "TRACK_ID_CATALOG_FAILED";
+        throw error;
+      }
+
+      state.catalogSource = payload.source || "spotify+soundcharts";
+      state.catalogInfo = payload;
+      state.catalogNotice = "";
+      const tracks = (Array.isArray(payload.tracks) ? payload.tracks : []).map((track, index) => ({
+        ...track,
+        id: String(track.id || ""),
+        title: String(track.title || "").trim(),
+        artist: String(track.artist || "Imagine Dragons").trim(),
+        album: String(track.album || "").trim(),
+        genre: String(track.genre || "Rock"),
+        releaseDate: String(track.releaseDate || ""),
+        previewUrl: String(track.previewUrl || ""),
+        artworkUrl: String(track.artworkUrl || ""),
+        storeUrl: String(track.spotifyUrl || ""),
+        rank: index,
+        queryIndex: 0,
+        duration: Number(track.duration || 0),
+        streamCount: track.streamCount !== null && track.streamCount !== undefined && track.streamCount !== "" && Number.isFinite(Number(track.streamCount)) ? Number(track.streamCount) : null
+      })).filter((track) => track.id && track.title && track.previewUrl);
+
+      return tracks.filter((track) => genreMatches(track) && eraMatches(track) && artistMatches(track));
+    } catch (error) {
+      state.catalogSource = "itunes-fallback";
+      state.catalogInfo = null;
+      state.catalogNotice = "Spotify stream catalogue unavailable: " + (error.message || "using fallback results");
+      console.warn("Track ID streaming catalogue fallback:", error);
+      return fetchLegacyCatalogForFilters();
+    }
+  }
+
+  function normalizeTrackTextForClient(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()
+      .replace(/\\s+/g, " ");
+  }
+
   function knownHit(track) {
     const cfg=getArtist(state.filters.artist);
     if(!cfg||!cfg.hits)return false;
@@ -370,24 +441,46 @@
   }
 
   function difficultyPool(catalog) {
-    const tracks=catalog.slice().sort((a,b)=>a.rank-b.rank||a.queryIndex-b.queryIndex);
-    const n=tracks.length;
-    if(!n)return [];
-    let selected;
-    if(state.difficulty==="easy") {
-      const hits=tracks.filter(knownHit);
-      selected=hits.length>=8?hits:tracks.slice(0,Math.max(8,Math.ceil(n*.4)));
-    } else if(state.difficulty==="medium") {
-      selected=tracks.slice(0,Math.max(10,Math.ceil(n*.68)));
-    } else if(state.difficulty==="hard") {
-      selected=tracks.slice(Math.floor(n*.22),Math.max(Math.floor(n*.22)+8,Math.ceil(n*.82)));
-    } else if(state.difficulty==="expert") {
-      selected=tracks.slice(Math.floor(n*.42));
-    } else {
-      selected=tracks.slice(Math.floor(n*.62));
+    const tracks = catalog.slice();
+    if (!tracks.length) return [];
+
+    if (state.catalogSource === "spotify+soundcharts" &&
+        normalizeTrackTextForClient(state.filters.artist) === "imagine dragons") {
+      // These are explicit cumulative Spotify-stream bands, not search-rank bands.
+      // Missing counts are excluded instead of being silently treated as zero.
+      const withMetrics = tracks.filter((track) => Number.isFinite(track.streamCount));
+      let selected = [];
+      if (state.difficulty === "easy") {
+        selected = withMetrics.filter((track) => track.streamCount >= STREAM_THRESHOLDS.easyMin);
+      } else if (state.difficulty === "medium") {
+        selected = withMetrics.filter((track) =>
+          track.streamCount >= STREAM_THRESHOLDS.mediumMin &&
+          track.streamCount < STREAM_THRESHOLDS.easyMin);
+      } else if (state.difficulty === "hard") {
+        selected = withMetrics.filter((track) =>
+          track.streamCount >= STREAM_THRESHOLDS.hardMin &&
+          track.streamCount < STREAM_THRESHOLDS.mediumMin);
+      } else {
+        selected = withMetrics.filter((track) => track.streamCount < STREAM_THRESHOLDS.hardMin);
+      }
+      return shuffle([...new Map(selected.map((track) => [track.id, track])).values()]);
     }
-    if(selected.length<8) selected=tracks;
-    return shuffle([...new Map(selected.map((track)=>[track.id,track])).values()]);
+
+    const ranked = tracks.sort((a,b) => (a.rank || 0) - (b.rank || 0) || (a.queryIndex || 0) - (b.queryIndex || 0));
+    const n = ranked.length;
+    let selected;
+    if (state.difficulty === "easy") {
+      const hits = ranked.filter(knownHit);
+      selected = hits.length >= 8 ? hits : ranked.slice(0, Math.max(8, Math.ceil(n * .4)));
+    } else if (state.difficulty === "medium") {
+      selected = ranked.slice(0, Math.max(10, Math.ceil(n * .68)));
+    } else if (state.difficulty === "hard") {
+      selected = ranked.slice(Math.floor(n * .22), Math.max(Math.floor(n * .22) + 8, Math.ceil(n * .82)));
+    } else {
+      selected = ranked.slice(Math.floor(n * .62));
+    }
+    if (selected.length < 8) selected = ranked;
+    return shuffle([...new Map(selected.map((track) => [track.id, track])).values()]);
   }
 
   function shuffle(array) {
@@ -400,18 +493,17 @@
   }
 
   function setTimeline({playing=false}={}) {
-    const target=TIMELINE_POSITIONS[state.stage]||TIMELINE_POSITIONS[0];
     clipLabels.forEach((label,index)=>label.classList.toggle("active",index===state.stage));
     clipProgress.style.transition=playing
-      ? "width "+Math.max(0.12,CLIPS[state.stage].seconds)+"s linear"
-      : "width 180ms ease";
-    clipProgress.style.width=(playing?0:target)+"%";
+      ? "width "+Math.max(0.1,CLIPS[state.stage].seconds)+"s linear"
+      : "none";
+    clipProgress.style.width="0%";
     clipDuration.textContent=durationLabel(state.stage);
     stageCounter.textContent="CLIP "+String(state.stage+1).padStart(2,"0")+" / 05";
     if(playing){
       const token=state.playbackToken;
       requestAnimationFrame(()=>{
-        if(token===state.playbackToken&&state.isPlaying)clipProgress.style.width=target+"%";
+        if(token===state.playbackToken&&state.isPlaying)clipProgress.style.width="100%";
       });
     }
   }
@@ -487,7 +579,11 @@
   function stopTimers() {
     state.playbackToken++;
     if(state.previewTimer)window.clearTimeout(state.previewTimer);
+    if(state.answerTimer)window.clearTimeout(state.answerTimer);
+    if(state.transitionTimer)window.clearTimeout(state.transitionTimer);
     state.previewTimer=null;
+    state.answerTimer=null;
+    state.transitionTimer=null;
     audio.pause();
     state.isPlaying=false;
     mainPlay.classList.remove("is-playing");
@@ -575,14 +671,29 @@
         state.loadingPool=false;
         state.currentTrack=null;
         roundStatus.textContent="NO TRACKS";
-        poolSummary.textContent="No playable songs match these filters.";
         setMainPlayState("No tracks found","!",true);
         guessInput.disabled=true;
         skipButton.disabled=true;
-        setFeedback("No previewable tracks match this mix. Try a different genre, era, or artist.","error");
+        if(state.catalogSource==="spotify+soundcharts") {
+          if(!state.catalogInfo || Number(state.catalogInfo.tracksWithStreamCounts||0)===0) {
+            poolSummary.textContent="Stream data unavailable";
+            setFeedback("Soundcharts did not return Spotify stream counts for this catalogue. Check API credentials and plan access; unknown counts are not assigned a difficulty.", "error");
+          } else {
+            poolSummary.textContent="No tracks in this stream range";
+            setFeedback("No playable tracks fall inside the selected stream-count range. Try another difficulty.", "error");
+          }
+        } else {
+          poolSummary.textContent="Fallback catalogue";
+          setFeedback(state.catalogNotice || "No playable songs match these filters. Try a different artist, genre, or era.", "error");
+        }
         return;
       }
-      poolSummary.textContent=state.pool.length+" playable tracks";
+      const trackedCount=state.catalog.filter((track)=>Number.isFinite(track.streamCount)).length;
+      if(state.catalogSource==="spotify+soundcharts") {
+        poolSummary.textContent=state.pool.length+" tracks in this stream tier · "+trackedCount+" with stream data";
+      } else {
+        poolSummary.textContent=state.pool.length+" playable tracks"+(state.catalogNotice?" · fallback source":"");
+      }
       state.loadingPool=false;
       await assignTrack(token,initial);
     } catch(error) {
@@ -633,7 +744,7 @@
       skipButton.disabled=false;
       setMainPlayState("Ready","▶",false);
       roundStatus.textContent="READY";
-      setFeedback("Listen closely. The first clue is "+durationLabel(state.stage)+".");
+      setFeedback(state.catalogNotice || ("Listen closely. The clip is "+durationLabel(state.stage)+"."));
     } catch(error) {
       if(token!==state.requestToken||state.currentTrack!==track)return;
       state.loadingPreview=false;
@@ -653,6 +764,7 @@
     revealTitle.hidden=true;
     revealArtist.hidden=true;
     revealAlbum.hidden=true;
+    trackSourceLink.hidden=true;
     resultMessage.hidden=true;
     trackArtShell.hidden=true;
     mainPlay.hidden=false;
@@ -668,6 +780,8 @@
   function showAnswer(won) {
     if(state.revealed||!state.currentTrack)return;
     stopTimers();
+    state.roundActive=true;
+    state.startedOnce=true;
     state.revealed=true;
     revealAndGuessMode(true);
     const track=state.currentTrack;
@@ -695,6 +809,11 @@
     revealTitle.hidden=false;revealTitle.textContent=track.title;
     revealArtist.hidden=false;revealArtist.textContent=track.artist;
     revealAlbum.hidden=false;revealAlbum.textContent=track.album||"";
+    if(track.storeUrl) {
+      trackSourceLink.href=track.storeUrl;
+      trackSourceLink.textContent=state.catalogSource==="spotify+soundcharts"?"Open on Spotify ↗":"Open song listing ↗";
+      trackSourceLink.hidden=false;
+    }
     resultMessage.hidden=false;
     resultMessage.textContent=runComplete
       ?"Final score: "+state.score+"/100 · Best possible: 100."
@@ -703,10 +822,62 @@
     timeline.hidden=true;
     guessRow.hidden=true;
     resultActions.hidden=false;
-    challengeButton.textContent="♧ Challenge your friend";
     nextButton.textContent=runComplete?"Play again ↻":"Next  ▷|";
+    nextButton.disabled=true;
     guessInput.value="";
     closeSuggestions();
+    playAnswerPreviewAndAutoAdvance();
+  }
+
+  function playAnswerPreviewAndAutoAdvance() {
+    const track=state.currentTrack;
+    const token=state.playbackToken;
+    resultMessage.textContent="Playing the answer for 7 seconds…";
+    roundStatus.textContent=state.round>=MAX_ROUNDS?"RUN COMPLETE":"ANSWER PLAYING";
+    if(track && track.previewUrl) {
+      try {
+        audio.currentTime=0;
+        audio.volume=Number(volumeSlider.value)/100;
+        state.isPlaying=true;
+        const playback=audio.play();
+        if(playback&&typeof playback.catch==="function") {
+          playback.catch(()=>{
+            if(token!==state.playbackToken)return;
+            state.isPlaying=false;
+            setFeedback("Answer revealed, but this preview could not be played. Moving on shortly.","error");
+          });
+        }
+      } catch(error) {
+        state.isPlaying=false;
+      }
+    } else {
+      state.isPlaying=false;
+    }
+
+    state.answerTimer=window.setTimeout(()=>{
+      state.answerTimer=null;
+      audio.pause();
+      state.isPlaying=false;
+      if(state.round>=MAX_ROUNDS) {
+        roundStatus.textContent="RUN COMPLETE";
+        revealKicker.textContent="RUN COMPLETE";
+        resultMessage.textContent="Final score: "+state.score+"/100 · Best possible: 100.";
+        nextButton.textContent="Play again ↻";
+        nextButton.disabled=false;
+        setFeedback("Run complete — "+state.score+" / 100 points.","success");
+        mainStage.classList.add("round-finale");
+        return;
+      }
+      mainStage.classList.remove("round-enter","round-finale");
+      mainStage.classList.add("round-exit");
+      state.transitionTimer=window.setTimeout(()=>{
+        state.transitionTimer=null;
+        mainStage.classList.remove("round-exit");
+        mainStage.classList.add("round-enter");
+        nextRound();
+        window.setTimeout(()=>mainStage.classList.remove("round-enter"),520);
+      },320);
+    },ANSWER_PREVIEW_MS);
   }
 
   function playSnippet() {
@@ -738,7 +909,7 @@
       setTimeline();
       setMainPlayState("Replay "+durationLabel(state.stage),"▶",false);
       roundStatus.textContent="READY TO GUESS";
-      setFeedback("Make a guess or skip for a longer clue.");
+      setFeedback("Make a guess or skip this song.");
     };
     if(playback&&typeof playback.catch==="function"){
       playback.catch(()=>{
@@ -794,7 +965,7 @@
   }
 
   function setDifficulty(value) {
-    if(!["easy","medium","hard","expert","impossible"].includes(value))return;
+    if(!["easy","medium","hard","impossible"].includes(value))return;
     if(state.difficulty===value)return;
     state.difficulty=value;
     renderAllControls();
@@ -864,13 +1035,17 @@
     });
 
     $("reroll-button").addEventListener("click",()=>{
+      if(state.roundActive) {
+        setFeedback("Finish this round before rerolling the mix.");
+        return;
+      }
       const wasAtRunLimit=state.round>=MAX_ROUNDS;
       if(wasAtRunLimit)resetRun();
       const anyOr= (items)=>items[Math.floor(Math.random()*items.length)];
       state.filters.genre=anyOr(GENRES);
       state.filters.era=anyOr(ERAS);
       state.filters.artist=anyOr(ARTISTS).name;
-      state.difficulty=anyOr(["easy","medium","hard","expert","impossible"]);
+      state.difficulty=anyOr(["easy","medium","hard","impossible"]);
       renderAllControls();
       showToast("Your mix has been rerolled");
       prepareTrack({reload:true,initial:state.round===0});
@@ -892,21 +1067,9 @@
         prepareTrack({reload:state.poolKey!==currentFilterKey(),initial:false});
         return;
       }
-      advanceClue(true);
+      showAnswer(false);
     });
     nextButton.addEventListener("click",nextRound);
-    challengeButton.addEventListener("click",async()=>{
-      const track=state.currentTrack;
-      if(!track)return;
-      const challenge="I just guessed "+track.title+" by "+track.artist+" on WordShift Track ID. Can you beat me? "+window.location.origin+"/track-id/";
-      try{
-        await navigator.clipboard.writeText(challenge);
-        showToast("Challenge copied — send it to a friend");
-      }catch(_){
-        showToast(challenge);
-      }
-    });
-
     guessInput.addEventListener("input",renderSuggestions);
     guessInput.addEventListener("keydown",(event)=>{
       if(event.key==="ArrowDown"){event.preventDefault();moveSuggestionSelection(1);}
@@ -925,6 +1088,7 @@
       if(!event.target.closest(".song-search"))closeSuggestions();
     });
     audio.addEventListener("ended",()=>{
+      if(state.revealed)return;
       if(state.previewTimer)window.clearTimeout(state.previewTimer);
       state.previewTimer=null;
       if(state.isPlaying){
