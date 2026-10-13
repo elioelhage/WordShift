@@ -536,6 +536,7 @@
     refreshClipTimeline(true);
     playButton.disabled = true;
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Playing…';
+    playButton.dataset.answerReplay = isAnswerReplay ? "true" : "false";
 
     const failPlayback = () => {
       if (token !== playbackToken) return;
@@ -708,6 +709,7 @@
     startButton.hidden = true;
     setFeedback("Listen to the snippet, then type your guess.");
     playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 1 second';
+    playButton.dataset.answerReplay = "false";
     skipButton.innerHTML = 'Skip to 2 sec <span aria-hidden="true">→</span>';
   }
 
@@ -768,6 +770,7 @@
       // Wrong answers reveal the song and offer the full preview on demand.
       playButton.disabled = false;
       playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
+      playButton.dataset.answerReplay = "true";
       stageCaption.textContent = "Hear the full 8-second preview, then continue when ready.";
       nextButton.focus({preventScroll: true});
     }
