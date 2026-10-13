@@ -144,6 +144,7 @@
     poolKey:"",
     requestToken:0,
     playbackToken:0,
+    startedOnce:false,
     previewTimer:null,
     suggestionIndex:-1,
     currentOffset:0
@@ -540,7 +541,8 @@
     if(!track)throw new Error("No playable tracks are available.");
     state.used.add(track.id);
     state.currentTrack=track;
-    if(state.round===0 || !initial)state.round++;
+    if(state.round===0)state.round=1;
+    else if(state.startedOnce)state.round++;
     roundNumberLabel.textContent=String(state.round).padStart(2,"0");
     trackArtShell.hidden=true;
     trackArt.src="";
@@ -638,6 +640,7 @@
     if(!state.currentTrack||state.loadingPreview||state.revealed||!state.currentTrack.previewUrl)return;
     stopTimers();
     state.roundActive=true;
+    state.startedOnce=true;
     state.isPlaying=true;
     const token=state.playbackToken;
     const seconds=CLIPS[state.stage].seconds;
@@ -674,7 +677,7 @@
     state.previewTimer=window.setTimeout(stopAtEnd,Math.max(120,seconds*1000));
   }
 
-  function advanceClue(autoPlay=true) {
+  function advanceClue(autoPlay=true, messagePrefix="") {
     if(!state.currentTrack||state.revealed)return;
     stopTimers();
     if(state.stage>=CLIPS.length-1){showAnswer(false);return;}
@@ -682,7 +685,7 @@
     setTimeline();
     renderAllControls();
     roundStatus.textContent="CLIP REVEALED";
-    setFeedback("Now you can hear "+durationLabel(state.stage)+".");
+    setFeedback(messagePrefix?messagePrefix+" now you can hear "+durationLabel(state.stage)+".":"Now you can hear "+durationLabel(state.stage)+".",messagePrefix?"error":"");
     setMainPlayState("Play "+durationLabel(state.stage),"▶",false);
     if(autoPlay)playSnippet();
   }
@@ -697,12 +700,13 @@
       showAnswer(true);
       return;
     }
+    guessInput.value="";
     setFeedback("Not quite — revealing the next clue…","error");
-    advanceClue(true);
+    advanceClue(true,"Not quite —");
   }
 
   async function settingsChanged(key) {
-    if(state.roundActive&&!state.revealed){
+    if(state.roundActive){
       setFeedback("Mix changes will apply to the next track.");
       return;
     }
@@ -714,7 +718,7 @@
     if(state.difficulty===value)return;
     state.difficulty=value;
     renderAllControls();
-    if(state.roundActive&&!state.revealed){setFeedback("Difficulty changes will apply to the next track.");return;}
+    if(state.roundActive){setFeedback("Difficulty changes will apply to the next track.");return;}
     prepareTrack({reload:true,initial:state.round===0});
   }
 
