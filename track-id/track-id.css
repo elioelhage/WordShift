@@ -2,8 +2,8 @@
 :root{color-scheme:dark;--bg:#07070c;--panel:#101019;--ink:#f5f2ff;--muted:#a09bb3;--muted-2:#706b82;--line:rgba(255,255,255,.1);--accent:#a45bff;--accent-rgb:164,91,255;--accent-ink:#170d24}
 body[data-difficulty="easy"]{--accent:#5ae6a5;--accent-rgb:90,230,165;--accent-ink:#091e15}
 body[data-difficulty="medium"]{--accent:#ffca61;--accent-rgb:255,202,97;--accent-ink:#241907}
-body[data-difficulty="hard"]{--accent:#ff684f;--accent-rgb:255,104,79;--accent-ink:#260c08}
-body[data-difficulty="expert"]{--accent:#ff64c8;--accent-rgb:255,100,200;--accent-ink:#270b1f}
+body[data-difficulty="hard"]{--accent:#ff8b3d;--accent-rgb:255,139,61;--accent-ink:#2a1207}
+body[data-difficulty="expert"]{--accent:#ff435a;--accent-rgb:255,67,90;--accent-ink:#2b080d}
 body[data-difficulty="impossible"]{--accent:#a45bff;--accent-rgb:164,91,255;--accent-ink:#170d24}
 *{box-sizing:border-box} [hidden]{display:none!important}
 html{min-height:100%;background:var(--bg)}
