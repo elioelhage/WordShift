@@ -5,13 +5,15 @@ Track ID is WordShift's multi-artist song-guessing game at `/track-id/`.
 ## Gameplay prototype
 
 - Choose between Imagine Dragons and Kanye West before a run.
-- Easy, Medium, and Hard song pools with ten rounds per run.
+- Ten-round runs with distinct Easy hit-list and Hard deeper-cut pools; Medium mixes both pools. If a tier lacks ten playable songs, it reports that rather than silently borrowing from another tier.
 - The first clip is 1.4 seconds of audio but is labelled one second; later stages reveal 2.5, 4, and 5 seconds.
 - Each stage has a different base score; difficulty affects the score awarded. The site does not disclose the multipliers.
 - Duplicate album/single releases are grouped by normalized title; live, remix, acoustic, instrumental, remastered, and featured-artist variants are filtered out where possible.
 - A custom searchable song picker supports mouse and keyboard navigation.
 - The selected artist's profile image appears in the sound orb; correct answers reveal song-cover art and album details.
 - On a correct guess, playback resumes about 0.4 seconds before the end of the guessing clip and continues for eight seconds before advancing automatically; the in-panel button can advance sooner.
+- On an incorrect guess, the answer is revealed and a separate button lets the player hear the full eight-second preview before manually advancing.
+- Artist and difficulty choices are grouped as pre-game setup and hidden during a run.
 
 ## Important audio rights note
 
