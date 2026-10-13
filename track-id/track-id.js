@@ -513,7 +513,7 @@
     answerReveal.classList.remove("is-autoplaying");
     autoAdvanceBox.hidden = true;
     refreshClipTimeline(false);
-    playButton.disabled = !currentTrack;
+    playButton.disabled = !currentTrack || !currentTrack.previewUrl;
     if (wasAnswerReplay && roundSolved) {
       playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
       playButton.dataset.answerReplay = "true";
@@ -522,10 +522,45 @@
   }
 
   function setAudioTrack(track) {
+    if (!track || !track.previewUrl) return;
     if (audio.src !== track.previewUrl) {
       audio.src = track.previewUrl;
       audio.load();
     }
+  }
+
+  // Keep the play action unavailable until the selected preview has metadata.
+  function waitForPlayablePreview(track) {
+    return new Promise((resolve, reject) => {
+      if (!track || !track.previewUrl) {
+        reject(new Error("No playable preview is available for this song."));
+        return;
+      }
+      setAudioTrack(track);
+      if (audio.readyState >= 1 && audio.duration > 0) {
+        resolve();
+        return;
+      }
+      const cleanUp = () => {
+        audio.removeEventListener("loadedmetadata", onReady);
+        audio.removeEventListener("canplay", onReady);
+        audio.removeEventListener("error", onError);
+      };
+      const onReady = () => {
+        if (audio.duration > 0) {
+          cleanUp();
+          resolve();
+        }
+      };
+      const onError = () => {
+        cleanUp();
+        reject(new Error("This preview could not be loaded. Try the next song."));
+      };
+      audio.addEventListener("loadedmetadata", onReady);
+      audio.addEventListener("canplay", onReady);
+      audio.addEventListener("error", onError);
+      audio.load();
+    });
   }
 
   function playSnippet(seconds = clipSeconds) {
@@ -715,7 +750,30 @@
     closeSuggestions();
     setAudioTrack(currentTrack);
     refreshClipTimeline(false);
-    setControls({guess: true, skip: true, play: true});
+    setControls({guess: false, skip: false, play: false});
+    stageCaption.textContent = "Loading preview…";
+    clipLabel.textContent = "LOADING TRACK";
+    playButton.disabled = true;
+    playButton.innerHTML = '<span aria-hidden="true">◌</span> Loading…';
+    audioNote.textContent = "Loading the selected track preview…";
+    waitForPlayablePreview(currentTrack).then(() => {
+      if (!gameStarted || roundSolved || currentTrack !== next) return;
+      stageCaption.textContent = "Preview ready. Press play when you're ready.";
+      clipLabel.textContent = "YOUR FIRST CLIP";
+      playButton.disabled = false;
+      playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 1 second';
+      setControls({guess: true, skip: true, play: true});
+      setFeedback("Listen to the snippet, then type your guess.");
+    }).catch((error) => {
+      if (!gameStarted || roundSolved || currentTrack !== next) return;
+      stageCaption.textContent = "Preview unavailable.";
+      clipLabel.textContent = "TRACK UNAVAILABLE";
+      setControls();
+      setFeedback(error.message || "This preview could not be loaded. Move to the next song.", "error");
+      nextButton.hidden = false;
+      nextButton.textContent = "Skip this song →";
+      nextButton.focus({preventScroll: true});
+    });
     nextButton.hidden = true;
     nextButton.textContent = "Skip to next song →";
     startButton.hidden = true;
