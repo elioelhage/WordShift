@@ -93,22 +93,22 @@ function trackIdError(status, code, message) {
 function normalizeTrackText(value) {
   return String(value || "")
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
-    .replace(/\\s+/g, " ");
+    .replace(/\s+/g, " ");
 }
 
 function normalizeTrackTitle(value) {
   const cleaned = String(value || "")
-    .replace(/\\s*[([]\\s*(?:\\d{4}\\s+)?(?:remaster(?:ed)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition)[^)]*[)]]\\s*$/i, "")
-    .replace(/\\s+-\\s+(?:\\d{4}\\s+)?(?:remaster(?:ed)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition).*$/i, "");
+    .replace(/\s*[\[(]\s*(?:\d{4}\s+)?(?:remaster(?:ed)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition)[^\])]*[\])]\s*$/i, "")
+    .replace(/\s+[-–]\s+(?:\d{4}\s+)?(?:remaster(?:ed)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition).*$/i, "");
   return normalizeTrackText(cleaned)
-    .replace(/\\b(remaster(ed)?(\\s+version)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition)\\b/g, "")
+    .replace(/\b(remaster(ed)?(\s+version)?|radio edit|single version|album version|explicit version|bonus track|deluxe edition)\b/g, "")
     .trim()
-    .replace(/\\s+/g, " ");
+    .replace(/\s+/g, " ");
 }
 
 async function readJsonResponse(response, provider) {
