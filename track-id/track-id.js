@@ -456,37 +456,45 @@
 
   function waitForTrack(track) {
     return new Promise((resolve,reject)=>{
-      if(!track||!track.previewUrl){reject(new Error("No playable preview for this recording."));return;}
-      if(audio.src!==track.previewUrl){
-        audio.src=track.previewUrl;
-        audio.load();
-      }
-      audio.volume=Number(volumeSlider.value)/100;
-      if(audio.readyState>=2 && Number.isFinite(audio.duration)&&audio.duration>0){
-        resolve();
+      if(!track||!track.previewUrl){
+        reject(new Error("No playable preview for this recording."));
         return;
       }
+      const sourceChanged=audio.src!==track.previewUrl;
+      audio.volume=Number(volumeSlider.value)/100;
       let settled=false;
-      const timeout=window.setTimeout(()=>finish(new Error("The preview took too long to load. Try the next track.")),12000);
+      let timeout=null;
       const clean=()=>{
         audio.removeEventListener("loadedmetadata",onReady);
         audio.removeEventListener("canplay",onReady);
         audio.removeEventListener("error",onError);
-        window.clearTimeout(timeout);
+        if(timeout)window.clearTimeout(timeout);
       };
       const finish=(error)=>{
         if(settled)return;
-        settled=true;clean();
+        settled=true;
+        clean();
         if(error)reject(error);else resolve();
       };
-      const onReady=()=>{if(audio.duration>0)finish();};
+      const onReady=()=>{
+        if(audio.readyState>=2&&Number.isFinite(audio.duration)&&audio.duration>0)finish();
+      };
       const onError=()=>finish(new Error("This audio preview is unavailable. Skip to another track."));
+      if(!sourceChanged&&audio.readyState>=2&&Number.isFinite(audio.duration)&&audio.duration>0){
+        resolve();
+        return;
+      }
+      // Attach listeners before initiating a source load, so a quick cache hit
+      // cannot race past the ready/error handlers.
       audio.addEventListener("loadedmetadata",onReady);
       audio.addEventListener("canplay",onReady);
       audio.addEventListener("error",onError);
+      timeout=window.setTimeout(()=>finish(new Error("The preview took too long to load. Try the next track.")),12000);
+      if(sourceChanged)audio.src=track.previewUrl;
+      audio.load();
+      onReady();
     });
   }
-
   function chooseOffset(track) {
     if(state.fromStart){state.currentOffset=0;return;}
     const maximum=Math.max(0,Math.min(18,(Number(audio.duration)||30)-CLIPS[state.stage].seconds-0.2));
