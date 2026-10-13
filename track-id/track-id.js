@@ -772,8 +772,24 @@
       prepareTrack({reload:true,initial:state.round===0});
     });
 
-    mainPlay.addEventListener("click",playSnippet);
-    skipButton.addEventListener("click",()=>advanceClue(true));
+    mainPlay.addEventListener("click",()=>{
+      if(!state.currentTrack){
+        prepareTrack({reload:true,initial:state.round===0});
+        return;
+      }
+      if(roundStatus.textContent==="PREVIEW UNAVAILABLE"){
+        prepareTrack({reload:state.poolKey!==currentFilterKey(),initial:false});
+        return;
+      }
+      playSnippet();
+    });
+    skipButton.addEventListener("click",()=>{
+      if(roundStatus.textContent==="PREVIEW UNAVAILABLE"){
+        prepareTrack({reload:state.poolKey!==currentFilterKey(),initial:false});
+        return;
+      }
+      advanceClue(true);
+    });
     nextButton.addEventListener("click",()=>prepareTrack({reload:state.poolKey!==currentFilterKey(),initial:false}));
     challengeButton.addEventListener("click",async()=>{
       const track=state.currentTrack;
