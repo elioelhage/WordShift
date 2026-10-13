@@ -908,7 +908,9 @@
   difficultyButtons.forEach((button) => button.addEventListener("click", () => setDifficulty(button.dataset.difficulty)));
   startButton.addEventListener("click", startGame);
   nextButton.addEventListener("click", nextRound);
-  playButton.addEventListener("click", () => playSnippet(clipSeconds));
+  playButton.addEventListener("click", () => playSnippet(
+    playButton.dataset.answerReplay === "true" ? answerPlaybackSeconds : clipSeconds
+  ));
   skipButton.addEventListener("click", skipSong);
   submitButton.addEventListener("click", checkGuess);
   guessInput.addEventListener("input", renderSuggestions);
