@@ -63,3 +63,12 @@ footer{position:relative;z-index:1;width:min(1120px,calc(100% - 40px));margin:0 
 .game-card.is-playing .game-topline { margin-bottom: 12px; }
 .game-card.is-playing .game-footer { display: none; }
 .game-card:not(.is-playing) .guess-area { opacity: .93; }
+
+/* Compact identity bar only appears after setup has been dismissed. */
+.round-focus{display:flex;align-items:center;gap:12px;margin:0 0 18px;padding:12px 15px;border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.035)}
+.round-focus[hidden]{display:none!important}.round-focus-art{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:rgba(var(--game-rgb),.12);color:var(--game-accent);font-size:1.35rem}
+.round-focus-copy{display:flex;min-width:0;flex:1;flex-direction:column}.round-focus-copy small{color:var(--muted);font-size:.59rem;font-weight:800;letter-spacing:.15em}.round-focus-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 .98rem "Space Grotesk",sans-serif}
+.round-focus-round{flex:0 0 auto;color:var(--muted);font-size:.67rem;font-weight:750;font-variant-numeric:tabular-nums}
+.game-card.is-playing .game-topline{display:none}.game-card.is-playing{padding:0;border:0;background:transparent;box-shadow:none}.game-card.is-playing .sound-stage{padding:30px 26px 25px;border-radius:23px}
+.game-card.is-playing .guess-area{padding:19px 4px 0}.game-card.is-playing .game-footer{display:none}.game-card.is-playing .sound-orb{width:82px;height:82px}
+@media(max-width:540px){.round-focus{padding:10px;gap:9px}.round-focus-art{width:36px;height:36px;flex-basis:36px}.round-focus-copy strong{font-size:.85rem}.round-focus-round{font-size:.58rem}.game-card.is-playing .sound-stage{padding:23px 13px 19px}.game-card.is-playing .guess-area{padding-inline:1px}}
