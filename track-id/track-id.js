@@ -555,6 +555,7 @@
       setFeedback("This preview is unavailable. Try replaying or skip to reveal another section.", "error");
       playButton.disabled = false;
       playButton.innerHTML = '<span aria-hidden="true">▶</span> Try again';
+      playButton.dataset.answerReplay = isAnswerReplay ? "true" : "false";
     };
     const startAt = () => {
       if (token !== playbackToken || !currentTrack) return;
