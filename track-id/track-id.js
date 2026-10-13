@@ -501,6 +501,7 @@
 
   function stopAudio() {
     const wasAnswerReplay = playButton.dataset.answerReplay === "true";
+    const wasActivePlayback = !audio.paused;
     playbackToken += 1;
     if (previewTimer) window.clearTimeout(previewTimer);
     if (advanceTimer) window.clearTimeout(advanceTimer);
@@ -517,6 +518,8 @@
     if (wasAnswerReplay && roundSolved) {
       playButton.innerHTML = '<span aria-hidden="true">▶</span> Play 8-second preview';
       playButton.dataset.answerReplay = "true";
+      // The answer player is only reset when stopping it intentionally (e.g. by
+      // advancing). Do not relabel a replay while its own timer is finishing it.
     }
     return playbackToken;
   }
