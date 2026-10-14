@@ -33,6 +33,10 @@
       "dest": "/track-id/index.html"
     },
     {
+      "src": "/song-hunt/?$",
+      "dest": "/song-hunt/index.html"
+    },
+    {
       "src": "/dragon-tunes/?$",
       "dest": "/track-id/index.html"
     },
