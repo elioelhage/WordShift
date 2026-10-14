@@ -39,6 +39,21 @@ Tracks with unknown stream counts are excluded from all four bands. These bands 
 
 The endpoint returns an actionable error if Spotify configuration is missing. Soundcharts plan/permission failures appear as unavailable stream data; the frontend does not fabricate stream counts.
 
+## Song Hunt catalogue endpoint
+
+`GET /api/song-hunt/catalog`
+
+Song Hunt is a metadata-only deduction game and does not use audio previews.
+
+1. Loads the official album and single catalogue for Imagine Dragons and Kanye West from Spotify.
+2. Skips compilations and recognizable alternate titles or album editions, including live, acoustic, remix, demo, instrumental, karaoke, remastered, deluxe, and reissue variants where identifiable.
+3. Deduplicates normalized song titles per base artist and chooses the earliest eligible release as the canonical recording. If duplicate editions have the same release date, explicit original masters are preferred where identifiable.
+4. Adds artist-level genre tags, first eligible release year, album, duration, and credited featured-artist status.
+5. Uses Soundcharts cumulative Spotify audience data to verify stream counts. Imagine Dragons has no stream threshold. Kanye West tracks are included only when a stream count is available and at least 50,000,000.
+6. Caches the entire generated catalogue in process memory for 12 hours. A missing stream count is not interpreted as zero.
+
+**Genre limitation:** Spotify's artist catalogue metadata does not offer a consistent per-track genre field in this route. Initial Song Hunt genre clues use the main artist profile's genre tags. A future catalogue version can replace these with curated or per-track classifications.
+
 ## Spotify developer requirements
 
 Spotify Developer Mode access is subject to Spotify's current account and endpoint eligibility rules. Verify that the app owner has the required Premium account and that the necessary catalogue endpoints are available to the app. Spotify credentials must only be used on this server, not from browser JavaScript.
