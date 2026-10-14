@@ -31,3 +31,25 @@ jobs:
           node --check song-hunt/song-hunt.js
       - name: Validate Vercel route configuration
         run: node -e "JSON.parse(require('fs').readFileSync('vercel.json', 'utf8')); console.log('vercel.json is valid')"
+      - name: Diagnose Render API availability and CORS
+        shell: bash
+        run: |
+          set -u
+          for attempt in 1 2 3; do
+            echo "Render health check attempt $attempt"
+            status=$(curl --silent --show-error --max-time 45 --dump-header /tmp/song-hunt-headers --output /tmp/song-hunt-body --write-out "%{http_code}" -H "Origin: https://wordshift.dev" -H "Accept: application/json" https://wordshift-api.onrender.com/health || true)
+            echo "HTTP_STATUS=$status"
+            cat /tmp/song-hunt-headers 2>/dev/null || true
+            cat /tmp/song-hunt-body 2>/dev/null || true
+            if [ "$status" = "200" ]; then
+              if grep -qi "^access-control-allow-origin: \*" /tmp/song-hunt-headers; then
+                echo "HEALTH_OK_AND_CORS_WILDCARD_PRESENT"
+                exit 0
+              fi
+              echo "HEALTH_OK_BUT_CORS_HEADER_MISSING"
+              exit 1
+            fi
+            sleep 8
+          done
+          echo "RENDER_API_UNAVAILABLE_AFTER_RETRIES"
+          exit 1
