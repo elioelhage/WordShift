@@ -30,6 +30,19 @@ The backend caches the enriched Imagine Dragons catalogue for 12 hours. The fron
 
 Spotify's Web API supplies metadata but is not used to extract preview audio. WordShift currently matches Spotify tracks with iTunes Search API promotional preview URLs. Apple's previews may not be authorized for a standalone song-guessing game, so confirm permission or replace the preview adapter with an appropriately licensed provider before public production. Do not download, mirror, or cache preview audio.
 
+## Song Hunt
+
+Song Hunt is a metadata-deduction game at `/song-hunt/`. It is separate from Track ID: no audio is played. Players search the available catalogue and compare each guess against the mystery song using artist, first release year, genre tags, album, cumulative Spotify streams, duration, and whether other artists are featured. Guess attempts are unlimited; personal wins, win rate, streak, and average winning guesses are saved locally in the browser.
+
+### Initial catalogue and canonical versions
+
+- The game is designed for multiple artists. The initial catalogue includes Imagine Dragons and Kanye West.
+- Imagine Dragons has no stream-count cutoff. Kanye West tracks are included only when Soundcharts verifies at least **50 million cumulative Spotify streams**; tracks with unknown stream counts do not qualify.
+- Live, acoustic, remix, demo, instrumental, karaoke, remastered, and other recognizable alternate-title versions are excluded. Deluxe, reissue, live, remix, and compilation album editions are filtered where identifiable. When multiple eligible releases share a normalized title and base artist, the earliest eligible release is selected as the canonical recording.
+- Spotify provides artist-level genre tags rather than consistent per-track genre labels through this catalogue route, so the first release uses the artist profile's genre tags as the genre clue. A later data pass can add track-specific genre classifications.
+- Catalogue metadata comes from Spotify and cumulative Spotify stream counts from Soundcharts. Missing counts are never presented as zero. The API caches the generated catalogue in server memory for 12 hours.
+- Backend route: `GET /api/song-hunt/catalog` on the WordShift Render API. Spotify and Soundcharts credentials must already be configured as described in [backend/README.md](backend/README.md).
+
 ## WordShift features
 
 - Daily puzzle with adaptive word lengths and color feedback.
