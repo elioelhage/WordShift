@@ -8,6 +8,7 @@ WordShift is a browser-game arcade with a daily word puzzle, competitive race mo
 
 - **WordShift / Wordle** — daily word puzzle at `/wordle/`, with hints, themes, accounts, and leaderboard integration.
 - **Track ID** — music recognition game at `/track-id/`, with genre/era/artist filters and four difficulty tiers.
+- **Song Hunt** — endless music deduction game at `/song-hunt/`, using artist, release year, genre, album, stream count, duration, and feature clues.
 - **Race mode** — create or join a private 1v1 room at `/race/`.
 - **Arcade** — browse available games at `/games/`.
 
