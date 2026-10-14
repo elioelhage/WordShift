@@ -479,7 +479,8 @@
   });
 
   document.addEventListener("click", (event) => {
-    if (!event.target.closest(".search-wrap")) closeSuggestions();
+    // Keep the selected result alive through the form button's click/submit cycle.
+    if (!event.target.closest(".search-wrap") && !event.target.closest(".guess-button")) closeSuggestions();
   });
 
   guessForm.addEventListener("submit", (event) => {
