@@ -41,7 +41,7 @@ app.get('/', (req, res) => {
   res.json({
     service: 'WordShift backend',
     status: 'online',
-    endpoints: ['/health', '/api/keys', '/api/track-id/catalog']
+    endpoints: ['/health', '/api/keys', '/api/track-id/catalog', '/api/song-hunt/catalog']
   });
 });
 
