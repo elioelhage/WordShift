@@ -1,0 +1,33 @@
+name: Song Hunt validation
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/api.js"
+      - "song-hunt/**"
+      - "vercel.json"
+      - ".github/workflows/song-hunt-validation.yml"
+  pull_request:
+    paths:
+      - "backend/api.js"
+      - "song-hunt/**"
+      - "vercel.json"
+      - ".github/workflows/song-hunt-validation.yml"
+
+jobs:
+  syntax-and-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Check JavaScript syntax
+        run: |
+          node --check backend/api.js
+          node --check song-hunt/song-hunt.js
+      - name: Validate Vercel route configuration
+        run: node -e "JSON.parse(require('fs').readFileSync('vercel.json', 'utf8')); console.log('vercel.json is valid')"
