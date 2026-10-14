@@ -566,7 +566,7 @@ let activeSongHuntCatalogBuild = null;
 function isSongHuntAlternateTitle(title) {
   const value = String(title || "");
   const alternateInBrackets = /[\[(][^\])]*(?:\blive\b|\bacoustic\b|\bremix(?:ed)?\b|\bdemo\b|\binstrumental\b|\bkaraoke\b|\bsped up\b|\bslowed(?: down)?\b|\bnightcore\b|\breimagined\b|\borchestral\b|\bpiano version\b|\bstripped\b|\bunplugged\b|\bcover\b|\bremaster(?:ed)?\b|\bre-record(?:ed|ing)?\b)[^\])]*[\])]/i;
-  const alternateSuffix = /\s[-–:]\s*(?:live|acoustic|remix(?:ed)?|demo|instrumental|karaoke|sped up|slowed(?: down)?|nightcore|reimagined|orchestral|piano version|stripped|unplugged|cover|remaster(?:ed)?|re-record(?:ed|ing)?)(?:\s|$)/i;
+  const alternateSuffix = /\s[-–:]\s*(?:(?:\d{4}\s+)?(?:live|acoustic|remix(?:ed)?|demo|instrumental|karaoke|sped up|slowed(?: down)?|nightcore|reimagined|orchestral|piano version|stripped|unplugged|cover|remaster(?:ed)?|re-record(?:ed|ing)?))(?:\s|$)/i;
   const alternateEnding = /\b(?:live|acoustic|remix(?:ed)?|demo|instrumental|karaoke|sped up|slowed(?: down)?|nightcore|reimagined|orchestral|piano version|stripped|unplugged|cover|remaster(?:ed)?|re-record(?:ed|ing)?)\s+(?:version|edit|recording|mix)\s*$/i;
   return alternateInBrackets.test(value) || alternateSuffix.test(value) || alternateEnding.test(value);
 }
