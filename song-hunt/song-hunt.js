@@ -146,7 +146,10 @@
     } catch (error) {
       state.loading = false;
       catalogStatus.textContent = "Catalogue unavailable";
-      loadErrorMessage.textContent = error.message || "Check the Song Hunt API connection and try again.";
+      const rawMessage = String(error && error.message || "");
+      loadErrorMessage.textContent = /failed to fetch|networkerror|load failed/i.test(rawMessage)
+        ? "The browser cannot reach the configured WordShift API server. Its Render hostname may be unavailable or outdated. Check the backend service URL in Render, then retry."
+        : rawMessage || "Check the Song Hunt API connection and try again.";
       loadError.hidden = false;
       setFeedback("The game can't start without its verified catalogue.", "error");
       retryButton.focus();
