@@ -536,6 +536,309 @@ app.get('/api/track-id/catalog', async (req, res) => {
 });
 
 
+
+// ============================================================
+// SONG HUNT: METADATA DEDUCTION CATALOG
+// A separate metadata-only game. No audio previews are required.
+// Stream counts are verified through Soundcharts; missing counts are
+// never fabricated. Kanye West songs must have at least 50M streams.
+// ============================================================
+const SONG_HUNT_ARTISTS = [
+  {
+    key: "imagine dragons",
+    displayName: "Imagine Dragons",
+    spotifyId: "53XhwfbYqKCa1cC15pYq2q",
+    defaultGenre: "Rock",
+    minimumStreams: null
+  },
+  {
+    key: "kanye west",
+    displayName: "Kanye West",
+    spotifyId: "5K4W6rqBFWDnAN6FQUkS6x",
+    defaultGenre: "Hip-Hop",
+    minimumStreams: 50000000
+  }
+];
+const SONG_HUNT_CACHE_MS = 12 * 60 * 60 * 1000;
+let songHuntCatalogCache = null;
+let activeSongHuntCatalogBuild = null;
+
+function isSongHuntAlternateTitle(title) {
+  const value = String(title || "");
+  const alternateInBrackets = /[\[(][^\])]*(?:\blive\b|\bacoustic\b|\bremix(?:ed)?\b|\bdemo\b|\binstrumental\b|\bkaraoke\b|\bsped up\b|\bslowed(?: down)?\b|\bnightcore\b|\breimagined\b|\borchestral\b|\bpiano version\b|\bstripped\b|\bunplugged\b|\bcover\b|\bremaster(?:ed)?\b|\bre-record(?:ed|ing)?\b)[^\])]*[\])]/i;
+  const alternateSuffix = /\s[-–:]\s*(?:live|acoustic|remix(?:ed)?|demo|instrumental|karaoke|sped up|slowed(?: down)?|nightcore|reimagined|orchestral|piano version|stripped|unplugged|cover|remaster(?:ed)?|re-record(?:ed|ing)?)(?:\s|$)/i;
+  const alternateEnding = /\b(?:live|acoustic|remix(?:ed)?|demo|instrumental|karaoke|sped up|slowed(?: down)?|nightcore|reimagined|orchestral|piano version|stripped|unplugged|cover|remaster(?:ed)?|re-record(?:ed|ing)?)\s+(?:version|edit|recording|mix)\s*$/i;
+  return alternateInBrackets.test(value) || alternateSuffix.test(value) || alternateEnding.test(value);
+}
+
+function isSongHuntAlternateAlbum(title) {
+  return /\b(?:live|deluxe|expanded|anniversary|greatest hits|best of|remaster(?:ed)?|remix|acoustic|karaoke|instrumentals|reissue|special edition|super deluxe|collector'?s edition|bonus tracks)\b/i.test(String(title || ""));
+}
+
+function cleanSongHuntTitle(title) {
+  return String(title || "")
+    .replace(/\s*[\[(]\s*(?:feat(?:uring)?|ft)\.?\s+[^\])]+[\])]/ig, "")
+    .replace(/\s+(?:feat(?:uring)?|ft)\.?\s+.+$/ig, "")
+    .replace(/\s*[\[(]\s*(?:single version|album version|remaster(?:ed)?(?:\s+\d{4})?)[^\])]*[\])]\s*$/i, "")
+    .trim();
+}
+
+function songHuntTitleKey(title) {
+  return normalizeTrackText(cleanSongHuntTitle(title))
+    .replace(/\b(?:the original|original version)\b/g, "")
+    .trim();
+}
+
+function formatSongHuntGenreTag(value) {
+  return String(value || "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function chooseSongHuntGenres(rawGenres, fallback) {
+  const cleaned = (Array.isArray(rawGenres) ? rawGenres : [])
+    .map(formatSongHuntGenreTag)
+    .filter(Boolean);
+  const unique = [...new Set(cleaned)].slice(0, 4);
+  return unique.length ? unique : [fallback];
+}
+
+async function getSongHuntArtistGenres(artist) {
+  try {
+    const profile = await spotifyGet("/artists/" + encodeURIComponent(artist.spotifyId));
+    return chooseSongHuntGenres(profile.genres, artist.defaultGenre);
+  } catch (error) {
+    console.warn("Song Hunt artist genres unavailable for " + artist.displayName + ":", error.message);
+    return [artist.defaultGenre];
+  }
+}
+
+async function fetchSongHuntAlbumTracks(album) {
+  const tracks = [];
+  let offset = 0;
+  let total = 0;
+  do {
+    const query = new URLSearchParams({ market: "CA", limit: "50", offset: String(offset) });
+    const response = await spotifyGet("/albums/" + encodeURIComponent(album.id) + "/tracks?" + query.toString());
+    for (const track of (response.items || [])) {
+      if (!track || !track.id || track.is_local || !track.name) continue;
+      tracks.push({
+        id: track.id,
+        title: track.name,
+        artists: (track.artists || []).map((artist) => ({ id: artist.id || "", name: artist.name || "" })),
+        album: album.name || "",
+        albumType: album.album_type || "album",
+        albumReleaseDate: album.release_date || "",
+        albumTotalTracks: Number(album.total_tracks) || 0,
+        trackNumber: Number(track.track_number) || 0,
+        releaseDate: album.release_date || "",
+        durationMs: Number(track.duration_ms) || 0,
+        explicit: Boolean(track.explicit),
+        spotifyUrl: track.external_urls?.spotify || ("https://open.spotify.com/track/" + track.id),
+        artworkUrl: (album.images || []).find((image) => image && image.url)?.url || ""
+      });
+    }
+    total = Number(response.total) || tracks.length;
+    offset += 50;
+  } while (offset < total && offset < 250);
+  return tracks;
+}
+
+function isBetterSongHuntRecording(candidate, previous) {
+  const candidateDate = String(candidate.releaseDate || "9999");
+  const previousDate = String(previous.releaseDate || "9999");
+  if (candidateDate !== previousDate) return candidateDate < previousDate;
+  // If the same title was issued on the same date in clean and explicit editions,
+  // prefer the explicit original master as the canonical version.
+  if (candidate.explicit !== previous.explicit) return candidate.explicit;
+  if (candidate.albumType !== previous.albumType) {
+    if (candidate.albumType === "single") return true;
+    if (previous.albumType === "single") return false;
+  }
+  return false;
+}
+
+function parseSongHuntYear(releaseDate) {
+  const match = String(releaseDate || "").match(/^(\d{4})/);
+  return match ? Number(match[1]) : null;
+}
+
+async function buildSongHuntArtistCatalog(artist) {
+  const [genres, albums] = await Promise.all([
+    getSongHuntArtistGenres(artist),
+    fetchSpotifyAlbums(artist.spotifyId)
+  ]);
+  const eligibleAlbums = albums
+    .filter((album) => album && album.id && album.album_type !== "compilation" && !isSongHuntAlternateAlbum(album.name))
+    .sort((a, b) => String(a.release_date || "9999").localeCompare(String(b.release_date || "9999")));
+
+  const albumBatches = await mapWithConcurrency(eligibleAlbums, 5, async (album) => {
+    try {
+      return await fetchSongHuntAlbumTracks(album);
+    } catch (error) {
+      if (error.providerStatus === 403) throw error;
+      console.warn("Song Hunt album track lookup failed:", album.name, error.message);
+      return [];
+    }
+  });
+
+  const canonical = new Map();
+  for (const raw of albumBatches.flat()) {
+    if (!raw || isSongHuntAlternateTitle(raw.title)) continue;
+    if (raw.artists.length && !raw.artists.some((credited) => credited.id === artist.spotifyId)) continue;
+
+    const title = cleanSongHuntTitle(raw.title);
+    const keyTitle = songHuntTitleKey(title);
+    if (!keyTitle) continue;
+
+    const creditedOthers = raw.artists
+      .filter((credited) => credited.id && credited.id !== artist.spotifyId)
+      .map((credited) => credited.name)
+      .filter(Boolean);
+    const titleFeature = String(raw.title).match(/(?:feat(?:uring)?|ft)\.?\s*([^\])]+)/i);
+    const titleFeatureNames = titleFeature
+      ? titleFeature[1].replace(/[\])]+$/g, "").split(/\s*(?:,|&| and )\s*/i).map((name) => name.trim()).filter(Boolean)
+      : [];
+    const featuredArtists = [...new Set([...creditedOthers, ...titleFeatureNames])];
+
+    const candidate = {
+      id: raw.id,
+      title,
+      artist: artist.displayName,
+      artistId: artist.spotifyId,
+      genres,
+      genre: genres[0] || artist.defaultGenre,
+      album: raw.album,
+      albumType: raw.albumType,
+      releaseDate: raw.releaseDate,
+      year: parseSongHuntYear(raw.releaseDate),
+      streamCount: null,
+      durationMs: raw.durationMs,
+      isFeatured: featuredArtists.length > 0,
+      featuredArtists,
+      spotifyUrl: raw.spotifyUrl,
+      artworkUrl: raw.artworkUrl,
+      explicit: raw.explicit
+    };
+    const key = artist.key + "|" + keyTitle;
+    const previous = canonical.get(key);
+    if (!previous || isBetterSongHuntRecording(candidate, previous)) canonical.set(key, candidate);
+  }
+
+  return [...canonical.values()];
+}
+
+async function enrichSongHuntStreamCounts(tracks) {
+  let soundchartsUnavailable = false;
+  return mapWithConcurrency(tracks, 5, async (track) => {
+    if (soundchartsUnavailable) return { ...track, streamCount: null };
+    try {
+      const streamCount = await getSpotifyStreamCount(track.id);
+      return { ...track, streamCount };
+    } catch (error) {
+      if (error.providerStatus === 403 || error.code === "SOUNDCHARTS_HTTP_403") {
+        soundchartsUnavailable = true;
+      } else if (error.providerStatus !== 404 && error.code !== "SOUNDCHARTS_HTTP_404") {
+        console.warn("Song Hunt stream lookup failed for " + track.title + ":", error.message);
+      }
+      return { ...track, streamCount: null };
+    }
+  });
+}
+
+async function buildSongHuntCatalog() {
+  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
+    throw trackIdError(503, "SPOTIFY_NOT_CONFIGURED",
+      "Spotify is not configured. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in the Render backend.");
+  }
+  if (!SOUNDCHARTS_CLIENT_ID || !SOUNDCHARTS_CLIENT_SECRET) {
+    throw trackIdError(503, "SOUNDCHARTS_NOT_CONFIGURED",
+      "Soundcharts is required to verify Song Hunt stream counts. Add SOUNDCHARTS_CLIENT_ID and SOUNDCHARTS_CLIENT_SECRET in the Render backend.");
+  }
+
+  const artistCatalogues = await Promise.all(SONG_HUNT_ARTISTS.map(async (artist) => ({
+    artist,
+    tracks: await buildSongHuntArtistCatalog(artist)
+  })));
+
+  const candidateTracks = artistCatalogues.flatMap((entry) => entry.tracks);
+  if (!candidateTracks.length) {
+    throw trackIdError(502, "SONG_HUNT_EMPTY_CATALOG", "Spotify returned no eligible original recordings for Song Hunt.");
+  }
+
+  const enriched = await enrichSongHuntStreamCounts(candidateTracks);
+  const artistNames = new Set(SONG_HUNT_ARTISTS.map((artist) => artist.displayName));
+  const filtered = enriched.filter((track) => {
+    const artist = SONG_HUNT_ARTISTS.find((candidate) => candidate.displayName === track.artist);
+    if (!artist) return false;
+    if (artist.minimumStreams === null) return true;
+    return Number.isFinite(track.streamCount) && track.streamCount >= artist.minimumStreams;
+  });
+
+  const byArtist = Object.fromEntries(SONG_HUNT_ARTISTS.map((artist) => [
+    artist.displayName,
+    filtered.filter((track) => track.artist === artist.displayName).length
+  ]));
+  if (!byArtist["Kanye West"]) {
+    throw trackIdError(503, "SONG_HUNT_KANYE_STREAMS_UNAVAILABLE",
+      "Song Hunt could not verify any Kanye West tracks at or above 50 million Spotify streams. Check Soundcharts access and try again; unverified tracks are intentionally excluded.");
+  }
+
+  const publicTracks = filtered.map((track) => ({
+    id: track.id,
+    title: track.title,
+    artist: track.artist,
+    year: track.year,
+    releaseDate: track.releaseDate,
+    genres: track.genres,
+    genre: track.genre,
+    album: track.album,
+    streamCount: Number.isFinite(track.streamCount) ? track.streamCount : null,
+    durationMs: track.durationMs,
+    isFeatured: track.isFeatured,
+    featuredArtists: track.featuredArtists,
+    spotifyUrl: track.spotifyUrl
+  }));
+
+  return {
+    game: "Song Hunt",
+    source: "Spotify metadata + Soundcharts cumulative Spotify stream counts",
+    updatedAt: new Date().toISOString(),
+    cacheDurationHours: 12,
+    rules: {
+      kanyeWestMinimumStreams: 50000000,
+      alternateVersionsExcluded: ["live", "acoustic", "remix", "demo", "instrumental", "remaster", "deluxe/reissue album editions"],
+      canonicalRecording: "Earliest eligible release for each normalized title and base artist"
+    },
+    counts: {
+      totalTracks: publicTracks.length,
+      byArtist,
+      kanyeTracksRemovedByStreamCutoff: Math.max(0, enriched.filter((track) => track.artist === "Kanye West").length - byArtist["Kanye West"]),
+      tracksWithoutVerifiedStreamCounts: publicTracks.filter((track) => track.streamCount === null).length
+    },
+    tracks: publicTracks
+  };
+}
+
+app.get("/api/song-hunt/catalog", async (req, res) => {
+  if (songHuntCatalogCache && songHuntCatalogCache.expiresAt > Date.now()) {
+    return res.json({ ...songHuntCatalogCache.payload, cached: true });
+  }
+  try {
+    if (!activeSongHuntCatalogBuild) activeSongHuntCatalogBuild = buildSongHuntCatalog();
+    const payload = await activeSongHuntCatalogBuild;
+    songHuntCatalogCache = { payload, expiresAt: Date.now() + SONG_HUNT_CACHE_MS };
+    return res.json({ ...payload, cached: false });
+  } catch (error) {
+    console.error("Song Hunt catalogue failed:", error.code || "", error.message);
+    return res.status(error.status || 502).json({
+      error: error.code || "SONG_HUNT_CATALOG_FAILED",
+      message: error.message || "The Song Hunt catalogue could not be loaded."
+    });
+  } finally {
+    activeSongHuntCatalogBuild = null;
+  }
+});
+
 // Fallback for unknown routes
 app.use((req, res) => {
   res.status(404).json({
