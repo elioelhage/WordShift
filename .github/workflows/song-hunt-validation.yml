@@ -52,6 +52,24 @@ jobs:
           echo "::warning::wordshift.dev is not yet serving Song Hunt with the current Render API URL. Check the live hosting deployment and asset cache."
           exit 0
 
+      - name: Probe and warm the Song Hunt catalogue
+        if: github.event_name == 'push'
+        timeout-minutes: 4
+        shell: bash
+        run: |
+          set +e
+          echo "Requesting the live Song Hunt catalogue after backend health check"
+          status=$(curl --silent --show-error --max-time 180 --dump-header /tmp/song-hunt-catalog-headers --output /tmp/song-hunt-catalog-body --write-out "%{http_code}" -H "Origin: https://wordshift.dev" -H "Accept: application/json" https://wordshift-t506.onrender.com/api/song-hunt/catalog || true)
+          echo "CATALOG_HTTP_STATUS=$status"
+          grep -iE '^(content-type|access-control-allow-origin|server|x-render-origin-server):' /tmp/song-hunt-catalog-headers 2>/dev/null || true
+          if [ "$status" = "200" ]; then
+            node -e "const p=JSON.parse(require('fs').readFileSync('/tmp/song-hunt-catalog-body','utf8')); if (!Array.isArray(p.tracks) || !p.tracks.length) process.exit(2); console.log('CATALOG_OK totalTracks='+(p.counts?.totalTracks ?? p.tracks.length)+' imagineDragons='+(p.counts?.byArtist?.['Imagine Dragons'] ?? '?')+' kanyeWest='+(p.counts?.byArtist?.['Kanye West'] ?? '?')+' cached='+Boolean(p.cached));" || echo "::warning::Catalogue endpoint returned HTTP 200 but the response did not contain a non-empty tracks array."
+          else
+            echo "::warning::Song Hunt catalogue probe failed. Response body (if any):"
+            head -c 2000 /tmp/song-hunt-catalog-body 2>/dev/null || true
+            echo
+          fi
+
       - name: Diagnose Render API availability and CORS
         shell: bash
         run: |
