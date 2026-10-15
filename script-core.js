@@ -13,7 +13,7 @@
 
   // --- SUPABASE CONFIGURATION ---
   // Keys are fetched from backend API (protected in Render environment variables)
-  const API_URL = 'https://wordshift-api.onrender.com'; // Change to your Render URL
+  const API_URL = 'https://wordshift-t506.onrender.com'; // Change to your Render URL
   let supabase = null;
   
   // Promise that resolves when Supabase is ready

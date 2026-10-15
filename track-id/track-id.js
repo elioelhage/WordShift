@@ -47,7 +47,7 @@
   const toast = $("toast");
 
   const ITUNES_SEARCH = "https://itunes.apple.com/search";
-  const WORDSHIFT_API = "https://wordshift-api.onrender.com";
+  const WORDSHIFT_API = "https://wordshift-t506.onrender.com";
   const MAX_ROUNDS = 10;
   const POINTS_PER_WIN = 10;
   const ANSWER_PREVIEW_MS = 7000;

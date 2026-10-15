@@ -37,7 +37,7 @@ jobs:
           set -u
           for attempt in 1 2 3; do
             echo "Render health check attempt $attempt"
-            status=$(curl --silent --show-error --max-time 45 --dump-header /tmp/song-hunt-headers --output /tmp/song-hunt-body --write-out "%{http_code}" -H "Origin: https://wordshift.dev" -H "Accept: application/json" https://wordshift-api.onrender.com/health || true)
+            status=$(curl --silent --show-error --max-time 45 --dump-header /tmp/song-hunt-headers --output /tmp/song-hunt-body --write-out "%{http_code}" -H "Origin: https://wordshift.dev" -H "Accept: application/json" https://wordshift-t506.onrender.com/health || true)
             echo "HTTP_STATUS=$status"
             cat /tmp/song-hunt-headers 2>/dev/null || true
             cat /tmp/song-hunt-body 2>/dev/null || true

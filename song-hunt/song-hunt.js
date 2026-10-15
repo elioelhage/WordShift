@@ -2,7 +2,7 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
-  const API_URL = "https://wordshift-api.onrender.com/api/song-hunt/catalog";
+  const API_URL = "https://wordshift-t506.onrender.com/api/song-hunt/catalog";
   const STORAGE_KEY = "wordshift-song-hunt-stats-v1";
 
   const guessForm = $("guess-form");

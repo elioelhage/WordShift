@@ -1,6 +1,6 @@
 (() => {
   // Fetch Supabase credentials from backend API (keys protected in Render)
-  const API_URL = "https://wordshift-api.onrender.com"; // Change to your Render URL
+  const API_URL = "https://wordshift-t506.onrender.com"; // Change to your Render URL
   let supabase = null;
 
   // Initialize Supabase with keys from backend
