@@ -746,13 +746,16 @@ async function enrichSongHuntStreamCounts(tracks) {
 }
 
 async function buildSongHuntCatalog() {
-  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-    throw trackIdError(503, "SPOTIFY_NOT_CONFIGURED",
-      "Spotify is not configured. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in the Render backend.");
-  }
-  if (!SOUNDCHARTS_CLIENT_ID || !SOUNDCHARTS_CLIENT_SECRET) {
-    throw trackIdError(503, "SOUNDCHARTS_NOT_CONFIGURED",
-      "Soundcharts is required to verify Song Hunt stream counts. Add SOUNDCHARTS_CLIENT_ID and SOUNDCHARTS_CLIENT_SECRET in the Render backend.");
+  const missingProviderCredentials = [
+    ...(!SPOTIFY_CLIENT_ID ? ["SPOTIFY_CLIENT_ID"] : []),
+    ...(!SPOTIFY_CLIENT_SECRET ? ["SPOTIFY_CLIENT_SECRET"] : []),
+    ...(!SOUNDCHARTS_CLIENT_ID ? ["SOUNDCHARTS_CLIENT_ID"] : []),
+    ...(!SOUNDCHARTS_CLIENT_SECRET ? ["SOUNDCHARTS_CLIENT_SECRET"] : [])
+  ];
+  if (missingProviderCredentials.length) {
+    throw trackIdError(503, "SONG_HUNT_PROVIDERS_NOT_CONFIGURED",
+      "Song Hunt catalogue setup is incomplete. Add these environment variables to the WordShift Render service: " +
+      missingProviderCredentials.join(", ") + ".");
   }
 
   const artistCatalogues = await Promise.all(SONG_HUNT_ARTISTS.map(async (artist) => ({

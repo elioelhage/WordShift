@@ -39,6 +39,17 @@ Tracks with unknown stream counts are excluded from all four bands. These bands 
 
 The endpoint returns an actionable error if Spotify configuration is missing. Soundcharts plan/permission failures appear as unavailable stream data; the frontend does not fabricate stream counts.
 
+## Required production setup
+
+The backend process can start and pass `/health` while Song Hunt is still unable to create its catalogue. On the Render service named **WordShift**, set all four provider credentials in **Environment** before expecting Song Hunt to work:
+
+- `SPOTIFY_CLIENT_ID`
+- `SPOTIFY_CLIENT_SECRET`
+- `SOUNDCHARTS_CLIENT_ID`
+- `SOUNDCHARTS_CLIENT_SECRET`
+
+Get each value from the corresponding provider account. Add the values directly in the Render dashboard; never commit them to GitHub or paste secret values into issue reports. Save the environment changes and let Render redeploy. Then run the **Song Hunt validation** workflow in GitHub Actions to test and warm the catalogue.
+
 ## Song Hunt catalogue endpoint
 
 `GET /api/song-hunt/catalog`
