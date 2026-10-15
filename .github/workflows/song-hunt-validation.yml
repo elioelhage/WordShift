@@ -42,11 +42,11 @@ jobs:
             echo "FRONTEND_HTTP_STATUS=$status"
             if [ "$status" = "200" ]; then
               grep -E 'const API_URL' /tmp/song-hunt-live.js || true
-              if grep -q "https://wordshift-t506.onrender.com/api/song-hunt/catalog" /tmp/song-hunt-live.js; then
-                echo "FRONTEND_API_URL_OK"
+              if grep -q "https://itunes.apple.com/search" /tmp/song-hunt-live.js; then
+                echo "FRONTEND_ITUNES_SOURCE_OK"
                 exit 0
               fi
-              echo "FRONTEND_STILL_SERVING_OLD_API_URL"
+              echo "FRONTEND_NOT_SERVING_EXPECTED_ITUNES_SOURCE"
             fi
             sleep 10
           done
@@ -80,31 +80,13 @@ jobs:
           echo "::warning::Render API did not return HTTP 200 after retries. Live catalogue connectivity was not verified."
           exit 0
 
-      - name: Probe and warm the Song Hunt catalogue
+      - name: Smoke test Apple iTunes Search used by Song Hunt
         if: github.event_name != 'pull_request'
-        timeout-minutes: 4
         shell: bash
         run: |
-          set +e
-          echo "Requesting the live Song Hunt catalogue after backend health check"
-          status=$(curl --silent --show-error --max-time 180 --dump-header /tmp/song-hunt-catalog-headers --output /tmp/song-hunt-catalog-body --write-out "%{http_code}" -H "Origin: https://wordshift.dev" -H "Accept: application/json" https://wordshift-t506.onrender.com/api/song-hunt/catalog || true)
-          echo "CATALOG_HTTP_STATUS=$status"
-          grep -iE '^(content-type|access-control-allow-origin|server|x-render-origin-server):' /tmp/song-hunt-catalog-headers 2>/dev/null || true
-          if [ "$status" = "200" ]; then
-            node -e "const p=JSON.parse(require('fs').readFileSync('/tmp/song-hunt-catalog-body','utf8')); if (!Array.isArray(p.tracks) || !p.tracks.length) process.exit(2); console.log('CATALOG_OK totalTracks='+(p.counts?.totalTracks ?? p.tracks.length)+' imagineDragons='+(p.counts?.byArtist?.['Imagine Dragons'] ?? '?')+' kanyeWest='+(p.counts?.byArtist?.['Kanye West'] ?? '?')+' cached='+Boolean(p.cached));"
-            validation_status=$?
-            if [ "$validation_status" -ne 0 ]; then
-              echo "::error::The Song Hunt catalogue endpoint returned invalid or empty track data."
-              exit 1
-            fi
-          else
-            echo "Catalogue response body (if any):"
-            head -c 2000 /tmp/song-hunt-catalog-body 2>/dev/null || true
-            echo
-            if grep -Eq '"error":"(SPOTIFY_NOT_CONFIGURED|SOUNDCHARTS_NOT_CONFIGURED|SONG_HUNT_PROVIDERS_NOT_CONFIGURED)"' /tmp/song-hunt-catalog-body 2>/dev/null; then
-              echo "::error::Song Hunt provider credentials are missing in the Render environment. Configure the Spotify and Soundcharts environment variables and rerun this workflow."
-            else
-              echo "::error::Song Hunt catalogue endpoint returned HTTP $status."
-            fi
-            exit 1
-          fi
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 \
+            "https://itunes.apple.com/search?term=Imagine%20Dragons&entity=song&country=ca&limit=5" \
+            --output /tmp/song-hunt-itunes.json
+          node -e "const p=JSON.parse(require('fs').readFileSync('/tmp/song-hunt-itunes.json','utf8')); if (!Array.isArray(p.results) || !p.results.some(t => t.trackId && t.trackName && t.artistName)) process.exit(1); console.log('ITUNES_SEARCH_OK results='+p.results.length);"
+

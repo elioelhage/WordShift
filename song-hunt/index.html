@@ -129,13 +129,13 @@
           <div class="side-title"><span class="side-symbol">♫</span><h2>Current catalogue</h2></div>
           <div class="artist-count"><span>Imagine Dragons</span><strong id="count-imagine-dragons">—</strong></div>
           <div class="artist-count"><span>Kanye West</span><strong id="count-kanye-west">—</strong></div>
-          <p>Kanye West tracks are included only when their Spotify stream count can be verified at 50 million or more. Imagine Dragons has no minimum-stream cutoff.</p>
-          <p class="catalogue-note">Live, acoustic, remix, demo, remastered, and alternate deluxe/reissue duplicates are filtered out where identifiable. The earliest eligible release is used as the canonical recording.</p>
+          <p>Song Hunt uses the same Apple Music/iTunes Search source as Track ID. It loads Imagine Dragons and Kanye West track metadata directly without requiring Spotify or Soundcharts API credentials.</p>
+          <p class="catalogue-note">Apple Music Search does not provide Spotify stream counts, so the Spotify streams clue appears as N/A. Live, remix, acoustic, demo, remastered, and obvious reissue variants are filtered out where identifiable.</p>
         </section>
       </aside>
     </div>
 
-    <p class="attribution">Track metadata is sourced from Spotify and cumulative stream counts from Soundcharts. Song links open the matching track on Spotify.</p>
+    <p class="attribution">Track metadata and song links use Apple’s iTunes Search API, matching Track ID’s fallback catalogue. Spotify cumulative stream counts are not provided by this source.</p>
   </main>
 
   <footer><span>© 2026 WordShift</span><span><a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a></span></footer>

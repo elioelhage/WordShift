@@ -2,7 +2,11 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
-  const API_URL = "https://wordshift-t506.onrender.com/api/song-hunt/catalog";
+  const ITUNES_SEARCH = "https://itunes.apple.com/search";
+  const SONG_HUNT_ARTISTS = [
+    { name: "Imagine Dragons", genre: "Rock" },
+    { name: "Kanye West", genre: "Hip-Hop" }
+  ];
   const STORAGE_KEY = "wordshift-song-hunt-stats-v1";
 
   const guessForm = $("guess-form");
@@ -111,6 +115,92 @@
     return node;
   }
 
+  function isAlternateSong(title, album) {
+    const alternateTitle = /\b(?:live|acoustic|remix(?:ed)?|demo|instrumental|karaoke|sped up|slowed(?: down)?|nightcore|reimagined|orchestral|piano version|stripped|unplugged|cover|remaster(?:ed)?|re-record(?:ed|ing)?)\b/i;
+    const alternateAlbum = /\b(?:live|deluxe|expanded|anniversary|greatest hits|best of|remaster(?:ed)?|remix|acoustic|karaoke|instrumentals|reissue|special edition|super deluxe|collector'?s edition|bonus tracks)\b/i;
+    return alternateTitle.test(String(title || "")) || alternateAlbum.test(String(album || ""));
+  }
+
+  function cleanSongTitle(title) {
+    return String(title || "")
+      .replace(/\s*[\[(]\s*(?:feat(?:uring)?|ft)\.?\s+[^\])]+[\])]/ig, "")
+      .replace(/\s+(?:feat(?:uring)?|ft)\.?\s+.+$/ig, "")
+      .replace(/\s*[\[(]\s*(?:single version|album version|remaster(?:ed)?(?:\s+\d{4})?)[^\])]*[\])]\s*$/i, "")
+      .trim();
+  }
+
+  function isCreditedToArtist(credit, artistName) {
+    const normalizedCredit = normalize(credit);
+    const normalizedArtist = normalize(artistName);
+    return normalizedCredit === normalizedArtist ||
+      normalizedCredit.startsWith(normalizedArtist + " ") ||
+      normalizedCredit.startsWith(normalizedArtist + " and ") ||
+      normalizedCredit.includes(" and " + normalizedArtist);
+  }
+
+  async function searchItunesArtist(artist) {
+    const url = new URL(ITUNES_SEARCH);
+    url.searchParams.set("term", artist.name);
+    url.searchParams.set("entity", "song");
+    url.searchParams.set("country", "ca");
+    url.searchParams.set("limit", "200");
+
+    const response = await fetch(url.toString(), {
+      mode: "cors",
+      headers: { "Accept": "application/json" }
+    });
+    if (!response.ok) {
+      throw new Error("Apple Music search for " + artist.name + " failed (" + response.status + ").");
+    }
+
+    const payload = await response.json();
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    return results
+      .filter((raw) => raw && raw.trackId && raw.trackName && raw.artistName)
+      .filter((raw) => isCreditedToArtist(raw.artistName, artist.name))
+      .filter((raw) => !isAlternateSong(raw.trackName, raw.collectionName))
+      .map((raw) => {
+        const releaseDate = String(raw.releaseDate || "");
+        const yearMatch = releaseDate.match(/^(\d{4})/);
+        const genre = String(raw.primaryGenreName || artist.genre).trim() || artist.genre;
+        const rawTitle = String(raw.trackName || "").trim();
+        const credit = String(raw.artistName || "").trim();
+        return {
+          id: "itunes-" + String(raw.trackId),
+          title: cleanSongTitle(rawTitle),
+          artist: artist.name,
+          year: yearMatch ? Number(yearMatch[1]) : null,
+          releaseDate,
+          genres: [genre],
+          genre,
+          album: String(raw.collectionName || "").trim(),
+          streamCount: null,
+          durationMs: Number(raw.trackTimeMillis) > 0 ? Number(raw.trackTimeMillis) : null,
+          isFeatured: /\b(?:feat(?:uring)?|ft)\.?\b/i.test(rawTitle) ||
+            (normalize(credit) !== normalize(artist.name) && isCreditedToArtist(credit, artist.name)),
+          featuredArtists: [],
+          storeUrl: String(raw.trackViewUrl || raw.collectionViewUrl || ""),
+          spotifyUrl: "",
+          explicit: Boolean(raw.trackExplicitness === "explicit")
+        };
+      })
+      .filter((track) => track.id && track.title && track.artist);
+  }
+
+  function deduplicateSongCatalog(tracks) {
+    const canonical = new Map();
+    tracks.forEach((track) => {
+      const key = normalize(track.artist) + "|" + normalize(track.title);
+      const previous = canonical.get(key);
+      if (!previous || String(track.releaseDate || "9999").localeCompare(String(previous.releaseDate || "9999")) < 0) {
+        canonical.set(key, track);
+      }
+    });
+    return [...canonical.values()].sort((a, b) =>
+      a.artist.localeCompare(b.artist) || a.title.localeCompare(b.title)
+    );
+  }
+
   async function loadCatalog() {
     state.loading = true;
     loadError.hidden = true;
@@ -118,40 +208,48 @@
     guessButton.disabled = true;
     revealButton.disabled = true;
     nextButton.disabled = true;
-    catalogStatus.textContent = "Loading verified song metadata…";
-    setFeedback("Loading your song catalogue…");
+    catalogStatus.textContent = "Loading songs from Apple Music…";
+    setFeedback("Fetching song metadata…");
     try {
-      const response = await fetch(API_URL, { headers: { "Accept": "application/json" } });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.message || "The catalogue service returned an error (" + response.status + ").");
-      if (!Array.isArray(payload.tracks) || !payload.tracks.length) throw new Error("The catalogue is empty. Try again in a moment.");
-      state.catalog = payload.tracks
-        .filter((track) => track && track.id && track.title && track.artist)
-        .map((track) => ({
-          ...track,
-          year: Number.isFinite(Number(track.year)) && track.year !== null ? Number(track.year) : null,
-          streamCount: Number.isFinite(Number(track.streamCount)) && track.streamCount !== null ? Number(track.streamCount) : null,
-          durationMs: Number.isFinite(Number(track.durationMs)) ? Number(track.durationMs) : null,
-          genres: Array.isArray(track.genres) && track.genres.length ? track.genres : [track.genre || "Unknown"],
-          isFeatured: Boolean(track.isFeatured)
-        }));
-      $("count-imagine-dragons").textContent = String(payload.counts?.byArtist?.["Imagine Dragons"] || 0);
-      $("count-kanye-west").textContent = String(payload.counts?.byArtist?.["Kanye West"] || 0);
+      const responses = await Promise.all(SONG_HUNT_ARTISTS.map(async (artist) => {
+        try {
+          return { artist, tracks: await searchItunesArtist(artist), error: null };
+        } catch (error) {
+          return { artist, tracks: [], error };
+        }
+      }));
+      const tracks = deduplicateSongCatalog(responses.flatMap((response) => response.tracks));
+      if (!tracks.length) {
+        const cause = responses.find((response) => response.error)?.error;
+        throw new Error(cause?.message || "Apple Music Search returned no eligible songs. Try again in a moment.");
+      }
+
+      state.catalog = tracks;
+      const counts = Object.fromEntries(SONG_HUNT_ARTISTS.map((artist) => [
+        artist.name,
+        tracks.filter((track) => track.artist === artist.name).length
+      ]));
+      $("count-imagine-dragons").textContent = String(counts["Imagine Dragons"] || 0);
+      $("count-kanye-west").textContent = String(counts["Kanye West"] || 0);
       catalogStatus.textContent = state.catalog.length + " eligible songs loaded";
       state.loading = false;
       guessInput.disabled = false;
       guessButton.disabled = false;
       guessInput.setAttribute("aria-expanded", "false");
       startRound();
+      if (responses.some((response) => response.error)) {
+        const missing = responses.filter((response) => response.error).map((response) => response.artist.name);
+        setFeedback("Catalogue loaded, but Apple Music search failed for: " + missing.join(", ") + ".", "error");
+      }
     } catch (error) {
       state.loading = false;
       catalogStatus.textContent = "Catalogue unavailable";
       const rawMessage = String(error && error.message || "");
       loadErrorMessage.textContent = /failed to fetch|networkerror|load failed/i.test(rawMessage)
-        ? "The browser cannot reach the configured WordShift API server. Its Render hostname may be unavailable or outdated. Check the backend service URL in Render, then retry."
-        : rawMessage || "Check the Song Hunt API connection and try again.";
+        ? "The browser cannot reach Apple Music Search. Check your connection and try again."
+        : rawMessage || "Apple Music Search could not load the song catalogue.";
       loadError.hidden = false;
-      setFeedback("The game can't start without its verified catalogue.", "error");
+      setFeedback("The game can't start without its song catalogue.", "error");
       retryButton.focus();
     }
   }
@@ -396,10 +494,10 @@
       const row = document.createElement("tr");
       const songCell = document.createElement("td");
       const songLink = el("a", "song-link", guess.title);
-      songLink.href = guess.spotifyUrl || "https://open.spotify.com/";
+      songLink.href = guess.storeUrl || guess.spotifyUrl || "https://music.apple.com/";
       songLink.target = "_blank";
       songLink.rel = "noopener noreferrer";
-      songLink.title = "Open " + guess.title + " on Spotify";
+      songLink.title = "Open " + guess.title + " song listing";
       songCell.appendChild(songLink);
       songCell.appendChild(el("span", "song-artist-sub", guess.artist));
       row.appendChild(songCell);
@@ -446,8 +544,8 @@
     copy.appendChild(el("strong", "", won ? "Found it in " + state.guesses.length + (state.guesses.length === 1 ? " guess!" : " guesses!") : "Mystery song revealed"));
     const details = state.target.artist + " · " + formatYear(state.target.year) + (state.target.album ? " · " + state.target.album : "");
     copy.appendChild(el("p", "", state.target.title + " — " + details));
-    const link = el("a", "", "Open track on Spotify ↗");
-    link.href = state.target.spotifyUrl || "https://open.spotify.com/";
+    const link = el("a", "", "Open song listing ↗");
+    link.href = state.target.storeUrl || state.target.spotifyUrl || "https://music.apple.com/";
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     copy.appendChild(link);
