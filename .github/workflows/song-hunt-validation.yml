@@ -41,7 +41,7 @@ jobs:
             status=$(curl --silent --show-error --max-time 20 --output /tmp/song-hunt-live.js --write-out "%{http_code}" "https://wordshift.dev/song-hunt/song-hunt.js?check=${GITHUB_SHA}" || true)
             echo "FRONTEND_HTTP_STATUS=$status"
             if [ "$status" = "200" ]; then
-              grep -E 'const API_URL' /tmp/song-hunt-live.js || true
+              grep -E 'const ITUNES_SEARCH' /tmp/song-hunt-live.js || true
               if grep -q "https://itunes.apple.com/search" /tmp/song-hunt-live.js; then
                 echo "FRONTEND_ITUNES_SOURCE_OK"
                 exit 0
@@ -50,34 +50,7 @@ jobs:
             fi
             sleep 10
           done
-          echo "::warning::wordshift.dev is not yet serving Song Hunt with the current Render API URL. Check the live hosting deployment and asset cache."
-          exit 0
-
-      - name: Diagnose Render API availability and CORS
-        shell: bash
-        run: |
-          set -u
-          for attempt in 1 2 3; do
-            echo "Render health check attempt $attempt"
-            status=$(curl --silent --show-error --max-time 45 --dump-header /tmp/song-hunt-headers --output /tmp/song-hunt-body --write-out "%{http_code}" -H "Origin: https://wordshift.dev" -H "Accept: application/json" https://wordshift-t506.onrender.com/health || true)
-            echo "HTTP_STATUS=$status"
-            cat /tmp/song-hunt-headers 2>/dev/null || true
-            cat /tmp/song-hunt-body 2>/dev/null || true
-            if [ "$status" = "200" ]; then
-              if grep -qi "^access-control-allow-origin: \\*" /tmp/song-hunt-headers; then
-                echo "HEALTH_OK_AND_CORS_WILDCARD_PRESENT"
-                exit 0
-              fi
-              echo "HEALTH_OK_BUT_CORS_HEADER_MISSING"
-              exit 1
-            fi
-            if [ "$status" = "404" ] && grep -qi "^x-render-routing: no-server" /tmp/song-hunt-headers; then
-              echo "::warning::The hard-coded Render API hostname has no service attached. Connect Render and update the backend URL before testing Song Hunt's live catalogue."
-              exit 0
-            fi
-            sleep 8
-          done
-          echo "::warning::Render API did not return HTTP 200 after retries. Live catalogue connectivity was not verified."
+          echo "::warning::wordshift.dev is not yet serving the updated Song Hunt asset. Check the static deployment and asset cache."
           exit 0
 
       - name: Smoke test Apple iTunes Search used by Song Hunt
